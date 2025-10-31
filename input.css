@@ -1,0 +1,106 @@
+/* Basic Reset and Box-Sizing */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    color: #fff; /* Default text color is white for contrast */
+}
+
+/* 1. Hero Section (Background Image) */
+.hero-section {
+    /* Replace 'path/to/your/background/image.jpg' with your image */
+    background-image: url('path/to/your/background/image.jpg');
+    background-size: cover;
+    background-position: center;
+    height: 100vh; /* Full viewport height */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Start from the top for the header */
+    text-align: center;
+    padding-top: 50px; /* Space for the header from the top */
+    position: relative; /* Needed to position elements within it */
+}
+
+/* 2. Header and Logo/Title Styling */
+header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 100px; /* Space between header and search elements */
+}
+
+.logo {
+    width: 50px; /* Adjust size as needed for the logo */
+    height: auto;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.5)); /* Adds a slight shadow for visibility */
+}
+
+header h1 {
+    font-size: 2.5em;
+    font-weight: 300; /* Lighter font weight for an elegant look */
+    letter-spacing: 5px; /* Spacing out the letters */
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Shadow for readability against the background */
+}
+
+/* 3. Search Container and Text */
+.search-container {
+    width: 100%;
+    max-width: 800px; /* Limit the width of the search elements */
+    padding: 0 20px;
+}
+
+.query-text {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+/* 4. Search Bar Styling */
+.search-bar {
+    display: flex;
+    background-color: rgba(255, 255, 255, 0.9); /* Slightly transparent white background */
+    border-radius: 30px; /* Creates the rounded ends */
+    overflow: hidden; /* Ensures the contents stay within the rounded border */
+    height: 60px; /* Fixed height for the search bar */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); /* Lifted appearance */
+}
+
+.search-input {
+    flex-grow: 1;
+    padding: 0 20px;
+    border: none;
+    outline: none; /* Remove focus outline */
+    font-size: 1em;
+    color: #333; /* Dark text inside the input */
+    background: transparent;
+}
+
+/* Change placeholder color to match the design */
+.search-input::placeholder {
+    color: #aaa;
+    font-style: italic;
+}
+
+/* 5. Search Button Styling */
+.search-button {
+    background-color: #2e8b57; /* A contrasting color, e.g., a shade of blue or green */
+    color: white;
+    border: none;
+    padding: 0 25px;
+    cursor: pointer;
+    font-size: 1.5em;
+    transition: background-color 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-button:hover {
+    background-color: #3cb371; /* Darker/lighter shade on hover */
+}
