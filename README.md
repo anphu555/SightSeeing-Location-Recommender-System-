@@ -1,4 +1,4 @@
-### Setup
+### Setup BACKEND API
 1. Copy file `.env.example` thành `.env`
 2. Điền API key của vào
 3. Chạy:
