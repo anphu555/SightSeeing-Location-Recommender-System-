@@ -8,7 +8,12 @@ from groq import Groq
 from data import PLACES
 from dotenv import load_dotenv
 load_dotenv()  # take environment variables from .env if present
-app = FastAPI(title="Smart Tourism PoC (Groq)", version="0.2.0")
+app = FastAPI(
+    title="Smart Tourism API",
+    version="1.0.0",
+    docs_url="/api/v1/docs",     # Swagger UI
+    redoc_url="/api/v1/redoc"    # alternative docs
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -152,8 +157,11 @@ def rank_places(ex: GroqExtraction, top_k: int) -> List[PlaceOut]:
 @app.get("/health")
 def health():
     return {"status": "ok"}
+@app.get("/")
+def root():
+    return {"message": "Welcome to Smart Tourism API! Visit /api/v1/docs for API docs."}
 
-@app.post("/recommend", response_model=RecommendResponse)
+@app.post("/api/v1/recommend", response_model=RecommendResponse)
 async def recommend(req: RecommendRequest):
     if not GROQ_API_KEY:
         raise HTTPException(status_code=500, detail="Server missing GROQ_API_KEY")
