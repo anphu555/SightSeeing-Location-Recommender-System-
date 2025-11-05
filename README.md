@@ -8,5 +8,5 @@
    pip install -r requirements.txt
    uvicorn main:app --reload
 4. Bật web:
-- Trong terminal sau khi chạy uvicorn main:app --reloa nó có bảo unvicorn running on... copy dán vào browser sau đó thêm /docs# ở đuôi để vào.
+- Trong terminal sau khi chạy uvicorn main:app --reload nó có bảo unvicorn running on... copy dán vào browser sau đó thêm /api/v1/docs ở đuôi để vào.
 - Dùng xong `CTRL+C` để thoát và nhớ chạy `deactivate` để tắt môi trường ảo.
