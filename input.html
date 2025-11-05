@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sigma-Alpha Sightseeing</title>
     <link rel="stylesheet" href="input.css"> </head>
+
+
 <body>
     <div class="hero-section">
         <header>
@@ -22,5 +24,27 @@
             </div>
         </main>
     </div>
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+  const inputEl = document.querySelector('.search-input');
+  const btnEl   = document.querySelector('.search-button');
+
+  function goSearch() {
+    const text = (inputEl?.value || '').trim();
+    if (!text) { alert('Nhập gì đó đã nha 🙂'); return; }
+    const params = new URLSearchParams({ text, k: '6' });
+    // Nếu input.html và index.html cùng thư mục:
+    window.location.href = `index.html?${params.toString()}`;
+    // Nếu KHÁC thư mục, dùng đường dẫn đúng, ví dụ:
+    // window.location.href = `/index.html?${params.toString()}`;
+  }
+
+  btnEl?.addEventListener('click', goSearch);
+  inputEl?.addEventListener('keydown', (e) => { if (e.key === 'Enter') goSearch(); });
+
+  // giúp bạn thử nhanh từ Console
+  window.goSearch = goSearch;
+});
+</script>
 </body>
 </html>

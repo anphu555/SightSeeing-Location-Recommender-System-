@@ -8,7 +8,12 @@ from groq import Groq
 from data import PLACES
 from dotenv import load_dotenv
 load_dotenv()  # take environment variables from .env if present
-app = FastAPI(title="Smart Tourism PoC (Groq)", version="0.2.0")
+app = FastAPI(
+    title="Smart Tourism API",
+    version="1.0.0",
+    docs_url="/api/v1/docs",     # Swagger UI
+    redoc_url="/api/v1/redoc"    # alternative docs
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,25 +36,66 @@ You are an expert text analysis API for Vietnam travel. Your job is to
 read a user's text and extract specific details. You must respond in
 ONLY a valid JSON format.
 
-The JSON object you return must have these five keys:
+The JSON object you return must have these six keys:
 
-1. "location": A list of all specific provinces in Vietnam mentioned
-   (e.g., "Quang Ninh", "Da Nang", "Lam Dong", "Kien Giang").
-   If no specific province is mentioned, return an empty list [].
-
-2. "type": Categorize the type of place. Must be one of:
+1. "location": A list of provinces the user WANTS to go to.
+2. "exclude_locations": A list of provinces the user wants to AVOID
+   or wants recommendations "similar to" (e.g., "like Vung Tau").
+3. "type": Categorize the type of place. Must be one of:
    "beach", "forest", "mountain", "island", "city", "unknown".
-
-3. "budget": Categorize the budget. Must be one of:
+4. "budget": Categorize the budget. Must be one of:
    "cheap", "moderate", "expensive", "unknown".
-
-4. "weather": Categorize the weather. Must be one of:
+5. "weather": Categorize the weather. Must be one of:
    "warm", "hot", "cool", "cold", "unknown".
-
-5. "crowded": Categorize the crowdedness. Must be one of:
+6. "crowded": Categorize the crowdedness. Must be one of:
    "crowded", "average", "empty", "unknown".
 
-Do not write any text outside of the JSON object.
+--- EXAMPLES ---
+
+USER TEXT: "i like mountains in Viet Nam and cool weather"
+YOUR JSON:
+{
+  "location": [],
+  "exclude_locations": [],
+  "type": "mountain",
+  "budget": "unknown",
+  "weather": "cool",
+  "crowded": "unknown"
+}
+
+USER TEXT: "show me islands in Quang Ninh"
+YOUR JSON:
+{
+  "location": ["Quảng Ninh"],
+  "exclude_locations": [],
+  "type": "island",
+  "budget": "unknown",
+  "weather": "unknown",
+  "crowded": "unknown"
+}
+
+USER TEXT: "Hmmm, i would love to go somewhere with great oceanic view that is similar to Vung Tau"
+YOUR JSON:
+{
+  "location": [],
+  "exclude_locations": ["Bà Rịa - Vũng Tàu"],
+  "type": "beach",
+  "budget": "unknown",
+  "weather": "unknown",
+  "crowded": "unknown"
+}
+
+USER TEXT: "I want to go anywhere but Phu Quoc, I find it too expensive"
+YOUR JSON:
+{
+  "location": [],
+  "exclude_locations": ["Kiên Giang"],
+  "type": "unknown",
+  "budget": "expensive",
+  "weather": "unknown",
+  "crowded": "unknown"
+}
+---
 """.strip()
 
 # ---------- schemas ----------
@@ -152,8 +198,10 @@ def rank_places(ex: GroqExtraction, top_k: int) -> List[PlaceOut]:
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
-@app.post("/recommend", response_model=RecommendResponse)
+@app.get("/")
+def root():
+    return {"message": "Welcome to Smart Tourism API! Visit /api/v1/docs for API docs."}
+@app.post("/api/v1/recommend", response_model=RecommendResponse)
 async def recommend(req: RecommendRequest):
     if not GROQ_API_KEY:
         raise HTTPException(status_code=500, detail="Server missing GROQ_API_KEY")
