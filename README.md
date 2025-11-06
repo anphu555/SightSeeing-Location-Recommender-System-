@@ -1,6 +1,6 @@
 ### Setup BACKEND API
 1. Copy file `.env.example` thành `.env`
-2. Điền API key của vào
+2. Điền API key của mình hoặc xin thằng an vào `.env`
 3. Chạy:
    ```terminal
    python -m venv .venv
