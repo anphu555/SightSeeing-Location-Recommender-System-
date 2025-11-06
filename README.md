@@ -10,7 +10,7 @@
    uvicorn main:app --reload
    ```
    - Chạy trên Win:
-  ```terminal
+  ```
    python -m venv .venv
    .venv/Script/Activate
    pip install -r requirements.txt
