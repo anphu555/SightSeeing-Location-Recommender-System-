@@ -1,10 +1,21 @@
 ### Setup BACKEND API
 1. Copy file `.env.example` thành `.env`
 2. Điền API key của mình hoặc xin thằng an vào `.env`
-3. Chạy trên WSL (Ubuntu) windows gpt đi:
+3.
+  - Chạy trên WSL (Ubuntu) windows gpt đi:
    ```terminal
    python -m venv .venv
    source .venv/bin/activate
+   pip install -r requirements.txt
+   uvicorn main:app --reload
+   ```
+   - Chạy trên Win:
+  ```terminal
+   python -m venv .venv
+   .venv/Script/Activate
+  ```
+     Comment `uvloop==0.22.1` trong `requirement.txt`
+  ```terminal
    pip install -r requirements.txt
    uvicorn main:app --reload
 4. Bật web:
