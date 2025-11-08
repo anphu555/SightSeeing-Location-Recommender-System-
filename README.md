@@ -1,6 +1,7 @@
 # Setup môi trường và chạy chương trình
 
   - Nếu đã từng setup môi trường, thực hiện bước 4, 6, 7, 8.
+  - Sử dụng `Command Prompt` nếu dùng Windows.
 ## 1. Tạo file .env để điền key API
   - Mở thư mục `.env-config`, nhân bản file `.env.example` sau đó đổi tên thành thành `.env`.
   - Sau đó di chuyển file `.env` vào thư mục `Backend`.
