@@ -35,8 +35,8 @@
     pip install -r .env-config\requirements.txt
     ```
 ## 6. Khởi động trang web
-
   ```terminal
+  cd Backend
   uvicorn main:app --reload
   ```
   - Sau khi chạy, chương trình hiện lên 1 đoạn URL, copy dán vào trình duyệt, hoặc `CTRL + chuột trái`.
