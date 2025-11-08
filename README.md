@@ -1,8 +1,36 @@
 # Setup môi trường và chạy chương trình
 
+## Trên Windows
+  - Dùng `Command Prompt`
+### 1. Setup môi trường
+
+#### Nếu đã từng setup môi trường, bỏ qua bước này.
+
+#### Nếu chưa, thực hiện:
+
+  ```terminal
+  .env-config\setup.bat
+  ```
+  - Mở file `.env` trong thư mục `Backend`, điền Groq API key vào ô `key` (lưu ý key nằm trong dấu ngoặc kép `""`).
+### 2. Chạy chương trình
+
+  ```terminal
+  start.bat
+  ```
+### 3. Đóng chương trình
+
+  - Khi muốn tắt chương trình, ấn `CTRL + C` trong terminal.
+  - Sau đó thực hiện:
+    ```terminal
+    cd ..
+    stop.bat
+    ```
+# Setup cũ
+
   - Nếu đã từng setup môi trường, thực hiện bước 4, 6, 7, 8.
   - Sử dụng `Command Prompt` nếu dùng Windows.
 ## 1. Tạo file .env để điền key API
+
   - Mở thư mục `.env-config`, nhân bản file `.env.example` sau đó đổi tên thành thành `.env`.
   - Sau đó di chuyển file `.env` vào thư mục `Backend`.
 
@@ -14,6 +42,8 @@
   - Nếu đã tạo môi trường ảo (có thư mục .venv) thì bỏ qua bước này.
   - Nếu chưa, thực hiện:
     ```terminal
+    python -m venv .venv
+    ``````terminal
     python -m venv .venv
     ```
 ## 4. Khởi động môi trường ảo (Virtual environment)
