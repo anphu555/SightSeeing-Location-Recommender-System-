@@ -10,20 +10,20 @@
 
 #### Nếu chưa, thực hiện:
 
-  ```terminal
+  ```bash
   .env-config\setup.bat
   ```
   - Mở file `.env` trong thư mục `Backend`, điền Groq API key vào ô `key` (lưu ý key nằm trong dấu ngoặc kép `""`).
 ### 2. Chạy chương trình
 
-  ```terminal
+  ```bash
   start.bat
   ```
 ### 3. Đóng chương trình
 
   - Khi muốn tắt chương trình, ấn `CTRL + C` trong terminal.
   - Sau đó thực hiện:
-    ```terminal
+    ```bash
     cd ..
     stop.bat
     ```
@@ -37,7 +37,7 @@
 
 #### Nếu chưa, thực hiện:
 
-  ```terminal
+  ```bash
   ./.env-config/setup.sh
   ```
   - Mở file `.env` trong thư mục `Backend`, điền Groq API key vào ô `key` (lưu ý key nằm trong dấu ngoặc kép `""`).
@@ -50,7 +50,7 @@
 
   - Khi muốn tắt chương trình, ấn `CTRL + C` trong terminal.
   - Sau đó thực hiện:
-    ```terminal
+    ```bash
     cd ..
     ./stop.bat
     ```
