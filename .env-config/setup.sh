@@ -5,13 +5,13 @@
 # sudo apt install python3-pip
 # sudo apt install python3-venv
 
-#  Create .env file (with the format as .env.example) in Backend to fill in the API key 
+# Create .env file (with the format as .env.example) in Backend to fill in the API key 
 cp ".env-config/.env.example" "backend/.env"
 
 # Setup virtual environment (.venv)
 python3 -m venv .venv
 
-#  Activate the virtual environment (venv). 
+# Activate the virtual environment (venv). 
 source .venv/bin/activate
 
 # Install defined package for virtual environment
