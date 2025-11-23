@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build: ./Backend  # Đường dẫn tới thư mục backend
