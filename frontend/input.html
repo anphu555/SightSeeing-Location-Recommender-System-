@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function goSearch() {
     const text = (inputEl?.value || '').trim();
-    if (!text) { alert('Nhập gì đó đã nha 🙂'); return; }
+    if (!text) { alert('Hãy nhập gì đó'); return; }
     const params = new URLSearchParams({ text, k: '6' });
     // Nếu input.html và index.html cùng thư mục:
     window.location.href = `index.html?${params.toString()}`;
