@@ -7,4 +7,4 @@ source .venv/bin/activate
 cd Backend
 
 # Start the server
-uvicorn main:app --reload
+uvicorn app.main:app --reload
