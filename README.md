@@ -55,3 +55,10 @@
     ./stop.bat
     ```
 
+## Chạy bằng docker:
+# 1. Tải docker (nhớ tải bản 2.x đừng tải bản 1.x):
+- https://www.docker.com/products/docker-desktop/
+# 2. Build và chạy:
+- `docker compuse up --build`
+# 3. Thoát
+- `CTRL + C`

@@ -1,0 +1,17 @@
+services:
+  backend:
+    build: ./Backend  # Đường dẫn tới thư mục backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./Backend:/code # Quan trọng: Giúp bạn sửa code ở ngoài, trong Docker tự cập nhật
+    env_file:
+      - ./Backend/.env
+
+  # Vì frontend bạn đơn giản, ta dùng 1 server nhẹ để chạy nó
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
