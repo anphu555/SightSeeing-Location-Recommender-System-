@@ -63,5 +63,4 @@
 - - `docker compose up --build` (window)
 - Sau khi build xong thì truy cập `localhost:3000` để vào trang web, `localhost:8000/api/v1/docs` để vào swagger UI (backend)
 # 3. Thoát
-# 3. Thoát
 - `CTRL + C`
