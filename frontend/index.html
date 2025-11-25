@@ -83,94 +83,148 @@
       
     </div>
   </main>
+<div class="loading-indicator">Đang tải thêm địa điểm...</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const apiBase = 'http://127.0.0.1:8000';
   const params  = new URLSearchParams(location.search);
-  const text    = (params.get('text') || '').trim();
-  const k       = Number(params.get('k') || '6');
+  
+  // Lấy text tìm kiếm
+  const text = (params.get('text') || '').trim();
+  
+  // Khởi tạo số lượng k ban đầu (mặc định 6)
+  let currentK = Number(params.get('k') || '6');
+  const stepK  = 6; // Mỗi lần kéo xuống sẽ tải thêm 6 cái nữa
+  
+  let isLoading = false; // Biến cờ để chặn gọi API nhiều lần cùng lúc
+  let isFull    = false; // Biến cờ để biết đã hết dữ liệu chưa
 
-  const headerH2 = document.querySelector('.results-header h2') || (()=>{
-    const wrap = document.createElement('div');
-    wrap.className = 'results-header';
-    wrap.innerHTML = '<h2>Results</h2>';
-    document.body.prepend(wrap);
-    return wrap.querySelector('h2');
-  })();
+  // DOM Elements
+  const headerH2      = document.querySelector('.results-header h2');
+  const cardsContainer= document.querySelector('.cards');
+  const loader        = document.querySelector('.loading-indicator');
+  const headerInput   = document.querySelector('.search-bar input');
+  const headerBtn     = document.querySelector('.search-bar button');
 
-  const cards = document.querySelector('.cards') || (()=>{
-    const div = document.createElement('div');
-    div.className = 'cards';
-    document.body.appendChild(div);
-    return div;
-  })();
+  // Đổ lại giá trị search vào ô input nếu có
+  if (headerInput) headerInput.value = text;
 
+  // Hàm tạo thẻ HTML cho 1 địa điểm
   function renderCard(item){
     const div = document.createElement('div');
     div.className = 'card';
     const img = document.createElement('img');
-    img.src = 'images/halong.jpg'; // tạm ảnh mẫu; đổi theo data nếu muốn
+    // Lưu ý: Đảm bảo đường dẫn ảnh đúng với dữ liệu trả về hoặc dùng ảnh placeholder
+    img.src = 'images/halong.jpg'; 
     img.alt = item.name;
-    const name = document.createElement('p'); name.textContent = item.name;
+    
+    const name = document.createElement('p'); 
+    name.textContent = item.name;
+    
     const meta = document.createElement('p');
-    meta.style.fontWeight='normal'; meta.style.color='#666'; meta.style.paddingBottom='12px';
-    meta.textContent = `${item.province ?? ''} • ${item.region ?? ''} • score ${item.score}`;
+    meta.style.fontWeight='normal'; 
+    meta.style.color='#666'; 
+    meta.style.paddingBottom='12px';
+    meta.textContent = `${item.province ?? ''} • Score: ${parseFloat(item.score).toFixed(2)}`;
+    
     div.append(img, name, meta);
     return div;
   }
 
-  async function run(){
-    if(!text){ headerH2.textContent='0 results'; return; }
-    headerH2.textContent = 'Loading...'; cards.innerHTML='';
-    try{
+  // Hàm gọi API chính
+  async function fetchResults(kValue, isLoadMore = false) {
+    if (!text) {
+      headerH2.textContent = '0 results';
+      return;
+    }
+    
+    // Nếu không phải load more (lần đầu vào), hiện trạng thái loading ở header
+    if (!isLoadMore) {
+      headerH2.textContent = 'Loading...';
+      cardsContainer.innerHTML = ''; 
+    } else {
+      loader.classList.add('active'); // Hiện chữ đang tải ở dưới đáy
+    }
+
+    isLoading = true;
+
+    try {
       const r = await fetch(`${apiBase}/api/v1/recommend`, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ user_text: text, top_k: k })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_text: text, top_k: kValue })
       });
-      if(!r.ok){
-        let err = await r.text(); throw new Error(err || `HTTP ${r.status}`);
-      }
+
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+
       const data = await r.json();
       const items = data.results || [];
-      headerH2.textContent = `${items.length} results`;
-      items.forEach(it => cards.appendChild(renderCard(it)));
-    }catch(e){
-      headerH2.textContent = 'Error';
-      cards.innerHTML = `<div style="padding:12px;color:#b00">${e.message}</div>`;
+
+      if (!isLoadMore) {
+        // --- LẦN TẢI ĐẦU TIÊN ---
+        headerH2.textContent = `${items.length} results`;
+        items.forEach(it => cardsContainer.appendChild(renderCard(it)));
+      } else {
+        // --- KHI KÉO CHUỘT (LOAD MORE) ---
+        // API trả về toàn bộ danh sách từ 0 -> kValue.
+        // Chúng ta chỉ cần lấy những phần tử mới chưa hiển thị.
+        // Giả sử API luôn trả về cùng thứ tự, ta cắt mảng từ vị trí cũ (currentK - stepK).
+        
+        const oldLength = currentK - stepK; 
+        const newItems = items.slice(oldLength); 
+
+        if (newItems.length === 0) {
+          isFull = true; // Không còn dữ liệu mới để tải
+          loader.textContent = "Đã hiển thị hết kết quả.";
+        } else {
+          newItems.forEach(it => cardsContainer.appendChild(renderCard(it)));
+          headerH2.textContent = `${items.length} results`; // Cập nhật tổng số
+        }
+      }
+
+    } catch (e) {
       console.error(e);
+      if (!isLoadMore) {
+        headerH2.textContent = 'Error loading data';
+        cardsContainer.innerHTML = `<div style="color:red; padding:10px">${e.message}</div>`;
+      }
+    } finally {
+      isLoading = false;
+      loader.classList.remove('active');
     }
   }
-  const headerInput = document.querySelector('.search-bar input');
-  const headerBtn   = document.querySelector('.search-bar button');
 
-  // (tuỳ thích) đổ lại giá trị đang có trên URL vào ô search để tiện sửa
-  if (headerInput) headerInput.value = (new URLSearchParams(location.search).get('text') || '');
+  // Chạy lần đầu tiên
+  fetchResults(currentK, false);
 
-  // 2) Hàm kích hoạt tìm kiếm mới
+  // --- XỬ LÝ INFINITE SCROLL ---
+  window.addEventListener('scroll', () => {
+    // Nếu đang tải hoặc đã hết dữ liệu thì không làm gì cả
+    if (isLoading || isFull) return;
+
+    // Kiểm tra nếu cuộn gần đến đáy trang (còn cách 100px)
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 100) {
+      currentK += stepK; // Tăng số lượng k cần lấy
+      fetchResults(currentK, true); // Gọi hàm với cờ isLoadMore = true
+    }
+  });
+
+  // --- XỬ LÝ TÌM KIẾM MỚI ---
   function triggerSearch() {
     const q = (headerInput?.value || '').trim();
     if (!q) return;
-
-    // Cách A (đơn giản nhất): đổi URL params rồi reload đúng chuẩn
-    const params = new URLSearchParams(location.search);
-    params.set('text', q);
-    params.set('k', params.get('k') || '6');
-    window.location.search = params.toString();
-
-    // Cách B (không reload trang): gọi lại hàm fetch hiện có
-    // 👉 Nếu bạn muốn dùng cách B, bạn cần biến `text` thành biến có thể gán lại,
-    //    và tách fetch ra thành hàm `fetchAndRender(q, k)`. Ở đây mình giữ cách A cho gọn.
+    // Reload lại trang với từ khóa mới, reset k về mặc định
+    const newParams = new URLSearchParams();
+    newParams.set('text', q);
+    newParams.set('k', '6'); 
+    window.location.search = newParams.toString();
   }
 
-  // 3) Gắn sự kiện click + Enter
   headerBtn?.addEventListener('click', triggerSearch);
   headerInput?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') triggerSearch();
   });
-
-  console.log('Params:', {text, k});
-  run();
 });
 </script>
 
