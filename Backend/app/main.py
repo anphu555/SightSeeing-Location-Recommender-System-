@@ -23,6 +23,13 @@ app.add_middleware(
 def health():
     return {"status": "ok"}
 
+@app.get("/")
+def root():
+    return {
+        "message": "Hello! Backend is running.",
+        "docs": "localhost:8000/api/v1/docs"
+    }
+
 # Đăng ký router
 app.include_router(recommendation.router, prefix="/api/v1", tags=["Recommendation"])
 
