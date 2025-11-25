@@ -81,7 +81,32 @@ def _call_groq(user_text: str):
 async def extract_with_groq(user_text: str) -> GroqExtraction:
     try:
         data = await run_in_threadpool(_call_groq, user_text)
-        return GroqExtraction(**data)
+
+        userPrompt = GroqExtraction(**data)
+
+        if isVaguePrompt(userPrompt) == True:
+            # request to prompt again!!!
+            # return 
+            ...
+
+        return userPrompt
+    
     except Exception as e:
         print(f"Error calling Groq: {e}") 
         raise HTTPException(status_code=502, detail="AI Service unavailable")
+    
+def isVaguePrompt(data: GroqExtraction) -> bool:
+    unknownCount = 0
+    if data.type == "unknown":
+        unknownCount += 1
+    # if data.budget == "unknown":
+        # unknownCount += 1
+    if data.weather == "unknown":
+        unknownCount += 1
+    if data.crowded == "unknown":
+        unknownCount += 1
+    
+    if unknownCount > 2:
+        return True
+    return False
+      
