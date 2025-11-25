@@ -13,7 +13,7 @@ body {
 /* 1. Hero Section (Background Image) */
 .hero-section {
     /* Replace 'path/to/your/background/image.jpg' with your image */
-    background-image: url('images/halong.jpg');
+    background-image: url('/images/halong.jpg');
     background-size: cover;
     background-position: center;
     height: 100vh; /* Full viewport height */
