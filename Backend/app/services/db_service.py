@@ -11,11 +11,26 @@ def get_db_connection():
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
-    # Tạo bảng users nếu chưa có
+    
+    # Bảng Users (Đã có từ bước trước)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             username TEXT PRIMARY KEY,
             hashed_password TEXT NOT NULL
+        )
+    ''')
+    
+    # --- MỚI: Bảng Ratings ---
+    # Lưu ai (username) đánh giá cái gì (place_id) bao nhiêu điểm (rating)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS ratings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            place_id INTEGER NOT NULL,
+            rating INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(username) REFERENCES users(username),
+            FOREIGN KEY(place_id) REFERENCES sightseeing(id)
         )
     ''')
     conn.commit()

@@ -15,13 +15,18 @@ class GroqExtraction(BaseModel):
     exclude_locations: List[str] = [] 
 
 class PlaceOut(BaseModel):
+    id: int
     name: str
     country: str
     province: str
     region: str
     themes: List[str]
     score: float
-
+# 2. Thêm Schema cho Rating
+class RatingCreate(BaseModel):
+    place_id: int
+    score: int = Field(..., ge=1, le=5) # Điểm từ 1 đến 5
+    
 class RecommendResponse(BaseModel):
     extraction: GroqExtraction
     results: List[PlaceOut]
