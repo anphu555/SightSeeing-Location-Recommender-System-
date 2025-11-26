@@ -90,6 +90,15 @@
   </main>
 <div class="loading-indicator">Đang tải thêm địa điểm...</div>
 
+<!-- Accessible Modal Dialog -->
+<div id="notificationModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalMessage" tabindex="-1">
+  <div class="modal-content">
+    <h2 id="modalTitle" class="modal-title"></h2>
+    <p id="modalMessage" class="modal-message"></p>
+    <button id="modalCloseBtn" class="modal-close-btn" type="button">OK</button>
+  </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const apiBase = 'https://cowardly-unnourishing-rigoberto.ngrok-free.dev';
@@ -104,6 +113,51 @@ document.addEventListener('DOMContentLoaded', () => {
   
   let isLoading = false; // Biến cờ để chặn gọi API nhiều lần cùng lúc
   let isFull    = false; // Biến cờ để biết đã hết dữ liệu chưa
+
+  // Modal Elements
+  const modal = document.getElementById('notificationModal');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalMessage = document.getElementById('modalMessage');
+  const modalCloseBtn = document.getElementById('modalCloseBtn');
+  let previousActiveElement = null;
+  let modalCallback = null;
+
+  // Accessible Modal Functions
+  function showModal(title, message, callback = null) {
+    previousActiveElement = document.activeElement;
+    modalCallback = callback;
+    modalTitle.textContent = title;
+    modalMessage.textContent = message;
+    modal.classList.add('active');
+    modal.focus();
+    modalCloseBtn.focus();
+  }
+
+  function hideModal() {
+    modal.classList.remove('active');
+    if (previousActiveElement) {
+      previousActiveElement.focus();
+    }
+    if (modalCallback) {
+      modalCallback();
+      modalCallback = null;
+    }
+  }
+
+  // Modal event listeners
+  modalCloseBtn.addEventListener('click', hideModal);
+  
+  modal.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      hideModal();
+    }
+  });
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      hideModal();
+    }
+  });
 
   // DOM Elements
   const headerH2      = document.querySelector('.results-header h2');
@@ -158,8 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
   async function handleRating(placeId, score, container) {
       const token = localStorage.getItem('token');
       if (!token) {
-          alert("Bạn cần đăng nhập để đánh giá!");
-          window.location.href = "login.html";
+          showModal("Thông báo", "Bạn cần đăng nhập để đánh giá!", () => {
+              window.location.href = "login.html";
+          });
           return;
       }
 
@@ -181,18 +236,19 @@ document.addEventListener('DOMContentLoaded', () => {
                   if (index < score) s.classList.add('active');
                   else s.classList.remove('active');
               });
-              alert(`Đã đánh giá ${score} sao!`);
+              showModal("Thành công", `Đã đánh giá ${score} sao!`);
           } else {
               if (res.status === 401) {
-                  alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
-                  window.location.href = "login.html";
+                  showModal("Thông báo", "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.", () => {
+                      window.location.href = "login.html";
+                  });
               } else {
-                  alert("Có lỗi xảy ra khi gửi đánh giá.");
+                  showModal("Lỗi", "Có lỗi xảy ra khi gửi đánh giá.");
               }
           }
       } catch (e) {
           console.error(e);
-          alert("Không thể kết nối tới server.");
+          showModal("Lỗi", "Không thể kết nối tới server.");
       }
   }
 
