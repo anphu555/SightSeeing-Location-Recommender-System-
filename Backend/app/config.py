@@ -18,5 +18,9 @@ class Settings:
     DATABASE_PATH = os.path.join(BACKEND_DIR, "travel_final.db")
 
     
-    # DATABASE_PATH = "travel_final.db"
+    # --- Cấu hình bảo mật ---
+    # Trong thực tế, hãy đổi chuỗi này thành một chuỗi ngẫu nhiên dài và bảo mật
+    SECRET_KEY = os.getenv("SECRET_KEY", "super_secret_key_sigma_alpha_123")
+    ALGORITHM = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES = 30
 settings = Settings()

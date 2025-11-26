@@ -6,8 +6,32 @@
     <title>Sigma-Alpha Sightseeing</title>
     <link rel="stylesheet" href="css/index.css"> </head>
 
-
 <body>
+    <div id="user-status" style="position: absolute; top: 20px; right: 20px; color: white; z-index: 1000;">
+    <a href="login.html" style="color: white; text-decoration: none; font-weight: bold;">Login</a>
+</div>
+
+<script>
+    // Thêm đoạn này vào thẻ script có sẵn hoặc tạo mới
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('token');
+        const username = localStorage.getItem('username');
+        const statusDiv = document.getElementById('user-status');
+
+        if (token && username) {
+            statusDiv.innerHTML = `
+                <span>Hello, ${username}</span>
+                <button onclick="logout()" style="margin-left: 10px; cursor: pointer;">Logout</button>
+            `;
+        }
+        
+        window.logout = function() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            window.location.reload();
+        }
+    });
+</script>
     <div class="hero-section">
         <header>
             <img src="images/TUYU_umbrella.png" alt="Umbrella Logo" class="logo">

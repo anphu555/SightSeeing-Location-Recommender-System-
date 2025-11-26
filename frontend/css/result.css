@@ -156,3 +156,21 @@ body {
 .loading-indicator.active {
   display: block;
 }
+
+/* CSS cho ngôi sao */
+.star-rating {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  margin-top: 5px;
+}
+.star {
+  font-size: 20px;
+  cursor: pointer;
+  color: #ccc; /* Màu xám khi chưa chọn */
+  transition: color 0.2s;
+}
+.star:hover,
+.star.active {
+  color: #ffd700; /* Màu vàng khi chọn/hover */
+}
