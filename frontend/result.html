@@ -130,11 +130,70 @@ document.addEventListener('DOMContentLoaded', () => {
     const meta = document.createElement('p');
     meta.style.fontWeight='normal'; 
     meta.style.color='#666'; 
-    meta.style.paddingBottom='12px';
+    // meta.style.paddingBottom='12px'; // Bỏ padding cũ để nhường chỗ cho sao
     meta.textContent = `${item.province ?? ''} • Score: ${parseFloat(item.score).toFixed(2)}`;
+      // --- PHẦN MỚI: Thêm 5 ngôi sao ---
+    const starContainer = document.createElement('div');
+    starContainer.className = 'star-rating';
     
-    div.append(img, name, meta);
+    // Tạo 5 ngôi sao
+    for (let i = 1; i <= 5; i++) {
+        const star = document.createElement('span');
+        star.innerHTML = '&#9733;'; // Ký tự ngôi sao
+        star.className = 'star';
+        star.dataset.value = i; // Lưu giá trị 1,2,3,4,5
+        star.dataset.id = item.id; // Lưu ID địa điểm
+        
+        // Sự kiện click
+        star.onclick = (e) => handleRating(item.id, i, starContainer);
+        
+        starContainer.appendChild(star);
+    }
+
+    div.append(img, name, meta, starContainer);
     return div;
+  }
+
+  // --- HÀM XỬ LÝ ĐÁNH GIÁ ---
+  async function handleRating(placeId, score, container) {
+      const token = localStorage.getItem('token');
+      if (!token) {
+          alert("Bạn cần đăng nhập để đánh giá!");
+          window.location.href = "login.html";
+          return;
+      }
+
+      try {
+          const apiBase = 'http://localhost:8000'; // Hoặc đường dẫn ngrok của bạn
+          const res = await fetch(`${apiBase}/api/v1/user/rate`, {
+              method: 'POST',
+              headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}` // Gửi kèm token
+              },
+              body: JSON.stringify({ place_id: placeId, score: score })
+          });
+
+          if (res.ok) {
+              // Cập nhật giao diện: Tô vàng các sao từ 1 đến score
+              const stars = container.querySelectorAll('.star');
+              stars.forEach((s, index) => {
+                  if (index < score) s.classList.add('active');
+                  else s.classList.remove('active');
+              });
+              alert(`Đã đánh giá ${score} sao!`);
+          } else {
+              if (res.status === 401) {
+                  alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+                  window.location.href = "login.html";
+              } else {
+                  alert("Có lỗi xảy ra khi gửi đánh giá.");
+              }
+          }
+      } catch (e) {
+          console.error(e);
+          alert("Không thể kết nối tới server.");
+      }
   }
 
   // Hàm gọi API chính

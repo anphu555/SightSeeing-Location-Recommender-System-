@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.routers import recommendation, auth
 from app.services.db_service import init_db
+from app.routers import recommendation, auth, rating
 
 # Khởi tạo bảng users khi chạy app
 init_db()
