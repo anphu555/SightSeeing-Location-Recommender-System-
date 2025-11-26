@@ -150,3 +150,20 @@ def get_all_places():
     finally:
         conn.close()
 
+def get_user_ratings_map(username: str):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        # Lấy tất cả place_id và rating mà user này đã đánh
+        cursor.execute("SELECT place_id, rating FROM ratings WHERE username = ?", (username,))
+        rows = cursor.fetchall()
+        
+        # Chuyển đổi thành dạng Dictionary: { 1: 5, 3: 4, ... }
+        # Nghĩa là: ID 1 được 5 sao, ID 3 được 4 sao...
+        result = {row["place_id"]: row["rating"] for row in rows}
+        return result
+    except Exception as e:
+        print(f"Error getting ratings: {e}")
+        return {}
+    finally:
+        conn.close()
