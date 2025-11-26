@@ -1,16 +1,27 @@
+# app/security.py
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt  # <--- Thay đổi: Import bcrypt trực tiếp
 from app.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Xóa dòng pwd_context = CryptContext(...)
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    # Bcrypt yêu cầu dữ liệu dạng bytes, nên cần .encode('utf-8')
+    # hashed_password từ DB là string, cần encode sang bytes
+    return bcrypt.checkpw(
+        plain_password.encode('utf-8'), 
+        hashed_password.encode('utf-8')
+    )
 
 def get_password_hash(password):
-    return pwd_context.hash(password)
+    # Tạo salt và hash password
+    pwd_bytes = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    hashed_bytes = bcrypt.hashpw(pwd_bytes, salt)
+    # Trả về string để lưu vào Database (SQLite TEXT)
+    return hashed_bytes.decode('utf-8')
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
