@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Sigma-Alpha</title>
+    <link rel="stylesheet" href="css/index.css">
+    <style>
+        .auth-container { max-width: 400px; margin: 100px auto; padding: 20px; text-align: center; }
+        .auth-input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; }
+        .auth-btn { padding: 10px 20px; background: #333; color: white; border: none; cursor: pointer; width: 100%; }
+        .msg { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <h2>Register</h2>
+        <input type="text" id="username" class="auth-input" placeholder="Username">
+        <input type="password" id="password" class="auth-input" placeholder="Password">
+        <button class="auth-btn" onclick="handleRegister()">Register</button>
+        <p class="msg" id="message"></p>
+        <p><a href="login.html">Back to Login</a></p>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api/v1/auth/register'; 
+
+        async function handleRegister() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const msg = document.getElementById('message');
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (response.status === 400) {
+                    msg.style.color = "red";
+                    msg.innerText = "Username already exists!";
+                    return;
+                }
+
+                if (!response.ok) throw new Error('Error');
+
+                msg.style.color = "green";
+                msg.innerText = "Đăng ký thành công! Đang chuyển hướng...";
+                setTimeout(() => window.location.href = 'login.html', 1500);
+
+            } catch (err) {
+                msg.style.color = "red";
+                msg.innerText = "Có lỗi xảy ra, vui lòng thử lại.";
+            }
+        }
+    </script>
+</body>
+</html>
