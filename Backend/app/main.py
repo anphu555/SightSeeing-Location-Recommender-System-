@@ -35,8 +35,9 @@ def root():
     }
 
 # Đăng ký router
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
-app.include_router(recommendation.router, prefix="/api/v1", tags=["Recommendation"])
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"]) # đăng nhập đăng ký
+app.include_router(recommendation.router, prefix="/api/v1", tags=["Recommendation"]) # gợi ý địa điểm
+app.include_router(rating.router, prefix="/api/v1/user", tags=["User Actions"]) # đnáh giá địa điểm
 
 # Lệnh chạy (nếu chạy trực tiếp python main.py)
 if __name__ == "__main__":
