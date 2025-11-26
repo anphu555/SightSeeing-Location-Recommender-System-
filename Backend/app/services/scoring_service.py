@@ -36,17 +36,15 @@ def score_place(ex: GroqExtraction, place: Dict[str, Any]) -> float:
     return round(prov_boost + theme_score + weather_bonus, 4)
 
 def rank_places(ex: GroqExtraction, top_k: int) -> List[PlaceOut]:
-    # Lấy dữ liệu từ DB mỗi khi có request 
-    # (Trong thực tế nên cache lại biến này để không query DB quá nhiều lần nếu dữ liệu ít thay đổi)
     db_places = get_all_places() 
     
     scored = []
     for p in db_places:
         s = score_place(ex, p)
         
-        # Chỉ lấy những địa điểm có điểm > 0 để kết quả chất lượng hơn
         if s > 0: 
             scored.append(PlaceOut(
+                id=p["id"],  # <--- QUAN TRỌNG: Thêm dòng này để sửa lỗi
                 name=p["name"],
                 country=p.get("country", "Vietnam"),
                 province=p.get("province") or "",
