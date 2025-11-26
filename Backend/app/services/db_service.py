@@ -7,6 +7,41 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+# --- Thêm hàm khởi tạo bảng Users ---
+def init_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Tạo bảng users nếu chưa có
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            username TEXT PRIMARY KEY,
+            hashed_password TEXT NOT NULL
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+# --- Các hàm thao tác User ---
+def create_user(username: str, hashed_password: str):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO users (username, hashed_password) VALUES (?, ?)", (username, hashed_password))
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False # Username đã tồn tại
+    finally:
+        conn.close()
+
+def get_user_by_username(username: str):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+    user = cursor.fetchone()
+    conn.close()
+    return user
+
 def get_all_places():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -63,3 +98,5 @@ def get_all_places():
         return []
     finally:
         conn.close()
+
+
