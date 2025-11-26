@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 class RecommendRequest(BaseModel):
     user_text: str = Field(..., example="i like mountains in Viet Nam and cool weather")
@@ -25,3 +25,15 @@ class PlaceOut(BaseModel):
 class RecommendResponse(BaseModel):
     extraction: GroqExtraction
     results: List[PlaceOut]
+
+# --- Thêm Schema cho Auth ---
+class UserCreate(BaseModel):
+    username: str
+    password: str
+
+class UserResponse(BaseModel):
+    username: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
