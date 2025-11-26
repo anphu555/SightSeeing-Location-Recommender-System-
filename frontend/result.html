@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
-          const apiBase = 'http://localhost:8000'; // Hoặc đường dẫn ngrok của bạn
+          const apiBase = 'https://cowardly-unnourishing-rigoberto.ngrok-free.dev'; // Hoặc đường dẫn ngrok của bạn
           const res = await fetch(`${apiBase}/api/v1/user/rate`, {
               method: 'POST',
               headers: { 
@@ -266,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!token) return;
 
       try {
-          const apiBase = 'http://localhost:8000'; // Hoặc link ngrok của bạn
+          const apiBase = 'https://cowardly-unnourishing-rigoberto.ngrok-free.dev'; // Hoặc link ngrok của bạn
           const res = await fetch(`${apiBase}/api/v1/user/my-ratings`, {
               method: 'GET',
               headers: { 
