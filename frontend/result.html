@@ -90,10 +90,63 @@
   </main>
 <div class="loading-indicator">Đang tải thêm địa điểm...</div>
 
+<!-- Toast container for accessible notifications -->
+<div class="toast-container" aria-live="polite" aria-atomic="true" id="toast-container"></div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const apiBase = 'https://cowardly-unnourishing-rigoberto.ngrok-free.dev';
   const params  = new URLSearchParams(location.search);
+  
+  // Toast notification function - accessible alternative to alert()
+  function showToast(message, type = 'info', duration = 4000) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.setAttribute('role', 'status');
+    
+    const icons = {
+      success: '✓',
+      error: '✕',
+      warning: '⚠',
+      info: 'ℹ'
+    };
+    
+    // Create toast elements safely without innerHTML to prevent XSS
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'toast-icon';
+    iconSpan.textContent = icons[type] || icons.info;
+    
+    const messageSpan = document.createElement('span');
+    messageSpan.className = 'toast-message';
+    messageSpan.textContent = message;
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'toast-close';
+    closeBtn.setAttribute('aria-label', 'Close notification');
+    closeBtn.textContent = '×';
+    closeBtn.addEventListener('click', () => removeToast(toast));
+    
+    toast.appendChild(iconSpan);
+    toast.appendChild(messageSpan);
+    toast.appendChild(closeBtn);
+    
+    container.appendChild(toast);
+    
+    // Auto-remove after duration, store timeout for cleanup
+    const timeoutId = setTimeout(() => removeToast(toast), duration);
+    toast._timeoutId = timeoutId;
+  }
+  
+  function removeToast(toast) {
+    if (!toast.parentElement) return;
+    // Clear the auto-remove timeout if toast was manually closed
+    if (toast._timeoutId) {
+      clearTimeout(toast._timeoutId);
+    }
+    toast.style.animation = 'fadeOut 0.3s ease-out forwards';
+    setTimeout(() => toast.remove(), 300);
+  }
   
   // Lấy text tìm kiếm
   const text = (params.get('text') || '').trim();
@@ -158,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function handleRating(placeId, score, container) {
       const token = localStorage.getItem('token');
       if (!token) {
-          alert("Bạn cần đăng nhập để đánh giá!");
+          showToast("Bạn cần đăng nhập để đánh giá!", "warning");
           window.location.href = "login.html";
           return;
       }
@@ -181,18 +234,18 @@ document.addEventListener('DOMContentLoaded', () => {
                   if (index < score) s.classList.add('active');
                   else s.classList.remove('active');
               });
-              alert(`Đã đánh giá ${score} sao!`);
+              showToast(`Đã đánh giá ${score} sao!`, "success");
           } else {
               if (res.status === 401) {
-                  alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+                  showToast("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.", "error");
                   window.location.href = "login.html";
               } else {
-                  alert("Có lỗi xảy ra khi gửi đánh giá.");
+                  showToast("Có lỗi xảy ra khi gửi đánh giá.", "error");
               }
           }
       } catch (e) {
           console.error(e);
-          alert("Không thể kết nối tới server.");
+          showToast("Không thể kết nối tới server.", "error");
       }
   }
 
