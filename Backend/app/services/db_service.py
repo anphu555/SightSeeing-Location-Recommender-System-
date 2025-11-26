@@ -36,6 +36,30 @@ def init_db():
     conn.commit()
     conn.close()
 
+# --- MỚI: Hàm thêm đánh giá ---
+def add_user_rating(username: str, place_id: int, rating: int):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        # Kiểm tra xem user đã đánh giá địa điểm này chưa
+        cursor.execute("SELECT id FROM ratings WHERE username = ? AND place_id = ?", (username, place_id))
+        existing = cursor.fetchone()
+        
+        if existing:
+            # Nếu có rồi thì cập nhật (Update)
+            cursor.execute("UPDATE ratings SET rating = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?", (rating, existing['id']))
+        else:
+            # Nếu chưa thì thêm mới (Insert)
+            cursor.execute("INSERT INTO ratings (username, place_id, rating) VALUES (?, ?, ?)", (username, place_id, rating))
+            
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"Error saving rating: {e}")
+        return False
+    finally:
+        conn.close()
+        
 # --- Các hàm thao tác User ---
 def create_user(username: str, hashed_password: str):
     conn = get_db_connection()
