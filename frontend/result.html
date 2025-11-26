@@ -259,8 +259,59 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // --- HÀM MỚI: Tải lại lịch sử đánh giá ---
+  async function loadUserRatings() {
+      const token = localStorage.getItem('token');
+      // Nếu chưa đăng nhập thì thôi, không cần tải
+      if (!token) return;
+
+      try {
+          const apiBase = 'http://localhost:8000'; // Hoặc link ngrok của bạn
+          const res = await fetch(`${apiBase}/api/v1/user/my-ratings`, {
+              method: 'GET',
+              headers: { 
+                  'Authorization': `Bearer ${token}`
+              }
+          });
+
+          if (res.ok) {
+              const ratingsMap = await res.json(); 
+              // ratingsMap sẽ có dạng: { "1": 5, "12": 4 }
+              
+              // Duyệt qua tất cả các container sao đang hiển thị trên màn hình
+              document.querySelectorAll('.star-rating').forEach(container => {
+                  // Lấy ID địa điểm từ ngôi sao đầu tiên trong container
+                  const firstStar = container.querySelector('.star');
+                  if (!firstStar) return;
+                  
+                  const placeId = firstStar.dataset.id;
+                  
+                  // Kiểm tra xem ID này có trong lịch sử đánh giá không
+                  if (ratingsMap[placeId]) {
+                      const userScore = ratingsMap[placeId];
+                      
+                      // Tô màu lại các ngôi sao
+                      const stars = container.querySelectorAll('.star');
+                      stars.forEach((s, index) => {
+                          if (index < userScore) s.classList.add('active');
+                          else s.classList.remove('active');
+                      });
+                  }
+              });
+          }
+      } catch (e) {
+          console.error("Lỗi tải lịch sử đánh giá:", e);
+      }
+  }
+
   // Chạy lần đầu tiên
-  fetchResults(currentK, false);
+  (async () => {
+        // 1. Tải danh sách địa điểm trước
+        await fetchResults(currentK, false);
+        
+        // 2. Sau đó tải ratings đè lên
+        await loadUserRatings();
+    })();
 
   // --- XỬ LÝ INFINITE SCROLL ---
   window.addEventListener('scroll', () => {
