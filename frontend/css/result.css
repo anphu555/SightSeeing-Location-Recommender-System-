@@ -184,6 +184,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  --toast-animation-duration: 300ms;
 }
 
 .toast {
@@ -194,7 +195,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  animation: slideIn 0.3s ease-out;
+  animation: slideIn var(--toast-animation-duration, 300ms) ease-out;
   font-size: 0.95rem;
 }
 

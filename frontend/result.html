@@ -101,14 +101,15 @@ function showToast(message, type = 'info', duration = 4000) {
   const container = document.querySelector('.toast-container');
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  toast.setAttribute('role', 'status');
+  // Use 'alert' role for error/warning types for immediate announcement
+  toast.setAttribute('role', (type === 'error' || type === 'warning') ? 'alert' : 'status');
   
   const messageSpan = document.createElement('span');
   messageSpan.textContent = message;
   
   const closeBtn = document.createElement('button');
   closeBtn.className = 'toast-close';
-  closeBtn.innerHTML = '&times;';
+  closeBtn.textContent = '×';
   closeBtn.setAttribute('aria-label', 'Close notification');
   closeBtn.onclick = () => removeToast(toast);
   
