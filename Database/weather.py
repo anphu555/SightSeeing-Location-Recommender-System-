@@ -25,16 +25,16 @@ def climate_label(temp):
     if temp is None:
         return "unknown"
     if temp >= 32:
-        return "rất nóng"
+        return "extremely hot"
     if temp >= 27:
-        return "nóng"
+        return "hot"
     if temp >= 23:
-        return "ấm"
+        return "warm"
     if temp >= 17:
-        return "mát"
+        return "cool"
     if temp >= 10:
-        return "lạnh"
-    return "rất lạnh"
+        return "cold"
+    return "extremely cold"
 
 
 # ────────────────────────────────
