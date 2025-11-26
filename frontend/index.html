@@ -1,232 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sigma-Alpha Sightseeing</title>
-  <link rel="stylesheet" href="css/style.css" />
-</head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sigma-Alpha Sightseeing</title>
+    <link rel="stylesheet" href="css/index.css"> </head>
+
 
 <body>
+    <div class="hero-section">
+        <header>
+            <img src="images/TUYU_umbrella.png" alt="Umbrella Logo" class="logo">
+            <h1>SIGMA-ALPHA SIGHTSEEING</h1>
+        </header>
 
-  <!-- Header -->
-  <header class="header">
-    <div class="overlay">
-      <div class="logo">
-        <img src="images/tuyu.png" alt="Logo" />
-        <h1>SIGMA-ALPHA SIGHTSEEING</h1>
-      </div>
-
-      <div class="search-bar">
-        <input type="text" placeholder="Search locations..." />
-        <button>Search</button>
-      </div>
+        <main class="search-container">
+            <p class="query-text">What type of place would you like to go?</p>
+            <div class="search-bar">
+                <input type="text" placeholder="For example: the mountains, the beaches,..." class="search-input">
+                <button class="search-button">
+                    🔍
+                </button>
+            </div>
+        </main>
     </div>
-  </header>
-
-  <!-- Results Section -->
-  <main class="results-section">
-    <div class="results-header">
-      <h2>3 results</h2>
-      <select>
-        <option>Sort by: Price</option>
-        <option>Sort by: Name</option>
-        <option>Sort by: Rating</option>
-      </select>
-    </div>
-
-    <div class="cards">
-      <div class="card">
-        <img src="images/tuyu.png" alt="Ha Long Bay" />
-        <p>HA LONG BAY</p>
-      </div>
-
-      <div class="card">
-        <img src="images/tuyu.png" alt="Tuan Chau Park" />
-        <p>TUAN CHAU PARK</p>
-      </div>
-
-      <div class="card">
-        <img src="images/yentu.jpg" alt="Yen Tu Mountain" />
-        <p>YEN TU MOUNTAIN</p>
-      </div>
-      
-      <div class="card">
-        <img src="images/yentu.jpg" alt="Yen Tu Mountain" />
-        <p>YEN TU MOUNTAIN</p>
-      </div>
-
-      <div class="card">
-        <img src="images/yentu.jpg" alt="Yen Tu Mountain" />
-        <p>YEN TU MOUNTAIN</p>
-      </div>
-
-      <div class="card">
-        <img src="images/yentu.jpg" alt="Yen Tu Mountain" />
-        <p>YEN TU MOUNTAIN</p>
-      </div>
-
-      <div class="card">
-        <img src="images/yentu.jpg" alt="Yen Tu Mountain" />
-        <p>YEN TU MOUNTAIN</p>
-      </div>
-
-      <div class="card">
-        <img src="images/yentu.jpg" alt="Yen Tu Mountain" />
-        <p>YEN TU MOUNTAIN</p>
-      </div>
-
-      <div class="card">
-        <img src="images/yentu.jpg" alt="Yen Tu Mountain" />
-        <p>YEN TU MOUNTAIN</p>
-      </div>
-      
-    </div>
-  </main>
-<div class="loading-indicator">Đang tải thêm địa điểm...</div>
-
-<script>
+    <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const apiBase = 'http://127.0.0.1:8000';
-  const params  = new URLSearchParams(location.search);
-  
-  // Lấy text tìm kiếm
-  const text = (params.get('text') || '').trim();
-  
-  // Khởi tạo số lượng k ban đầu (mặc định 6)
-  let currentK = Number(params.get('k') || '6');
-  const stepK  = 6; // Mỗi lần kéo xuống sẽ tải thêm 6 cái nữa
-  
-  let isLoading = false; // Biến cờ để chặn gọi API nhiều lần cùng lúc
-  let isFull    = false; // Biến cờ để biết đã hết dữ liệu chưa
+  const inputEl = document.querySelector('.search-input');
+  const btnEl   = document.querySelector('.search-button');
 
-  // DOM Elements
-  const headerH2      = document.querySelector('.results-header h2');
-  const cardsContainer= document.querySelector('.cards');
-  const loader        = document.querySelector('.loading-indicator');
-  const headerInput   = document.querySelector('.search-bar input');
-  const headerBtn     = document.querySelector('.search-bar button');
-
-  // Đổ lại giá trị search vào ô input nếu có
-  if (headerInput) headerInput.value = text;
-
-  // Hàm tạo thẻ HTML cho 1 địa điểm
-  function renderCard(item){
-    const div = document.createElement('div');
-    div.className = 'card';
-    const img = document.createElement('img');
-    // Lưu ý: Đảm bảo đường dẫn ảnh đúng với dữ liệu trả về hoặc dùng ảnh placeholder
-    img.src = 'images/halong.jpg'; 
-    img.alt = item.name;
-    
-    const name = document.createElement('p'); 
-    name.textContent = item.name;
-    
-    const meta = document.createElement('p');
-    meta.style.fontWeight='normal'; 
-    meta.style.color='#666'; 
-    meta.style.paddingBottom='12px';
-    meta.textContent = `${item.province ?? ''} • Score: ${parseFloat(item.score).toFixed(2)}`;
-    
-    div.append(img, name, meta);
-    return div;
+  function goSearch() {
+    const text = (inputEl?.value || '').trim();
+    if (!text) { alert('Hãy nhập gì đó'); return; }
+    const params = new URLSearchParams({ text, k: '6' });
+    // Nếu input.html và index.html cùng thư mục:
+    window.location.href = `result.html?${params.toString()}`;
+    // Nếu KHÁC thư mục, dùng đường dẫn đúng, ví dụ:
+    // window.location.href = `/index.html?${params.toString()}`;
   }
 
-  // Hàm gọi API chính
-  async function fetchResults(kValue, isLoadMore = false) {
-    if (!text) {
-      headerH2.textContent = '0 results';
-      return;
-    }
-    
-    // Nếu không phải load more (lần đầu vào), hiện trạng thái loading ở header
-    if (!isLoadMore) {
-      headerH2.textContent = 'Loading...';
-      cardsContainer.innerHTML = ''; 
-    } else {
-      loader.classList.add('active'); // Hiện chữ đang tải ở dưới đáy
-    }
+  btnEl?.addEventListener('click', goSearch);
+  inputEl?.addEventListener('keydown', (e) => { if (e.key === 'Enter') goSearch(); });
 
-    isLoading = true;
-
-    try {
-      const r = await fetch(`${apiBase}/api/v1/recommend`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_text: text, top_k: kValue })
-      });
-
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-
-      const data = await r.json();
-      const items = data.results || [];
-
-      if (!isLoadMore) {
-        // --- LẦN TẢI ĐẦU TIÊN ---
-        headerH2.textContent = `${items.length} results`;
-        items.forEach(it => cardsContainer.appendChild(renderCard(it)));
-      } else {
-        // --- KHI KÉO CHUỘT (LOAD MORE) ---
-        // API trả về toàn bộ danh sách từ 0 -> kValue.
-        // Chúng ta chỉ cần lấy những phần tử mới chưa hiển thị.
-        // Giả sử API luôn trả về cùng thứ tự, ta cắt mảng từ vị trí cũ (currentK - stepK).
-        
-        const oldLength = currentK - stepK; 
-        const newItems = items.slice(oldLength); 
-
-        if (newItems.length === 0) {
-          isFull = true; // Không còn dữ liệu mới để tải
-          loader.textContent = "Đã hiển thị hết kết quả.";
-        } else {
-          newItems.forEach(it => cardsContainer.appendChild(renderCard(it)));
-          headerH2.textContent = `${items.length} results`; // Cập nhật tổng số
-        }
-      }
-
-    } catch (e) {
-      console.error(e);
-      if (!isLoadMore) {
-        headerH2.textContent = 'Error loading data';
-        cardsContainer.innerHTML = `<div style="color:red; padding:10px">${e.message}</div>`;
-      }
-    } finally {
-      isLoading = false;
-      loader.classList.remove('active');
-    }
-  }
-
-  // Chạy lần đầu tiên
-  fetchResults(currentK, false);
-
-  // --- XỬ LÝ INFINITE SCROLL ---
-  window.addEventListener('scroll', () => {
-    // Nếu đang tải hoặc đã hết dữ liệu thì không làm gì cả
-    if (isLoading || isFull) return;
-
-    // Kiểm tra nếu cuộn gần đến đáy trang (còn cách 100px)
-    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 100) {
-      currentK += stepK; // Tăng số lượng k cần lấy
-      fetchResults(currentK, true); // Gọi hàm với cờ isLoadMore = true
-    }
-  });
-
-  // --- XỬ LÝ TÌM KIẾM MỚI ---
-  function triggerSearch() {
-    const q = (headerInput?.value || '').trim();
-    if (!q) return;
-    // Reload lại trang với từ khóa mới, reset k về mặc định
-    const newParams = new URLSearchParams();
-    newParams.set('text', q);
-    newParams.set('k', '6'); 
-    window.location.search = newParams.toString();
-  }
-
-  headerBtn?.addEventListener('click', triggerSearch);
-  headerInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') triggerSearch();
-  });
+  // giúp bạn thử nhanh từ Console
+  window.goSearch = goSearch;
 });
 </script>
-
 </body>
 </html>
