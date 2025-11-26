@@ -1,9 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import recommendation, auth
-from app.services.db_service import init_db
 from app.routers import recommendation, auth, rating
+from app.services.db_service import init_db
 
 # Khởi tạo bảng users khi chạy app
 init_db()
@@ -39,6 +38,7 @@ def root():
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"]) # đăng nhập đăng ký
 app.include_router(recommendation.router, prefix="/api/v1", tags=["Recommendation"]) # gợi ý địa điểm
 app.include_router(rating.router, prefix="/api/v1/user", tags=["User Actions"]) # đnáh giá địa điểm
+
 
 # Lệnh chạy (nếu chạy trực tiếp python main.py)
 if __name__ == "__main__":
