@@ -90,7 +90,41 @@
   </main>
 <div class="loading-indicator">Đang tải thêm địa điểm...</div>
 
+<!-- Toast notification container for accessible user feedback -->
+<div class="toast-container" role="alert" aria-live="polite" aria-atomic="true"></div>
+
 <script>
+// Toast notification function for accessible user feedback
+function showToast(message, type = 'info', duration = 4000) {
+  const container = document.querySelector('.toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
+  
+  const messageSpan = document.createElement('span');
+  messageSpan.textContent = message;
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'toast-close';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.setAttribute('aria-label', 'Close notification');
+  closeBtn.onclick = () => removeToast(toast);
+  
+  toast.appendChild(messageSpan);
+  toast.appendChild(closeBtn);
+  container.appendChild(toast);
+  
+  // Auto-remove after duration
+  setTimeout(() => removeToast(toast), duration);
+}
+
+function removeToast(toast) {
+  if (!toast.parentNode) return;
+  toast.style.animation = 'slideOut 0.3s ease-out forwards';
+  setTimeout(() => toast.remove(), 300);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const apiBase = 'https://cowardly-unnourishing-rigoberto.ngrok-free.dev';
   const params  = new URLSearchParams(location.search);
@@ -158,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function handleRating(placeId, score, container) {
       const token = localStorage.getItem('token');
       if (!token) {
-          alert("Bạn cần đăng nhập để đánh giá!");
+          showToast("Bạn cần đăng nhập để đánh giá!", "warning");
           window.location.href = "login.html";
           return;
       }
@@ -181,18 +215,18 @@ document.addEventListener('DOMContentLoaded', () => {
                   if (index < score) s.classList.add('active');
                   else s.classList.remove('active');
               });
-              alert(`Đã đánh giá ${score} sao!`);
+              showToast(`Đã đánh giá ${score} sao!`, "success");
           } else {
               if (res.status === 401) {
-                  alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+                  showToast("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.", "error");
                   window.location.href = "login.html";
               } else {
-                  alert("Có lỗi xảy ra khi gửi đánh giá.");
+                  showToast("Có lỗi xảy ra khi gửi đánh giá.", "error");
               }
           }
       } catch (e) {
           console.error(e);
-          alert("Không thể kết nối tới server.");
+          showToast("Không thể kết nối tới server.", "error");
       }
   }
 
