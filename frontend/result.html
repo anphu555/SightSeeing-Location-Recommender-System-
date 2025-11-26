@@ -91,16 +91,17 @@
 <div class="loading-indicator">Đang tải thêm địa điểm...</div>
 
 <!-- Toast notification container for accessible user feedback -->
-<div class="toast-container" role="alert" aria-live="polite" aria-atomic="true"></div>
+<div class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <script>
 // Toast notification function for accessible user feedback
+const TOAST_ANIMATION_DURATION = 300;
+
 function showToast(message, type = 'info', duration = 4000) {
   const container = document.querySelector('.toast-container');
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   toast.setAttribute('role', 'status');
-  toast.setAttribute('aria-live', 'polite');
   
   const messageSpan = document.createElement('span');
   messageSpan.textContent = message;
@@ -115,14 +116,19 @@ function showToast(message, type = 'info', duration = 4000) {
   toast.appendChild(closeBtn);
   container.appendChild(toast);
   
-  // Auto-remove after duration
-  setTimeout(() => removeToast(toast), duration);
+  // Auto-remove after duration, store timeout ID on the element
+  toast._timeoutId = setTimeout(() => removeToast(toast), duration);
 }
 
 function removeToast(toast) {
   if (!toast.parentNode) return;
-  toast.style.animation = 'slideOut 0.3s ease-out forwards';
-  setTimeout(() => toast.remove(), 300);
+  // Clear auto-removal timeout if exists
+  if (toast._timeoutId) {
+    clearTimeout(toast._timeoutId);
+    toast._timeoutId = null;
+  }
+  toast.style.animation = `slideOut ${TOAST_ANIMATION_DURATION}ms ease-out forwards`;
+  setTimeout(() => toast.remove(), TOAST_ANIMATION_DURATION);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
