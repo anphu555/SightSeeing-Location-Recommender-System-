@@ -1,43 +1,52 @@
-import sqlite3
 import pandas as pd
+import sqlite3
 
-# 1. Kết nối vào file gốc
-conn_old = sqlite3.connect('travel.db')
+csv_path = "vietnamPlaces.csv"
+db_path = "travel_final.db"
+table_name = "sightseeing"
 
-print("Đang đọc dữ liệu từ bảng sightseeing...")
+# Các cột cần giữ
+desired_cols = ["id", "name", "kind", "lat", "lon", "province", "climate"]
 
-# Lấy toàn bộ dữ liệu thô từ bảng sightseeing
-df = pd.read_sql("SELECT * FROM sightseeing", conn_old)
+# Đọc CSV
+df = pd.read_csv(csv_path, dtype=str)
+df.columns = [c.strip() for c in df.columns]
 
-# 2. XỬ LÝ CỘT (Đây là bước làm sạch cấu trúc, không xóa dòng)
-# Bảng của bạn bị lỗi dư cột do import sai, ta chỉ lấy 5 cột đầu tiên
-df_clean = df.iloc[:, 0:5].copy()
+# mapping tên cột
+possible_names = {
+    "name": "name",
+    "kind": "kind",
+    "lat": "lat",
+    "latitude": "lat",
+    "lon": "lon",
+    "longitude": "lon",
+    "province": "province",
+    "province/city": "province",
+    "climate": "climate",
+    "weather": "climate",
+}
 
-# Đặt lại tên cột cho chuẩn để code backend dễ gọi
-df_clean.columns = ['name', 'kind', 'lat', 'lon', 'province']
+col_map = {c: possible_names[c.lower()] for c in df.columns if c.lower() in possible_names}
+df = df.rename(columns=col_map)
 
-# 3. THÊM CỘT ID
-# Tạo cột id chạy từ 1 đến hết
-df_clean.insert(0, 'id', range(1, 1 + len(df_clean)))
+# tạo id nếu chưa có
+df["id"] = range(1, len(df) + 1)
 
-print(f"Đã xử lý xong. Tổng số địa điểm: {len(df_clean)}")
-print(df_clean.head()) # In thử 5 dòng để bạn kiểm tra
+# chỉ giữ đúng 7 cột
+for c in desired_cols:
+    if c not in df.columns:
+        df[c] = None
+df_final = df[desired_cols].copy()
 
-# 4. LƯU RA DATABASE MỚI (travel_final.db)
-conn_new = sqlite3.connect('travel_final.db')
-df_clean.to_sql('sightseeing', conn_new, if_exists='replace', index=False)
+# strip text nhẹ
+df_final["name"] = df_final["name"].astype(str).str.strip()
+df_final["province"] = df_final["province"].astype(str).str.strip()
+df_final["climate"] = df_final["climate"].astype(str).str.strip()
 
-# (Tùy chọn) Nếu bạn muốn copy luôn bảng 'places' sang cho đủ bộ
-try:
-    df_places = pd.read_sql("SELECT * FROM places", conn_old)
-    # Thêm ID cho places luôn nếu cần
-    df_places.insert(0, 'id', range(1, 1 + len(df_places)))
-    df_places.to_sql('places', conn_new, if_exists='replace', index=False)
-    print("Đã copy thêm bảng places.")
-except:
-    print("Không tìm thấy bảng places hoặc có lỗi.")
+# Ghi vào DB
+conn = sqlite3.connect(db_path)
+df_final.to_sql(table_name, conn, if_exists="replace", index=False)
+conn.close()
 
-conn_old.close()
-conn_new.close()
-
-print("\nHoàn tất! File mới là 'travel_final.db'.")
+print(f"[DONE] Đã ghi {len(df_final)} hàng vào {db_path} (bảng: {table_name})")
+print(df_final.head(10).to_string(index=False))

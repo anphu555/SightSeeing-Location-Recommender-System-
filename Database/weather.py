@@ -12,6 +12,7 @@ output_file = "vietnamPlaces.csv"
 input_files = [
     f for f in glob.glob("*.csv")
     if os.path.basename(f).lower() not in ["vietnamplaces.csv"]
+    if os.path.basename(f).lower() not in ["vietnam_tourism_daily.csv"]
 ]
 
 print("Các file đang được xử lý:")
