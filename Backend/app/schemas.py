@@ -3,7 +3,7 @@ from typing import List
 
 class RecommendRequest(BaseModel):
     user_text: str = Field(..., example="i like mountains in Viet Nam and cool weather")
-    top_k: int = Field(5, ge=1, le=20)
+    top_k: int = Field(5, ge=1, le=100)
 
 class GroqExtraction(BaseModel):
     location: List[str]
