@@ -86,26 +86,6 @@ def get_user_by_username(username: str):
     conn.close()
     return user
 
-# --- Hàm thêm đánh giá (Giữ nguyên) ---
-def add_user_rating(username: str, place_id: int, rating: int):
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT id FROM ratings WHERE username = ? AND place_id = ?", (username, place_id))
-        existing = cursor.fetchone()
-        
-        if existing:
-            cursor.execute("UPDATE ratings SET rating = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?", (rating, existing['id']))
-        else:
-            cursor.execute("INSERT INTO ratings (username, place_id, rating) VALUES (?, ?, ?)", (username, place_id, rating))
-            
-        conn.commit()
-        return True
-    except Exception as e:
-        print(f"Error saving rating: {e}")
-        return False
-    finally:
-        conn.close()
 
 def get_all_places():
     conn = get_db_connection()
