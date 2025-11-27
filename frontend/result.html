@@ -95,7 +95,9 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const apiBase = 'https://cowardly-unnourishing-rigoberto.ngrok-free.dev';
+  // --- CẤU HÌNH API (Sửa 1 chỗ duy nhất tại đây) ---
+  const apiBase = 'http://localhost:8000'; 
+  
   const params  = new URLSearchParams(location.search);
   
   // Toast notification function - accessible alternative to alert()
@@ -112,7 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
       info: 'ℹ'
     };
     
-    // Create toast elements safely without innerHTML to prevent XSS
     const iconSpan = document.createElement('span');
     iconSpan.className = 'toast-icon';
     iconSpan.textContent = icons[type] || icons.info;
@@ -133,14 +134,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     container.appendChild(toast);
     
-    // Auto-remove after duration, store timeout for cleanup
     const timeoutId = setTimeout(() => removeToast(toast), duration);
     toast._timeoutId = timeoutId;
   }
   
   function removeToast(toast) {
     if (!toast.parentElement) return;
-    // Clear the auto-remove timeout if toast was manually closed
     if (toast._timeoutId) {
       clearTimeout(toast._timeoutId);
     }
@@ -151,12 +150,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Lấy text tìm kiếm
   const text = (params.get('text') || '').trim();
   
-  // Khởi tạo số lượng k ban đầu (mặc định 6)
+  // Khởi tạo số lượng k ban đầu
   let currentK = Number(params.get('k') || '6');
-  const stepK  = 6; // Mỗi lần kéo xuống sẽ tải thêm 6 cái nữa
+  const stepK  = 6; 
   
-  let isLoading = false; // Biến cờ để chặn gọi API nhiều lần cùng lúc
-  let isFull    = false; // Biến cờ để biết đã hết dữ liệu chưa
+  let isLoading = false; 
+  let isFull    = false; 
 
   // DOM Elements
   const headerH2      = document.querySelector('.results-header h2');
@@ -165,7 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const headerInput   = document.querySelector('.search-bar input');
   const headerBtn     = document.querySelector('.search-bar button');
 
-  // Đổ lại giá trị search vào ô input nếu có
   if (headerInput) headerInput.value = text;
 
   // Hàm tạo thẻ HTML cho 1 địa điểm
@@ -173,7 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const div = document.createElement('div');
     div.className = 'card';
     const img = document.createElement('img');
-    // Lưu ý: Đảm bảo đường dẫn ảnh đúng với dữ liệu trả về hoặc dùng ảnh placeholder
     img.src = 'images/halong.jpg'; 
     img.alt = item.name;
     
@@ -183,21 +180,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const meta = document.createElement('p');
     meta.style.fontWeight='normal'; 
     meta.style.color='#666'; 
-    // meta.style.paddingBottom='12px'; // Bỏ padding cũ để nhường chỗ cho sao
     meta.textContent = `${item.province ?? ''} • Score: ${parseFloat(item.score).toFixed(2)}`;
-      // --- PHẦN MỚI: Thêm 5 ngôi sao ---
+
     const starContainer = document.createElement('div');
     starContainer.className = 'star-rating';
     
-    // Tạo 5 ngôi sao
     for (let i = 1; i <= 5; i++) {
         const star = document.createElement('span');
-        star.innerHTML = '&#9733;'; // Ký tự ngôi sao
+        star.innerHTML = '&#9733;'; 
         star.className = 'star';
-        star.dataset.value = i; // Lưu giá trị 1,2,3,4,5
-        star.dataset.id = item.id; // Lưu ID địa điểm
+        star.dataset.value = i; 
+        star.dataset.id = item.id; 
         
-        // Sự kiện click
         star.onclick = (e) => handleRating(item.id, i, starContainer);
         
         starContainer.appendChild(star);
@@ -217,18 +211,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
-          const apiBase = 'https://cowardly-unnourishing-rigoberto.ngrok-free.dev'; // Hoặc đường dẫn ngrok của bạn
+          // Đã xóa khai báo apiBase trùng lặp ở đây
           const res = await fetch(`${apiBase}/api/v1/user/rate`, {
               method: 'POST',
               headers: { 
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}` // Gửi kèm token
+                  'Authorization': `Bearer ${token}`
               },
               body: JSON.stringify({ place_id: placeId, score: score })
           });
 
           if (res.ok) {
-              // Cập nhật giao diện: Tô vàng các sao từ 1 đến score
               const stars = container.querySelectorAll('.star');
               stars.forEach((s, index) => {
                   if (index < score) s.classList.add('active');
@@ -256,17 +249,17 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
-    // Nếu không phải load more (lần đầu vào), hiện trạng thái loading ở header
     if (!isLoadMore) {
       headerH2.textContent = 'Loading...';
       cardsContainer.innerHTML = ''; 
     } else {
-      loader.classList.add('active'); // Hiện chữ đang tải ở dưới đáy
+      loader.classList.add('active'); 
     }
 
     isLoading = true;
 
     try {
+      // Sử dụng apiBase chung
       const r = await fetch(`${apiBase}/api/v1/recommend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -279,24 +272,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const items = data.results || [];
 
       if (!isLoadMore) {
-        // --- LẦN TẢI ĐẦU TIÊN ---
         headerH2.textContent = `${items.length} results`;
         items.forEach(it => cardsContainer.appendChild(renderCard(it)));
       } else {
-        // --- KHI KÉO CHUỘT (LOAD MORE) ---
-        // API trả về toàn bộ danh sách từ 0 -> kValue.
-        // Chúng ta chỉ cần lấy những phần tử mới chưa hiển thị.
-        // Giả sử API luôn trả về cùng thứ tự, ta cắt mảng từ vị trí cũ (currentK - stepK).
-        
         const oldLength = currentK - stepK; 
         const newItems = items.slice(oldLength); 
 
         if (newItems.length === 0) {
-          isFull = true; // Không còn dữ liệu mới để tải
+          isFull = true; 
           loader.textContent = "Đã hiển thị hết kết quả.";
         } else {
           newItems.forEach(it => cardsContainer.appendChild(renderCard(it)));
-          headerH2.textContent = `${items.length} results`; // Cập nhật tổng số
+          headerH2.textContent = `${items.length} results`; 
         }
       }
 
@@ -315,11 +302,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- HÀM MỚI: Tải lại lịch sử đánh giá ---
   async function loadUserRatings() {
       const token = localStorage.getItem('token');
-      // Nếu chưa đăng nhập thì thôi, không cần tải
       if (!token) return;
 
       try {
-          const apiBase = 'https://cowardly-unnourishing-rigoberto.ngrok-free.dev'; // Hoặc link ngrok của bạn
+          // Đã xóa khai báo apiBase trùng lặp ở đây
           const res = await fetch(`${apiBase}/api/v1/user/my-ratings`, {
               method: 'GET',
               headers: { 
@@ -329,21 +315,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (res.ok) {
               const ratingsMap = await res.json(); 
-              // ratingsMap sẽ có dạng: { "1": 5, "12": 4 }
               
-              // Duyệt qua tất cả các container sao đang hiển thị trên màn hình
               document.querySelectorAll('.star-rating').forEach(container => {
-                  // Lấy ID địa điểm từ ngôi sao đầu tiên trong container
                   const firstStar = container.querySelector('.star');
                   if (!firstStar) return;
                   
                   const placeId = firstStar.dataset.id;
                   
-                  // Kiểm tra xem ID này có trong lịch sử đánh giá không
                   if (ratingsMap[placeId]) {
                       const userScore = ratingsMap[placeId];
-                      
-                      // Tô màu lại các ngôi sao
                       const stars = container.querySelectorAll('.star');
                       stars.forEach((s, index) => {
                           if (index < userScore) s.classList.add('active');
@@ -359,30 +339,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Chạy lần đầu tiên
   (async () => {
-        // 1. Tải danh sách địa điểm trước
         await fetchResults(currentK, false);
-        
-        // 2. Sau đó tải ratings đè lên
         await loadUserRatings();
     })();
 
-  // --- XỬ LÝ INFINITE SCROLL ---
   window.addEventListener('scroll', () => {
-    // Nếu đang tải hoặc đã hết dữ liệu thì không làm gì cả
     if (isLoading || isFull) return;
-
-    // Kiểm tra nếu cuộn gần đến đáy trang (còn cách 100px)
     if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 100) {
-      currentK += stepK; // Tăng số lượng k cần lấy
-      fetchResults(currentK, true); // Gọi hàm với cờ isLoadMore = true
+      currentK += stepK; 
+      fetchResults(currentK, true); 
     }
   });
 
-  // --- XỬ LÝ TÌM KIẾM MỚI ---
   function triggerSearch() {
     const q = (headerInput?.value || '').trim();
     if (!q) return;
-    // Reload lại trang với từ khóa mới, reset k về mặc định
     const newParams = new URLSearchParams();
     newParams.set('text', q);
     newParams.set('k', '6'); 
