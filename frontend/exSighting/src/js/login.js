@@ -41,15 +41,15 @@ async function handleLogin(e) {
 
 // 2. THÊM ĐOẠN NÀY ĐỂ BẮT SỰ KIỆN (Thay thế cho onclick bên HTML)
 // Đảm bảo file HTML đã load xong mới tìm element
-// document.addEventListener('DOMContentLoaded', () => {
-//     // Tìm nút Login hoặc Form Login. 
-//     // Giả sử nút login của bạn có id="btn-login" hoặc là nút submit trong form
-//     const loginButton = document.querySelector('button[onclick="handleLogin()"]') || document.getElementById('btn-login') || document.querySelector('button[type="submit"]');
+document.addEventListener('DOMContentLoaded', () => {
+    // Tìm nút Login hoặc Form Login. 
+    // Giả sử nút login của bạn có id="btn-login" hoặc là nút submit trong form
+    const loginButton = document.querySelector('button[onclick="handleLogin()"]') || document.getElementById('btn-login') || document.querySelector('button[type="submit"]');
 
-//     if (loginButton) {
-//         loginButton.addEventListener('click', handleLogin);
-//     }
-// });
+    if (loginButton) {
+        loginButton.addEventListener('click', handleLogin);
+    }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
             // 1. Xử lý ấn Enter thì cũng gọi hàm đăng nhập
