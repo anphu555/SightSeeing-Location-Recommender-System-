@@ -4,34 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sigma-Alpha Sightseeing</title>
-    <link rel="stylesheet" href="css/index.css"> </head>
+    <link rel="stylesheet" href="css/index.css"> 
+</head>
 
 <body>
     <div id="user-status" style="position: absolute; top: 20px; right: 20px; color: white; z-index: 1000;">
-    <a href="login.html" style="color: white; text-decoration: none; font-weight: bold;">Login</a>
-</div>
+        <a href="login.html" style="color: white; text-decoration: none; font-weight: bold;">Login</a>
+    </div>
 
-<script>
-    // Thêm đoạn này vào thẻ script có sẵn hoặc tạo mới
-    document.addEventListener('DOMContentLoaded', () => {
-        const token = localStorage.getItem('token');
-        const username = localStorage.getItem('username');
-        const statusDiv = document.getElementById('user-status');
-
-        if (token && username) {
-            statusDiv.innerHTML = `
-                <span>Hello, ${username}</span>
-                <button onclick="logout()" style="margin-left: 10px; cursor: pointer;">Logout</button>
-            `;
-        }
-        
-        window.logout = function() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('username');
-            window.location.reload();
-        }
-    });
-</script>
     <div class="hero-section">
         <header>
             <img src="images/TUYU_umbrella.png" alt="Umbrella Logo" class="logo">
@@ -48,27 +28,7 @@
             </div>
         </main>
     </div>
-    <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const inputEl = document.querySelector('.search-input');
-  const btnEl   = document.querySelector('.search-button');
 
-  function goSearch() {
-    const text = (inputEl?.value || '').trim();
-    if (!text) { alert('Hãy nhập gì đó'); return; }
-    const params = new URLSearchParams({ text, k: '6' });
-    // Nếu input.html và index.html cùng thư mục:
-    window.location.href = `result.html?${params.toString()}`;
-    // Nếu KHÁC thư mục, dùng đường dẫn đúng, ví dụ:
-    // window.location.href = `/index.html?${params.toString()}`;
-  }
-
-  btnEl?.addEventListener('click', goSearch);
-  inputEl?.addEventListener('keydown', (e) => { if (e.key === 'Enter') goSearch(); });
-
-  // giúp bạn thử nhanh từ Console
-  window.goSearch = goSearch;
-});
-</script>
+    <script type="module" src="/js/index.js"></script>
 </body>
 </html>
