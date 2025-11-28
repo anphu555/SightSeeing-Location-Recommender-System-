@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết quả tìm kiếm - exSighting</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+
+    <header class="navbar-v3">
+        <div class="logo" onclick="window.location.href='index.html'" style="cursor: pointer;">
+            <i class="fas fa-umbrella"></i>
+            <span>exSighting</span>
+        </div>
+        <nav class="nav-links">
+            <a href="#" class="nav-item">Contact</a>
+            <a href="#" class="nav-item">About us</a>
+        </nav>
+        <button class="user-actions-unsigned-in">
+            <div class="user-icon-bg">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <span class="sign-in-text">Sign In</span>
+        </button>
+    </header>
+
+    <section class="hero-banner-static"> 
+        <div class="overlay"></div>
+        <div class="search-container">
+            <h1>What type of place would you like to go?</h1>
+            <div class="search-box">
+                <input type="text" id="resultsPageInput" placeholder="For example: the mountains, the beaches,...">
+                <button onclick="performSearch(document.getElementById('resultsPageInput').value)"><i class="fas fa-search"></i></button>
+            </div>
+        </div>
+        </section>
+    
+    <main class="results-page-wrapper">
+      <div class="results-container">
+
+    <div class="results-toolbar">
+        <h3 class="result-count"><span id="totalCount">0</span> results</h3>
+        <div class="custom-sort-dropdown" id="customSort">
+            <div class="sort-trigger">
+                <span class="sort-label">Sort by:</span>
+                <span class="sort-value" id="currentSortValue">Newest</span>
+                <i class="fas fa-chevron-down arrow-icon"></i>
+            </div>
+            <ul class="sort-options">
+                <li class="sort-option active" data-value="newest"><i class="fas fa-clock"></i> Newest</li>
+                <li class="sort-option" data-value="price"><i class="fas fa-tag"></i> Price</li>
+                <li class="sort-option" data-value="views"><i class="fas fa-eye"></i> Most Viewed</li>
+            </ul>
+            <input type="hidden" id="sortSelectHidden" value="newest">
+        </div>
+    </div>
+
+    <div class="results-grid" id="resultsGrid">
+        </div>
+
+</div>
+    </main>
+
+    <script>
+        // --- DATA MẪU ---
+        const dbResponse = [
+            { id: 101, title: "Gai Nhat de thuong", subtitle: "Thanh Hoa", views: 252, image: "link_to_image_1" },
+            { id: 102, title: "Gai Nhat dang yeu", subtitle: "Hai Phong", views: 500, image: "link_to_image_2" },
+            { id: 103, title: "Gai Nhat Dam Dang", subtitle: "Ha Noi", views: 120, image: "link_to_image_3" },
+            { id: 104, title: "Co gai Da Lat", subtitle: "Lam Dong", views: 890, image: "link_to_image_4" },
+        ];
+
+        // --- HÀM TẠO THẺ, RENDER PAGE, VÀ BẮT SỰ KIỆN TÌM KIẾM ---
+
+        function createCardHTML(item) {
+             // Hàm tạo thẻ (giữ nguyên logic đã có)
+             return `
+                 <div class="result-card">
+                     <div class="card-img-top">
+                         <img src="${item.image}" alt="${item.title}">
+                         <div class="view-badge">
+                             <i class="fas fa-eye"></i> ${item.views}
+                         </div>
+                     </div>
+                     <div class="card-body">
+                         <h4 class="card-title">${item.title}</h4>
+                         <p class="card-subtitle">${item.subtitle}</p>
+                     </div>
+                     <div class="card-footer">
+                         <button class="icon-action like-btn"><i class="fas fa-thumbs-up"></i></button>
+                         <button class="icon-action dislike-btn"><i class="fas fa-thumbs-down"></i></button>
+                     </div>
+                 </div>
+             `;
+         }
+
+        function renderPage(data) {
+            const grid = document.getElementById('resultsGrid');
+            const counter = document.getElementById('totalCount');
+            
+            counter.innerText = data.length;
+
+            if (data.length > 0) {
+                grid.innerHTML = data.map(item => createCardHTML(item)).join('');
+            } else {
+                grid.innerHTML = '<p class="no-result" style="width:100%; text-align:center;">No results found.</p>';
+            }
+        }
+        
+        // Lọc dữ liệu dựa trên từ khóa (dùng chung cho load trang và tìm kiếm lại)
+        function performSearch(keyword) {
+            const keywordTrimmed = keyword ? keyword.toLowerCase().trim() : '';
+
+            const filteredData = dbResponse.filter(item => {
+                return item.title.toLowerCase().includes(keywordTrimmed) || 
+                       item.subtitle.toLowerCase().includes(keywordTrimmed);
+            });
+            renderPage(filteredData);
+        }
+
+        // Hàm lấy tham số từ URL
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        // Logic chính khi tải trang
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialQuery = getQueryParam('q');
+            const searchInput = document.getElementById('resultsPageInput');
+            
+            // 1. Điền từ khóa vào ô tìm kiếm (ví dụ: "Beach")
+            if (initialQuery) {
+                searchInput.value = initialQuery;
+            }
+
+            // 2. Thực hiện tìm kiếm ban đầu dựa trên URL hoặc toàn bộ danh sách
+            performSearch(initialQuery);
+            
+            // 3. Thêm sự kiện Enter/Click để tìm kiếm lại
+            searchInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    performSearch(searchInput.value);
+                }
+            });
+        });
+
+        // --- LOGIC CUSTOM DROPDOWN ---
+document.addEventListener('DOMContentLoaded', () => {
+    const dropdown = document.getElementById('customSort');
+    const trigger = dropdown.querySelector('.sort-trigger');
+    const options = dropdown.querySelectorAll('.sort-option');
+    const currentValueDisplay = document.getElementById('currentSortValue');
+    const hiddenInput = document.getElementById('sortSelectHidden');
+
+    // 1. Bật/Tắt Menu khi click vào nút
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation(); // Ngăn sự kiện lan ra ngoài
+        dropdown.classList.toggle('open');
+    });
+
+    // 2. Xử lý khi chọn một item
+    options.forEach(option => {
+        option.addEventListener('click', () => {
+            // Lấy giá trị và text
+            const value = option.getAttribute('data-value');
+            const text = option.innerText;
+
+            // Cập nhật giao diện
+            currentValueDisplay.innerText = text;
+            hiddenInput.value = value; // Lưu vào input ẩn để Backend dùng
+
+            // Cập nhật class active
+            options.forEach(opt => opt.classList.remove('active'));
+            option.classList.add('active');
+
+            // Đóng menu
+            dropdown.classList.remove('open');
+
+            // GỌI HÀM SẮP XẾP DỮ LIỆU Ở ĐÂY (Ví dụ)
+            // sortData(value); 
+            console.log("Đã chọn sort theo:", value);
+        });
+    });
+
+    // 3. Click ra ngoài thì đóng menu
+    document.addEventListener('click', (e) => {
+        if (!dropdown.contains(e.target)) {
+            dropdown.classList.remove('open');
+        }
+    });
+});
+    </script>
+</body>
+</html>
