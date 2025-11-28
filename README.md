@@ -64,3 +64,14 @@
 - Sau khi build xong thì truy cập `localhost:3000` để vào trang web, `localhost:8000/api/v1/docs` để vào swagger UI (backend)
 # 3. Thoát
 - `CTRL + C`
+
+### Cách chạy web bằng node (nếu muốn test chung backend thì chạy start.bat hay start.sh như thường)
+## Frontend:
+# 1. Tải node:
+- nodejs.org
+# 2. Vào thư mục exSighting
+-  cd frontend/exSighting/ 
+# 3. Chạy lệnh: (cái này chỉ cần làm 1 lần, cả linux lần window)
+- `npm install`
+# 4. Mở web bằng lệnh:
+- `npm run dev`
