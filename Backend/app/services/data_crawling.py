@@ -6,7 +6,7 @@ import pandas as pd
 BASE_URL = "https://csdl.vietnamtourism.gov.vn/dest/"
 # DATA_TYPE = 2  # 2 likely maps to Accommodations/Hotels based on search results
 START_PAGE = 1
-MAX_PAGES = 2  # Set to a higher number to crawl more
+MAX_PAGES = 1  # Set to a higher number to crawl more
 
 async def scrape_tourism_data():
     async with async_playwright() as p:
