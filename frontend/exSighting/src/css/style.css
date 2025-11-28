@@ -1,0 +1,713 @@
+/* =========================================
+   1. THIẾT LẬP CHUNG (GLOBAL)
+   ========================================= */
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #FFFFFF;
+    color: #333;
+    overflow-x: hidden; /* Ngăn thanh cuộn ngang */
+}
+
+/* =========================================
+   2. NAVBAR (HEADER)
+   ========================================= */
+.navbar-v3 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 100px; 
+    background-color: white; 
+    border-bottom: 1px solid #eee;
+    
+    /* [QUAN TRỌNG] Đảm bảo header nằm trên Banner để bấm được nút */
+    position: relative; 
+    z-index: 1000; 
+}
+
+/* Logo */
+.navbar-v3 .logo {
+    display: flex;
+    align-items: center;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #14838B; 
+}
+
+.navbar-v3 .logo i {
+    color: #14838B; 
+    margin-right: 5px;
+    font-size: 2.2rem;
+}
+
+/* Nav Links */
+.navbar-v3 .nav-links {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    margin-right: 20px; 
+}
+
+/* Link Item */
+.navbar-v3 .nav-links .nav-item {
+    color: #14838B; 
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    position: relative; 
+    padding-bottom: 3px; 
+    transition: color 0.3s;
+    cursor: pointer;
+}
+
+/* Gạch chân trượt ra từ giữa */
+.navbar-v3 .nav-links .nav-item::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 50%; 
+    transform: translateX(-50%); 
+    background: #0c6a6f; 
+    transition: width 0.3s ease;
+}
+
+.navbar-v3 .nav-links .nav-item:hover::after {
+    width: 100%;
+}
+
+.navbar-v3 .nav-links .nav-item:hover {
+    color: #0c6a6f; 
+}
+
+/* Nút Sign In */
+button.user-actions-unsigned-in {
+    display: flex;
+    align-items: center;
+    background-color: #14838B; 
+    color: white;
+    border: none; 
+    padding: 0; 
+    border-radius: 25px; 
+    overflow: hidden; 
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s;
+    height: 45px; 
+    position: relative;
+    z-index: 1001; 
+}
+
+button.user-actions-unsigned-in:hover {
+    background-color: #0c6a6f; 
+}
+
+.user-icon-bg {
+    background-color: white; 
+    color: #14838B; 
+    border-radius: 50%; 
+    width: 35px;
+    height: 35px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    flex-shrink: 0; 
+    margin: 5px; 
+}
+
+.sign-in-text {
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 0 20px 0 5px; 
+}
+
+/* =========================================
+   3. HERO BANNER (SLIDER BACKGROUND)
+   ========================================= */
+.hero-banner {
+    position: relative;
+    height: 400px; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    margin-top: -80px; 
+    z-index: 1; /* Thấp hơn header */
+    overflow: hidden; /* Ẩn các phần ảnh trượt ra ngoài */
+    background: #222; 
+}
+
+/* --- SỬA LẠI PHẦN SLIDE TRONG style.css --- */
+
+.banner-slider {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 0; 
+}
+
+.slide {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-size: cover;
+    background-position: center;
+    
+    /* [NÂNG CẤP] Tăng thời gian lên 1.5s và dùng cubic-bezier để trượt mượt mà, không bị đều đều */
+    transition: transform 1.5s cubic-bezier(0.65, 0, 0.35, 1);
+    
+    /* Mặc định: Nằm chờ bên TRÁI */
+    transform: translateX(-100%);
+    z-index: 1;
+    
+    /* Tối ưu hiệu năng rendering */
+    will-change: transform;
+}
+
+/* Slide đang hiện: Ở giữa, Z-index cao nhất để đè lên slide cũ */
+.slide.active {
+    transform: translateX(0);
+    z-index: 10; 
+}
+
+/* Slide trượt đi: Sang PHẢI, Z-index thấp hơn active một chút */
+.slide.leave {
+    transform: translateX(100%);
+    z-index: 5;
+}
+
+
+/* --- Overlay & Nội dung --- */
+.hero-banner .overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 3; 
+}
+
+.search-container { position: relative; z-index: 10; padding-top: 80px; }
+.search-container h1 { font-size: 1.8rem; font-weight: 600; margin-bottom: 20px; }
+.search-box { display: flex; background-color: white; border-radius: 30px; padding: 5px 5px 5px 20px; width: 600px; max-width: 90vw; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
+.search-box input { flex-grow: 1; border: none; outline: none; font-size: 1rem; color: #555; }
+.search-box button { background-color: #14838B; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.1rem; cursor: pointer; transition: background-color 0.3s; }
+.search-box button:hover { background-color: #0c6a6f; }
+
+.dots-container { position: absolute; bottom: 20px; z-index: 10; display: flex; gap: 8px; }
+.dot { width: 10px; height: 10px; background-color: rgba(255, 255, 255, 0.5); border-radius: 50%; transition: background-color 0.3s; cursor: pointer; }
+.dot.active { background-color: white; }
+
+/* =========================================
+   4. POPULAR PLACES SECTION
+   ========================================= */
+.popular-places-section { padding: 40px 50px; text-align: center; }
+
+/* Tiêu đề & Thanh trang trí */
+.section-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 30px;
+    color: #14838B; 
+    position: relative;
+}
+.section-title::after {
+    content: ''; display: block; width: 200px; height: 1px; background-color: #14838B; margin: 15px auto 0;
+}
+
+/* Container chính */
+.places-carousel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px; 
+    position: relative;
+    width: 100%; 
+}
+
+/* Cửa sổ hiển thị (Viewport)
+   [NÂNG CẤP]: Thêm padding để khi thẻ nổi lên không bị mất bóng đổ 
+*/
+.carousel-viewport {
+    overflow: hidden; 
+    width: 810px; 
+    border-radius: 15px; 
+    
+    /* Mở rộng vùng hiển thị theo chiều dọc */
+    padding-top: 30px; 
+    padding-bottom: 50px; 
+    /* Kéo margin âm để layout không bị đẩy lệch quá xa */
+    margin-top: -30px; 
+    margin-bottom: -50px;
+}
+
+/* Nút mũi tên */
+.arrow-btn {
+    background-color: white; border: 1px solid #ccc; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; color: #333; cursor: pointer; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); transition: all 0.3s; flex-shrink: 0; z-index: 5; 
+}
+.arrow-btn:hover { background-color: #f0f0f0; border-color: #14838B; color: #14838B; }
+
+/* Danh sách thẻ */
+.place-card-list {
+    display: flex; gap: 30px; transition: transform 0.4s ease-in-out; width: max-content; transform: translateX(0); 
+}
+
+/* =========================================
+   5. PLACE CARD TEMPLATE (HIỆU ỨNG 3D MỚI)
+   ========================================= */
+.place-card {
+    position: relative;
+    width: 250px; 
+    height: 400px; 
+    border-radius: 15px;
+    overflow: hidden;
+    
+    /* Bóng đổ nhẹ cơ bản */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    
+    cursor: pointer;
+    flex-shrink: 0; 
+    background-color: #ddd; 
+    
+    /* [QUAN TRỌNG] Cubic-bezier giúp chuyển động nảy và mượt hơn */
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    
+    will-change: transform, box-shadow;
+}
+
+/* HIỆU ỨNG HOVER NỔI 3D */
+.place-card:hover {
+    /* Nổi lên cao 15px */
+    transform: translateY(-15px);
+    
+    /* Bóng đổ 2 lớp: 
+       - Lớp 1 (màu đen nhạt): tạo khối sát chân.
+       - Lớp 2 (màu xanh thương hiệu): tạo hào quang lan tỏa xa.
+    */
+    box-shadow: 
+        0 15px 30px rgba(0, 0, 0, 0.15), 
+        0 40px 70px -10px rgba(20, 131, 139, 0.3);
+        
+    /* Sáng ảnh lên chút cho bắt mắt */
+    filter: brightness(1.05);
+}
+
+.card-image {
+    width: 100%; height: 100%; object-fit: cover; display: block; 
+    transition: transform 0.4s ease, filter 0.4s ease; 
+}
+/* Zoom ảnh nhẹ khi hover */
+.place-card:hover .card-image { transform: scale(1.05); }
+
+.card-name-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; color: white; text-align: center; pointer-events: none; }
+.card-name-overlay h3 { margin: 0; font-size: 1.3rem; font-weight: 700; text-shadow: 0 0 5px rgba(0, 0, 0, 0.8); }
+
+/* Bảng thông tin trượt lên */
+.card-content-wrapper { position: absolute; bottom: 0; left: 0; right: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none; }
+.card-content { background-color: white; color: #333; padding: 15px; text-align: left; border-top-left-radius: 10px; border-top-right-radius: 10px; transform: translateY(100%); transition: transform 0.4s ease; pointer-events: auto; }
+.place-card:hover .card-content { transform: translateY(0); }
+.card-content p { margin: 5px 0; font-size: 0.95rem; }
+
+/* Nút Explore */
+.explore-btn { background-color: #14838B; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: background-color 0.3s; }
+.explore-btn:hover { background-color: #0c6a6f; }
+
+/* Nút View All (Hiệu ứng gạch dưới trượt ra) */
+.view-all-btn { 
+    background: none; border: none; color: #14838B; font-size: 1rem; font-weight: 600; margin-top: 20px; cursor: pointer; 
+    position: relative; padding-bottom: 3px; transition: color 0.3s; 
+}
+.view-all-btn::after { 
+    content: ''; position: absolute; width: 0; height: 2px; bottom: 0; left: 50%; transform: translateX(-50%); background: #0c6a6f; transition: width 0.3s ease; 
+}
+.view-all-btn:hover { color: #0c6a6f; }
+.view-all-btn:hover::after { width: 100%; }
+
+/* =========================================
+   6. SEARCH RESULTS PAGE (ĐÃ SỬA LỖI LAYOUT)
+   ========================================= */
+
+/* =========================================
+   6. SEARCH RESULTS PAGE (RESPONSIVE FIX)
+   ========================================= */
+
+/* Wrapper toàn trang */
+.results-page-wrapper {
+    /* [QUAN TRỌNG] Đổi 100px thành 5% để lề tự co giãn theo màn hình */
+    padding: 40px 5%; 
+    background-color: #fff;
+    min-height: 100vh;
+    box-sizing: border-box; /* Đảm bảo padding không làm vỡ layout */
+}
+
+/* Container chính (Khung viền) */
+.results-container {
+    /* [QUAN TRỌNG] 
+       - width: 100% để nó luôn lấp đầy khoảng trống cho phép 
+       - max-width: 1400px để nó không bị bè ra quá to trên màn hình siêu rộng
+    */
+    width: 100%;
+    max-width: 1400px; 
+    
+    margin: 0 auto; /* Căn giữa */
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+/* --- (Giữ nguyên các phần Toolbar, Grid...) --- */
+
+/* [MỚI] Thêm Media Query để tối ưu cho màn hình nhỏ (Mobile/Tablet) */
+@media (max-width: 768px) {
+    .results-page-wrapper {
+        padding: 20px 10px; /* Giảm lề xuống mức tối thiểu trên điện thoại */
+    }
+    
+    .results-container {
+        padding: 15px; /* Giảm padding trong khung */
+        border: none; /* Có thể bỏ viền trên mobile cho thoáng */
+        box-shadow: none;
+    }
+    
+    /* Toolbar xếp dọc trên mobile */
+    .results-toolbar {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+    
+    .custom-sort-dropdown {
+        width: 100%; /* Nút sort full width trên mobile cho dễ bấm */
+    }
+}
+
+/* --- THANH CÔNG CỤ (Toolbar) --- */
+.results-toolbar {
+    display: flex;
+    justify-content: space-between; /* Đẩy 2 phần tử sang 2 cực Trái - Phải */
+    align-items: center;            /* Căn giữa theo chiều dọc */
+    width: 100%;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;  /* Đường kẻ mờ ngăn cách */
+}
+
+/* Chỉnh lại font chữ kết quả cho giống ảnh */
+.result-count {
+    color: #14838B;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* Đảm bảo dropdown không bị co lại */
+.custom-sort-dropdown {
+    flex-shrink: 0; 
+}
+
+/* --- LƯỚI KẾT QUẢ (GRID 4-5 CỘT) --- */
+.results-grid {
+    display: grid;
+    /* [QUAN TRỌNG] 210px giúp hiển thị 4-5 thẻ/hàng trên màn hình laptop/PC */
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); 
+    gap: 20px; /* Khoảng cách giữa các thẻ */
+    width: 100%;
+}
+
+/* --- CÁC PHẦN KHÁC GIỮ NGUYÊN --- */
+.result-count {
+    color: #14838B;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0;
+    white-space: nowrap;
+}
+
+/* Ô tìm kiếm trong trang (CSS MỚI) */
+.search-in-page {
+    display: flex;
+    align-items: center;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    padding: 5px 15px;
+    width: 40%; /* Chiếm 40% chiều rộng thanh toolbar */
+    max-width: 400px;
+}
+
+.search-in-page input {
+    border: none;
+    background: transparent;
+    outline: none;
+    flex-grow: 1;
+    padding: 5px;
+    font-size: 0.95rem;
+    color: #333;
+}
+
+.search-in-page button {
+    background: none;
+    border: none;
+    color: #14838B;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: transform 0.2s;
+}
+
+.search-in-page button:hover { transform: scale(1.1); color: #0c6a6f; }
+
+/* Custom Dropdown Container */
+.custom-sort-dropdown {
+    position: relative;
+    width: 200px;
+    font-family: 'Poppins', sans-serif;
+    user-select: none;
+}
+
+/* --- LƯỚI KẾT QUẢ (GRID) --- */
+.results-grid {
+    display: grid;
+    /* Tự động chia cột: Tối thiểu 260px, tự co giãn */
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
+    gap: 30px;
+    width: 100%; /* Bắt buộc */
+}
+
+/* --- THẺ KẾT QUẢ (CARD) --- */
+.result-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Để các thẻ bằng nhau */
+}
+
+.result-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.card-img-top {
+    position: relative;
+    height: 200px; /* Chiều cao ảnh cố định */
+    width: 100%;
+}
+
+.card-img-top img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Cắt ảnh vừa khung, không bị méo */
+}
+
+.view-badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    background-color: #14838B;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: flex; align-items: center; gap: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.card-body {
+    padding: 15px;
+    text-align: center;
+    flex-grow: 1;
+}
+
+.card-title {
+    color: #14838B;
+    font-size: 1rem;
+    margin: 0 0 5px 0;
+    font-weight: 600;
+}
+
+.card-subtitle { color: #777; font-size: 0.9rem; margin: 0; }
+
+.card-footer {
+    display: flex; justify-content: center; gap: 30px;
+    padding: 10px 0 20px 0;
+    border-top: 1px solid #f9f9f9;
+}
+
+.icon-action {
+    background: none; border: none; font-size: 1.4rem; color: #333;
+    cursor: pointer; transition: transform 0.2s, color 0.2s;
+}
+.icon-action:hover { transform: scale(1.2); }
+.like-btn:hover { color: #14838B; }
+.dislike-btn:hover { color: #d9534f; }
+
+/* Responsive */
+@media (max-width: 992px) {
+    .results-page-wrapper { padding: 40px 20px; }
+    .results-toolbar { flex-direction: column; gap: 15px; }
+    .search-in-page { width: 100%; order: 2; } /* Đẩy thanh tìm kiếm xuống giữa */
+    .result-count { order: 1; align-self: flex-start; }
+    .custom-sort-dropdown { order: 3; align-self: flex-end; width: 100%; }
+    .sort-trigger { width: 100%; box-sizing: border-box; }
+}
+/* --- NEW STATIC BANNER FOR RESULTS PAGE --- */
+.hero-banner-static {
+    position: relative;
+    height: 400px; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-align: center;
+    padding: 20px;
+    z-index: 1; 
+    overflow: hidden; 
+
+    /* BACKGROUND TĨNH: Bạn có thể thay đổi URL này sau */
+    background-image: url('https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070&auto=format&fit=crop'); 
+    background-size: cover;
+    background-position: center;
+    
+    /* Kéo lên để nằm dưới Navbar (như trang chủ) */
+    margin-top: -80px; 
+}
+
+/* =========================================
+   CUSTOM SORT DROPDOWN (IMPROVED)
+   ========================================= */
+
+/* Container chính */
+.custom-sort-dropdown {
+    position: relative;
+    width: 250px;
+    font-family: 'Poppins', sans-serif;
+    user-select: none; /* Ngăn bôi đen text */
+}
+
+/* Nút bấm hiển thị (Trigger) */
+.sort-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: white;
+    color: #14838B; /* Màu xanh chủ đạo */
+    padding: 10px 20px;
+    border-radius: 25px; /* Bo tròn kiểu viên thuốc */
+    border: 1px solid #14838B;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.sort-trigger:hover {
+    background-color: #14838B;
+    color: white;
+    box-shadow: 0 5px 15px rgba(20, 131, 139, 0.3);
+}
+
+.sort-label {
+    font-weight: 400;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-right: 5px;
+}
+
+.sort-value {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.arrow-icon {
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+/* Hiệu ứng xoay mũi tên khi mở menu */
+.custom-sort-dropdown.open .arrow-icon {
+    transform: rotate(180deg);
+}
+
+/* Danh sách tùy chọn (Dropdown Menu) */
+.sort-options {
+    position: absolute;
+    top: 110%; /* Cách nút một chút */
+    right: 0;
+    width: 100%;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    padding: 10px 0;
+    list-style: none;
+    z-index: 100;
+    
+    /* Ẩn mặc định */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Hiệu ứng hiện menu */
+.custom-sort-dropdown.open .sort-options {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Từng dòng lựa chọn */
+.sort-option {
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #555;
+    transition: background 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sort-option i {
+    width: 20px; /* Cố định chiều rộng icon để chữ thẳng hàng */
+    color: #ccc;
+    transition: color 0.2s;
+}
+
+/* Hover vào dòng lựa chọn */
+.sort-option:hover {
+    background-color: #f0fdfd; /* Màu xanh cực nhạt */
+    color: #14838B;
+}
+
+.sort-option:hover i {
+    color: #14838B;
+}
+
+/* Dòng đang được chọn */
+.sort-option.active {
+    color: #14838B;
+    font-weight: 600;
+}
+
+.sort-option.active i {
+    color: #14838B;
+}
+
+/* Đường kẻ mờ ngăn cách */
+.divider {
+    height: 1px;
+    background-color: #eee;
+    margin: 5px 20px;
+}
+
+

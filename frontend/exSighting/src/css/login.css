@@ -1,0 +1,253 @@
+/* =========================================
+   STYLE CHO TRANG LOGIN & REGISTER
+   ========================================= */
+
+/* Reset cơ bản */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Container bao quanh toàn trang */
+.login-page {
+    /* Background Gradient màu thương hiệu: Từ xanh nhạt sang xanh đậm */
+    background: linear-gradient(135deg, #e0f7fa 0%, #14838B 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+/* Wrapper để giới hạn chiều rộng */
+.login-wrapper {
+    width: 100%;
+    max-width: 420px; /* Độ rộng chuẩn cho form login */
+}
+
+/* Thẻ Card chứa nội dung Form */
+.login-card {
+    background: #ffffff;
+    padding: 40px 35px;
+    border-radius: 20px;
+    /* Hiệu ứng bóng đổ tạo chiều sâu (Glassmorphism nhẹ) */
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2); 
+    text-align: center;
+}
+
+/* Header & Logo */
+.login-header .logo-icon {
+    font-size: 3rem;
+    color: #14838B; /* Màu xanh chủ đạo */
+    margin-bottom: 10px;
+}
+
+.login-header h2 {
+    color: #333;
+    margin: 10px 0 5px;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.login-header p {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 30px;
+}
+
+/* --- FORM INPUTS --- */
+.input-group {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.9rem;
+    color: #444;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    font-size: 1rem;
+    background-color: #f9f9f9;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+/* Hiệu ứng khi bấm vào ô nhập */
+.input-group input:focus {
+    border-color: #14838B;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(20, 131, 139, 0.15); /* Viền sáng xanh nhẹ */
+}
+
+/* Wrapper cho mật khẩu để đặt icon mắt */
+.password-wrapper {
+    position: relative;
+}
+
+/* Icon mắt ẩn/hiện mật khẩu */
+.toggle-password {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #999;
+    font-size: 1rem;
+    transition: color 0.3s;
+}
+
+.toggle-password:hover {
+    color: #14838B;
+}
+
+/* Link Quên mật khẩu */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+    margin-top: -10px;
+}
+
+.forgot-pass {
+    font-size: 0.85rem;
+    color: #14838B;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.forgot-pass:hover {
+    text-decoration: underline;
+}
+
+/* Thông báo lỗi */
+.error-message {
+    color: #d9534f; /* Màu đỏ */
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+    font-weight: 500;
+    min-height: 20px; /* Giữ chỗ để không bị nhảy layout */
+}
+
+/* --- BUTTONS --- */
+
+/* Nút Chính (Login/Register) */
+.btn-primary {
+    width: 100%;
+    padding: 12px;
+    background-color: #14838B;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: #0c6a6f; /* Đậm hơn khi hover */
+    transform: translateY(-2px); /* Nổi lên nhẹ */
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-primary:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Đường kẻ ngăn cách (Divider) */
+.divider {
+    margin: 25px 0;
+    position: relative;
+    text-align: center;
+}
+
+.divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: #e0e0e0;
+    z-index: 1;
+}
+
+.divider span {
+    background: #fff; /* Trùng màu nền card */
+    padding: 0 15px;
+    position: relative;
+    z-index: 2;
+    color: #888;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* Nút Google */
+.btn-google {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 500;
+    color: #333;
+    transition: all 0.2s;
+}
+
+.btn-google:hover {
+    background-color: #f5f5f5;
+    border-color: #ccc;
+}
+
+.btn-google img {
+    width: 20px;
+    height: 20px;
+}
+
+/* Link chuyển trang (Login <-> Register) */
+.register-link {
+    margin-top: 25px;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.register-link a {
+    color: #14838B;
+    font-weight: 700;
+    text-decoration: none;
+    margin-left: 5px;
+}
+
+.register-link a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive cho điện thoại */
+@media (max-width: 480px) {
+    .login-card {
+        padding: 30px 20px;
+    }
+    
+    .login-header h2 {
+        font-size: 1.5rem;
+    }
+}
