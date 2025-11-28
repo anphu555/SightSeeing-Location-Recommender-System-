@@ -65,7 +65,6 @@ async def scrape_tourism_data():
         df.to_csv("vietnam_tourism_data.csv", index=False)
         print(f"Done! Scraped {len(all_data)} items.")
 
-
 async def crawl_title_info_wrapper():
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -228,7 +227,6 @@ async def crawl_title_info(page, place_entry):
             print(f"Error on item {i}: {e}")
 
 async def crawl_content_info(page, place_entry):
-
     # The full text to store descriptions, split by "|||"
     paragraph_content_fulltext = ""
 
@@ -291,11 +289,51 @@ async def crawl_content_info(page, place_entry):
     # Append to dict
     place_entry.update({"description": paragraph_content_fulltext})
 
-    
+async def crawl_image(page, place_entry):
+    # The full text to store image links, split by "|||"
+    all_image_links = ""
+
+    # load page in the specific class
+    await page.wait_for_selector(".item.text-center")
+
+    # locate to all class name .item text-center
+    items = page.locator(".item.text-center")
+
+    # Count the number of class named .item text-center
+    count = await items.count()   
+
+    # print(f"\n\n{count}\n\n")
+
+    # Loop through all items
+    for i in range(count):
+        item = items.nth(i)
+
+        if i != 0:
+            all_image_links += "|||"
+        
+        try:
+            # 1. Find the 'a' tag inside this item
+            # We look inside .header because that's usually where the main link is
+            link_locator = item.locator("a").first
+            
+            # 2. Get the 'href' attribute
+            image_link = await link_locator.get_attribute("href")
+            
+            all_image_links += image_link
+
+        except Exception as e:
+            print(f"Error on item {i}: {e}")
+
+    # print(all_image_links)
+    # Append to dict
+    place_entry.update({"image": all_image_links})
+
 
 async def crawl_1place_info(page, place_entry):
     await crawl_title_info(page, place_entry)
     await crawl_content_info(page, place_entry)
+    await crawl_image(page, place_entry)
+
 
 
 async def crawl_all_places_info():
@@ -339,9 +377,6 @@ async def crawl_all_places_info():
         df.to_csv("vietnam_tourism_data.csv", index=False)
         print(f"Done! Scraped {len(all_place)} items.")
 
-        
-
-
 
 # Run the script
 if __name__ == "__main__":
@@ -353,9 +388,5 @@ if __name__ == "__main__":
     # asyncio.run(crawl_content_info())
     # asyncio.run(crawl_title_info())
     # asyncio.run(crawl_title())                # ban nay ngon
-    # asyncio.run(crawl_first_container_only())
-    # asyncio.run(crawl_titles2())
-    # asyncio.run(crawl_titles())
-
-    # asyncio.run(crawl_specific_section())
+ 
     # asyncio.run(scrape_tourism_data())
