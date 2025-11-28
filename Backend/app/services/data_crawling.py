@@ -5,8 +5,10 @@ import pandas as pd
 # CONFIGURATION
 BASE_URL = "https://csdl.vietnamtourism.gov.vn/dest/"
 # DATA_TYPE = 2  # 2 likely maps to Accommodations/Hotels based on search results
-START_PAGE = 1
-MAX_PAGES = 1  # Set to a higher number to crawl more
+# START_PAGE = 1
+# START_PAGE = 1171 #max (1172 is empty page)
+START_PAGE = 1127
+MAX_PAGES = 2  # Set to a higher number to crawl more
 
 async def scrape_tourism_data():
     async with async_playwright() as p:
@@ -183,61 +185,68 @@ async def crawl_1place_info_wrapper():
 
 async def crawl_title_info(page, place_entry):
     # Where the title, address... is contained
-    await page.wait_for_selector(".cslt-detail")
+    # await page.wait_for_selector(".cslt-detail")
 
     # The title is on the first .cslt-detail css class
-    items = page.locator(".cslt-detail").first
+    items = page.locator(".cslt-detail")
 
     # Count the number of items which page.locator gives out
     count = await items.count()     # == 1 because locate only the first item 
 
     # print(f"{count}")
 
+    # empty page
+    if count == 0:      
+        return "stop"
+    
+    item = items.nth(0)
+
     # Loop through all items
-    for i in range(count):
-        item = items.nth(i)
+    # for i in range(count):
+    try:
+        # Extract title
+        title_element = item.locator(".header h4")
+        title_text = await title_element.inner_text()
+
+        # Append to dict
+        place_entry.update({"title": title_text})
+
+        # print(f"{title_text.strip()}")
+
+        # =======================================================
+        # # Extract other info
+        # other_info = item.locator("span")
         
-        try:
-            # Extract title
-            title_element = item.locator(".header h4")
-            title_text = await title_element.inner_text()
+        # other_info_count = await other_info.count()
 
-            # Append to dict
-            place_entry.update({"title": title_text})
+        # for j in range(other_info_count):
+        #     other_info_iterator = other_info.nth(j)
+        #     info_text = await other_info_iterator.inner_text()
 
-            # print(f"{title_text.strip()}")
+        #     ## Append to dict
+        #     ## place_entry.update({f"span{j}": info_text})
 
-            # =======================================================
-            # # Extract other info
-            # other_info = item.locator("span")
-            
-            # other_info_count = await other_info.count()
+        #     print(f"{info_text.strip()}")
+        # =======================================================
 
-            # for j in range(other_info_count):
-            #     other_info_iterator = other_info.nth(j)
-            #     info_text = await other_info_iterator.inner_text()
-
-            #     ## Append to dict
-            #     ## place_entry.update({f"span{j}": info_text})
-
-            #     print(f"{info_text.strip()}")
-            # =======================================================
-
-        except Exception as e:
-            print(f"Error on item {i}: {e}")
+    except Exception as e:
+        print(f"Error on item {0}: {e}")
 
 async def crawl_content_info(page, place_entry):
     # The full text to store descriptions, split by "|||"
     paragraph_content_fulltext = ""
 
     # load page in the specific class
-    await page.wait_for_selector(".content-detail")
+    # await page.wait_for_selector(".content-detail")
 
     # locate to all class name .content-detail
     items = page.locator(".content-detail")
 
     # Count the number of class named .content-detail
     count = await items.count()   
+
+    if count == 0:
+        return "skip"
 
     # print(f"\n\n{count}\n\n")
 
@@ -294,7 +303,7 @@ async def crawl_image(page, place_entry):
     all_image_links = ""
 
     # load page in the specific class
-    await page.wait_for_selector(".item.text-center")
+    # await page.wait_for_selector(".item.text-center")
 
     # locate to all class name .item text-center
     items = page.locator(".item.text-center")
@@ -303,6 +312,10 @@ async def crawl_image(page, place_entry):
     count = await items.count()   
 
     # print(f"\n\n{count}\n\n")
+
+    if count == 0:
+        place_entry.update({"image": all_image_links})
+        return
 
     # Loop through all items
     for i in range(count):
@@ -330,8 +343,16 @@ async def crawl_image(page, place_entry):
 
 
 async def crawl_1place_info(page, place_entry):
-    await crawl_title_info(page, place_entry)
-    await crawl_content_info(page, place_entry)
+    status = await crawl_title_info(page, place_entry)
+
+    if status == "stop":
+        return status
+
+    status = await crawl_content_info(page, place_entry)
+
+    if status == "skip":
+        return status
+
     await crawl_image(page, place_entry)
 
 
@@ -343,6 +364,7 @@ async def crawl_all_places_info():
         
         all_place = []
         place_entry_i = 1
+        return_message = ""
 
         for current_page in range(START_PAGE, START_PAGE + MAX_PAGES):
             print(f"Crawling page {current_page}...")
@@ -357,7 +379,13 @@ async def crawl_all_places_info():
                 # Go to page and wait for the list to load
                 await page.goto(target_url, timeout=60000)
 
-                await crawl_1place_info(page, place_entry)
+                status = await crawl_1place_info(page, place_entry)
+
+                if status == "stop":
+                    break
+                elif status == "skip":
+                    place_entry = {}
+                    continue
 
                 all_place.append(place_entry)
                 place_entry = {}
