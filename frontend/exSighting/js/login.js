@@ -1,12 +1,19 @@
-// Nếu dùng localhost thì URL này, nếu deploy thì đổi lại
 const API_URL = 'http://localhost:8000/api/v1/auth/login'; 
 
-async function handleLogin() {
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
+// 1. Giữ nguyên logic xử lý
+async function handleLogin(e) {
+    if(e) e.preventDefault(); // Ngăn form reload trang
+
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
     const errorMsg = document.getElementById('error-msg');
 
-    // OAuth2 yêu cầu gửi data dạng Form Data
+    // Kiểm tra xem element có tồn tại không trước khi lấy value
+    if (!usernameInput || !passwordInput) return;
+
+    const username = usernameInput.value;
+    const password = passwordInput.value;
+
     const formData = new URLSearchParams();
     formData.append('username', username);
     formData.append('password', password);
@@ -21,15 +28,25 @@ async function handleLogin() {
         if (!response.ok) throw new Error('Login failed');
 
         const data = await response.json();
-        
-        // Lưu token vào localStorage
         localStorage.setItem('token', data.access_token);
         localStorage.setItem('username', username);
-        
-        // Chuyển hướng về trang chủ
         window.location.href = 'index.html';
     } catch (err) {
-        errorMsg.innerText = "Sai tên đăng nhập hoặc mật khẩu!";
-        errorMsg.style.display = "block";
+        if(errorMsg) {
+            errorMsg.innerText = "Sai tên đăng nhập hoặc mật khẩu!";
+            errorMsg.style.display = "block";
+        }
     }
 }
+
+// 2. THÊM ĐOẠN NÀY ĐỂ BẮT SỰ KIỆN (Thay thế cho onclick bên HTML)
+// Đảm bảo file HTML đã load xong mới tìm element
+document.addEventListener('DOMContentLoaded', () => {
+    // Tìm nút Login hoặc Form Login. 
+    // Giả sử nút login của bạn có id="btn-login" hoặc là nút submit trong form
+    const loginButton = document.querySelector('button[onclick="handleLogin()"]') || document.getElementById('btn-login') || document.querySelector('button[type="submit"]');
+
+    if (loginButton) {
+        loginButton.addEventListener('click', handleLogin);
+    }
+});

@@ -1,9 +1,16 @@
 const API_URL = 'http://localhost:8000/api/v1/auth/register'; 
 
-async function handleRegister() {
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
+async function handleRegister(e) {
+    if(e) e.preventDefault();
+
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
     const msg = document.getElementById('message');
+
+    if (!usernameInput || !passwordInput) return;
+
+    const username = usernameInput.value;
+    const password = passwordInput.value;
 
     try {
         const response = await fetch(API_URL, {
@@ -13,19 +20,35 @@ async function handleRegister() {
         });
 
         if (response.status === 400) {
-            msg.style.color = "red";
-            msg.innerText = "Username already exists!";
+            if(msg) {
+                msg.style.color = "red";
+                msg.innerText = "Username already exists!";
+            }
             return;
         }
 
         if (!response.ok) throw new Error('Error');
 
-        msg.style.color = "green";
-        msg.innerText = "Đăng ký thành công! Đang chuyển hướng...";
+        if(msg) {
+            msg.style.color = "green";
+            msg.innerText = "Đăng ký thành công! Đang chuyển hướng...";
+        }
         setTimeout(() => window.location.href = 'login.html', 1500);
 
     } catch (err) {
-        msg.style.color = "red";
-        msg.innerText = "Có lỗi xảy ra, vui lòng thử lại.";
+        if(msg) {
+            msg.style.color = "red";
+            msg.innerText = "Có lỗi xảy ra, vui lòng thử lại.";
+        }
     }
 }
+
+// THÊM ĐOẠN BẮT SỰ KIỆN
+document.addEventListener('DOMContentLoaded', () => {
+    // Tìm nút Register
+    const registerButton = document.querySelector('button[onclick="handleRegister()"]') || document.getElementById('btn-register') || document.querySelector('button');
+
+    if (registerButton) {
+        registerButton.addEventListener('click', handleRegister);
+    }
+});
