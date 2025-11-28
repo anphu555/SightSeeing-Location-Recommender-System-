@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Sigma-Alpha</title>
+    <link rel="stylesheet" href="css/index.css">
+    <style>
+        .auth-container { max-width: 400px; margin: 100px auto; padding: 20px; text-align: center; }
+        .auth-input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; }
+        .auth-btn { padding: 10px 20px; background: #333; color: white; border: none; cursor: pointer; width: 100%; }
+        .msg { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <h2 style="color:black;">Register</h2>
+        <input type="text" id="username" class="auth-input" placeholder="Username" autofocus>
+        <input type="password" id="password" class="auth-input" placeholder="Password">
+        <button id="btn-register" class="auth-btn">Register</button>
+        <p class="msg" id="message"></p>
+        <p style="margin: 15px;"><a href="login.html">Back to Login</a></p>
+    </div>
+
+    <script type="module" src="/js/register.js"></script>
+</body>
+</html>

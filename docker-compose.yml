@@ -14,5 +14,8 @@ services:
     ports:
       - "3000:80"
     volumes:
-      - ./frontend:/usr/share/nginx/html
-      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+      # Mount code nguồn (HTML/CSS/JS)
+      - ./frontend/exSighting:/usr/share/nginx/html
+      
+      # SỬA DÒNG DƯỚI NÀY (Thêm /exSighting vào đường dẫn)
+      - ./frontend/exSighting/nginx.conf:/etc/nginx/conf.d/default.conf
