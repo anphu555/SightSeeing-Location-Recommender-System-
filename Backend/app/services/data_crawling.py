@@ -285,6 +285,9 @@ async def crawl_content_info(page, place_entry):
             except Exception as e:
                 print(f"Error on item {i}: {e}")
 
+
+
+    # print(paragraph_content_fulltext)
     # Append to dict
     place_entry.update({"description": paragraph_content_fulltext})
 
