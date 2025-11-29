@@ -35,12 +35,14 @@ class Place(SQLModel, table=True):
 # User <-> Place rating
 class Rating(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    score: int = Field(..., ge=1, le=5)
     
     # Foreign Keys
     # It connects user and place by their id
-    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
-    place_id: Optional[int] = Field(default=None, foreign_key="place.id")
+    user_id: int = Field(foreign_key="user.id")
+    place_id: int = Field(foreign_key="place.id")
+
+
+    score: int = Field(..., ge=1, le=5)
 
     # Relationships
     # User can check its relationship by user.ratings.place.....
