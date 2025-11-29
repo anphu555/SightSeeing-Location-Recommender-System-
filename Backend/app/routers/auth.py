@@ -8,7 +8,9 @@ from datetime import timedelta
 from jose import JWTError, jwt
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+# Thêm auto_error=False để FastAPI không tự động báo lỗi 401 nếu thiếu token
+# Điều này cho phép hàm get_current_user_optional xử lý logic "có token thì lấy, không có thì thôi"
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
 @router.post("/register", response_model=UserResponse)
 def register(user: UserCreate):
