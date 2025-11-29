@@ -71,7 +71,16 @@
 - nodejs.org
 # 2. Vào thư mục exSighting
 -  cd frontend/exSighting/ 
-# 3. Chạy lệnh: (cái này chỉ cần làm 1 lần, cả linux lần window)
+# 3. Chạy lệnh: (cái này chỉ cần làm 1 lần, cả linux lẫn window)
 - `npm install`
 # 4. Mở web bằng lệnh:
 - `npm run dev`
+
+# Update database
+## B1: Thay model trong alembic/env.py (chỗ import schemas dòng 9)
+## B1: Chạy cái này
+```bash 
+alembic revision --autogenerate -m "message"
+alembic upgrade head
+```
+## B2: Chạy cái này
