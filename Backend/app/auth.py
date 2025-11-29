@@ -17,6 +17,8 @@ from app.schemas import User, UserCreate, UserResponse, Token
 # You likely have this in a separate file (e.g., database.py).
 # If so, import it: from app.database import get_session, engine
 from sqlmodel import create_engine, Session
+from app.database import engine
+
 
 # Placeholder engine (replace with your actual engine import)
 # engine = create_engine("sqlite:///database.db") 
