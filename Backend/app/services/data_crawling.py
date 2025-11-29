@@ -7,8 +7,8 @@ BASE_URL = "https://csdl.vietnamtourism.gov.vn/dest/"
 # DATA_TYPE = 2  # 2 likely maps to Accommodations/Hotels based on search results
 # START_PAGE = 1
 # START_PAGE = 1171 #max (1172 is empty page)
-START_PAGE = 1127
-MAX_PAGES = 2  # Set to a higher number to crawl more
+START_PAGE = 1
+MAX_PAGES = 1171  # Set to a higher number to crawl more
 
 async def scrape_tourism_data():
     async with async_playwright() as p:
@@ -197,7 +197,7 @@ async def crawl_title_info(page, place_entry):
 
     # empty page
     if count == 0:      
-        return "stop"
+        return "skip"
     
     item = items.nth(0)
 
@@ -345,7 +345,7 @@ async def crawl_image(page, place_entry):
 async def crawl_1place_info(page, place_entry):
     status = await crawl_title_info(page, place_entry)
 
-    if status == "stop":
+    if status == "skip":
         return status
 
     status = await crawl_content_info(page, place_entry)
