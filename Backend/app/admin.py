@@ -11,7 +11,7 @@ from app.schemas import User, Place, Rating
 # These classes control what you see in the admin panel.
 # You can customize 'column_list' based on the actual fields in your models.
 class UserAdmin(ModelView, model=User):
-    column_list = [User.id] # Add fields you want to see
+    column_list = [User.id, User.username]         # Add fields you want to see
     icon = "fa-solid fa-user"
 
 class PlaceAdmin(ModelView, model=Place):
