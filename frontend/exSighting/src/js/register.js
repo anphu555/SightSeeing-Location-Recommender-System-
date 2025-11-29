@@ -52,3 +52,28 @@ document.addEventListener('DOMContentLoaded', () => {
         registerButton.addEventListener('click', handleRegister);
     }
 });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Logic ẩn hiện mật khẩu
+            const toggleIcon = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password');
+            if (toggleIcon && passwordInput) {
+                toggleIcon.addEventListener('click', () => {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    toggleIcon.classList.toggle('fa-eye');
+                    toggleIcon.classList.toggle('fa-eye-slash');
+                });
+            }
+
+            // Logic bấm Enter
+            const inputs = document.querySelectorAll('#registerForm input');
+            inputs.forEach(input => {
+                input.addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault(); 
+                        handleRegister();   
+                    }
+                });
+            });
+        });
