@@ -1,97 +1,64 @@
 import pandas as pd
 import numpy as np
-from lightfm import LightFM
-from lightfm.data import Dataset
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
-# 1. Your Database
-# Có lẽ sẽ dùng pandas đọc file CSV thay vì đống này
+# 1. Database giả lập (như cũ)
 items_df = pd.DataFrame([
     {"id": 0, "name": "Lầu Ông Hoàng", "kind": "castle", "province": "Bình Thuận", "climate": "warm"},
     {"id": 1, "name": "Tháp Po Sah Inư", "kind": "ruins", "province": "Bình Thuận", "climate": "warm"},
     {"id": 2, "name": "Vịnh Hạ Long", "kind": "island", "province": "Quảng Ninh", "climate": "cool"},
 ])
 
-# 2. Initialize LightFM Dataset
-# We need to tell LightFM all possible features (kinds, climates, etc.)
-dataset = Dataset()
-dataset.fit(
-    users=[0], # Dummy user
-    items=items_df['id'],
-    user_features=['wants_castle', 'wants_ruins', 'wants_island', 'wants_warm', 'wants_cool'],
-    item_features=['is_castle', 'is_ruins', 'is_island', 'is_warm', 'is_cool']
-)
+# 2. Tạo "Feature Soup" cho Item (Gộp tất cả đặc điểm thành 1 chuỗi văn bản)
+def create_soup(x):
+    return f"{x['kind']} {x['province']} {x['climate']} is_{x['kind']} is_{x['climate']}"
 
-# 3. Build Item Features Matrix
-# Map: kind="castle" -> feature="is_castle"
-def build_item_features(row):
-    features = [f"is_{row['kind']}", f"is_{row['climate']}"]
-    return (row['id'], features)
+items_df['soup'] = items_df.apply(create_soup, axis=1)
 
-item_features = dataset.build_item_features(
-    (row['id'], [f"is_{row['kind']}", f"is_{row['climate']}"]) 
-    for index, row in items_df.iterrows()
-)
+# 3. Khởi tạo Vectorizer
+count = CountVectorizer()
+count_matrix = count.fit_transform(items_df['soup'])
 
-# --- NOTE: In a real app, you would TRAIN the model here using past interaction data. ---
-# Since you have no data yet, we will initialize a model with random weights 
-# (or manual weights if you are advanced).
-model = LightFM(loss='warp')
-# model.fit(interactions, user_features=..., item_features=..., epochs=30)
-
-
-
-# ==============================\
-# Step 2
+# 4. Hàm Recommend thay thế
 def recommend(user_prompt):
-    # --- PHASE 1: HARD FILTERING (The "Filter" Part) ---
-    # Only keep items in the requested province
-    candidates = items_df[items_df['province'].isin(user_prompt['location'])]
+    # --- Bước 1: Lọc cứng (Hard Filtering) ---
+    # Giữ lại logic lọc theo tỉnh nếu cần, hoặc để model tự lo
     
-    if candidates.empty:
-        return []
-
-    # --- PHASE 2: CONSTRUCT USER REPRESENTATION (The "Cold Start" Trick) ---
-    # Convert user prompt into LightFM user features
-    active_features = []
+    # --- Bước 2: Tạo User Profile từ Prompt ---
+    # Chuyển đổi prompt user thành chuỗi keywords tương ứng với soup của item
+    user_keywords = []
     
     if user_prompt['type'] != 'unknown':
-        active_features.append(f"wants_{user_prompt['type']}") # e.g., 'wants_island'
+        user_keywords.append(user_prompt['type'])       # vd: "island"
+        user_keywords.append(f"is_{user_prompt['type']}")
     
-    # Simple logic to map weather preference
-    if user_prompt['weather'] == 'cool':
-        active_features.append("wants_cool")
-    elif user_prompt['weather'] == 'warm':
-        active_features.append("wants_warm")
+    if user_prompt['location']:
+         for loc in user_prompt['location']:
+            user_keywords.append(loc)                   # vd: "Quảng Ninh"
+            
+    if user_prompt['weather'] != 'unknown':
+        user_keywords.append(user_prompt['weather'])    # vd: "cool"
+        user_keywords.append(f"is_{user_prompt['weather']}")
 
-    # Build the sparse matrix for this specific request
-    # We use a dummy user_id=0, but the 'features' are what matter
-    user_features_matrix = dataset.build_user_features([(0, active_features)])
-
-    # --- PHASE 3: RANKING (The LightFM Part) ---
-    candidate_ids = candidates['id'].values
+    user_soup = " ".join(user_keywords)
     
-    # Predict scores for ONLY the filtered candidates
-    # 'predict' calculates the dot product between User Features and Candidate Item Features
-    scores = model.predict(
-        user_ids=0, 
-        item_ids=candidate_ids, 
-        user_features=user_features_matrix, 
-        item_features=item_features
-    )
+    # --- Bước 3: Tính toán độ tương đồng ---
+    # Biến đổi user profile thành vector cùng không gian với item
+    try:
+        user_vector = count.transform([user_soup])
+    except:
+        # Trường hợp từ khóa lạ chưa từng xuất hiện
+        return []
 
-    # Attach scores to the candidates
-    candidates = candidates.copy() # Avoid warning
-    candidates['lightfm_score'] = scores
+    # Tính Cosine Similarity giữa User và TOÀN BỘ Items
+    cosine_sim = cosine_similarity(user_vector, count_matrix)
     
-    # Sort descending
-    return candidates.sort_values(by='lightfm_score', ascending=False)
-
-# --- TEST IT ---
-user_request = {
-    "location": ["Quảng Ninh"],
-    "type": "island",
-    "weather": "unknown"
-}
-
-results = recommend(user_request)
-print(results[['name', 'kind', 'lightfm_score']])
+    # --- Bước 4: Xếp hạng ---
+    scores = cosine_sim[0]
+    items_df['score'] = scores
+    
+    # Sắp xếp giảm dần
+    results = items_df.sort_values(by='score', ascending=False)
+    
+    return results[results['score'] > 0] # Chỉ trả về kết quả có độ liên quan
