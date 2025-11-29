@@ -7,6 +7,7 @@ python-multipart==0.0.20  # For login forms
 # Database & Admin
 sqlmodel==0.0.27
 sqladmin==0.22.0
+alembic==1.17.2
 
 # AI
 groq==0.33.0
