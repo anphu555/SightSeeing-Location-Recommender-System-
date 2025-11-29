@@ -4,10 +4,31 @@ from app.config import settings
 from app.routers import recommendation, auth, rating
 from app.services.db_service import init_db
 
-# Khởi tạo bảng users khi chạy app
-init_db()
+from contextlib import asynccontextmanager
+from app.database import create_db_and_tables
 
+# IMPORT YOUR MODELS HERE
+# Even if you don't use them in this file, importing them registers them with SQLModel
+from app.models import User, Place, Rating 
+
+# 1. Define the Lifespan (Startup Event). Create tables in .db file (SQLModel)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # This runs when the app starts
+    create_db_and_tables()
+    print("Startup: Database tables created!")
+    yield
+    # This runs when the app stops (optional)
+    print("Shutdown: App is stopping")
+
+# Khởi tạo bảng users khi chạy app
+# init_db()
+
+# lifespan is the modern way to define logic that needs to
+# run before your application starts receiving requests (Startup)
+# and after it stops (Shutdown).
 app = FastAPI(
+    lifespan=lifespan,
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     docs_url="/api/v1/docs",
