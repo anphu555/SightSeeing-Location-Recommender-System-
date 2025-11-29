@@ -4,4 +4,23 @@ groq==0.33.0
 python-dotenv==1.2.1
 SQLAlchemy==2.0.44
 sqlmodel==0.0.27
-jose==1.0.0
+
+
+# jose==1.0.0
+bcrypt==5.0.0
+python-multipart==0.0.20
+# newer jose vertion (pip install "python-jose[cryptography]")
+itsdangerous==2.2.0 
+jinja2==3.1.6 
+markupsafe==3.0.3 
+sqladmin==0.22.0 
+wtforms==3.1.2
+
+
+cffi==2.0.0
+cryptography==46.0.3 
+ecdsa==0.19.1
+pyasn1==0.6.1 
+pycparser==2.23 
+python-jose==3.5.0 
+rsa==4.9.1

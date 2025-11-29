@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
+# from backend.app.old.schemas import RatingCreate
 from app.schemas import RatingCreate
 from app.services.db_service import add_user_rating
-from app.routers.auth import get_current_user # Import hàm bảo vệ vừa viết
+# from backend.app.old.auth import get_current_user # Import hàm bảo vệ vừa viết
+from app.auth import get_current_user # Import hàm bảo vệ vừa viết
 from app.services.db_service import get_user_ratings_map
 
 router = APIRouter()

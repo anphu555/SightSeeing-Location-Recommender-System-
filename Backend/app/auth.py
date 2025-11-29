@@ -10,8 +10,7 @@ from jose import JWTError, jwt
 from app.config import settings
 from app.security import verify_password, get_password_hash, create_access_token
 
-# Import your NEW SQLModel classes
-# Assuming the file with the classes is named 'schemas.py' or 'models.py'
+# Import your SQLModel classes
 from app.schemas import User, UserCreate, UserResponse, Token
 
 # --- DATABASE DEPENDENCY ---
