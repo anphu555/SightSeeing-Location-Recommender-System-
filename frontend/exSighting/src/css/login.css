@@ -138,7 +138,7 @@
     min-height: 20px; /* Giữ chỗ để không bị nhảy layout */
 }
 
-/* --- BUTTONS --- */
+/* --- BUTTONS --- * /
 
 /* Nút Chính (Login/Register) */
 .btn-primary {
