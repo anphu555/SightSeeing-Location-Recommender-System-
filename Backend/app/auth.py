@@ -16,16 +16,9 @@ from app.schemas import User, UserCreate, UserResponse, Token
 # --- DATABASE DEPENDENCY ---
 # You likely have this in a separate file (e.g., database.py).
 # If so, import it: from app.database import get_session, engine
-from sqlmodel import create_engine, Session
-from app.database import engine
+from app.database import get_session
 
 
-# Placeholder engine (replace with your actual engine import)
-# engine = create_engine("sqlite:///database.db") 
-
-def get_session():
-    with Session(engine) as session:
-        yield session
 
 # --- ROUTER SETUP ---
 router = APIRouter()
