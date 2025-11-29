@@ -5,9 +5,7 @@ from app.services.db_service import create_user, get_user_by_username
 from app.security import verify_password, get_password_hash, create_access_token
 from app.config import settings
 from datetime import timedelta
-from fastapi import Depends, HTTPException, status
 from jose import JWTError, jwt
-from app.config import settings
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -63,3 +61,15 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
     return username
+
+async def get_current_user_optional(token: str = Depends(oauth2_scheme)):
+    try:
+        if not token:
+            return None
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            return None
+        return username
+    except:
+        return None
