@@ -3,6 +3,7 @@ from groq import Groq
 from fastapi import HTTPException
 from fastapi.concurrency import run_in_threadpool
 from app.config import settings
+# from backend.app.old.schemas import GroqExtraction
 from app.schemas import GroqExtraction
 
 client = Groq(api_key=settings.GROQ_API_KEY)

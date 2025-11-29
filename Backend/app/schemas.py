@@ -1,44 +1,106 @@
-from pydantic import BaseModel, Field
 from typing import List, Optional
+from sqlmodel import SQLModel, Field, Relationship, JSON, Column
 
-class RecommendRequest(BaseModel):
-    user_text: str = Field(..., example="i like mountains in Viet Nam and cool weather")
+# ==========================================
+# DATABASE TABLES (table=True) (create table in db)
+# These create the actual rows in your DB.
+# ==========================================
+
+# table = true để tạo bảng cho db (trong file sqlite)
+class User(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    username: str = Field(index=True, unique=True)
+    hashed_password: str  # We store the hash, not the raw password
+
+    # Relationships (Optional but recommended)
+    ratings: List["Rating"] = Relationship(back_populates="user")
+
+class Place(SQLModel, table=True):
+    # 1. ID: Standard Auto-Incrementing Primary Key
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # 2. Basic String
+    name: str
+    
+    # 3. List Fields (Stored as JSON Arrays)
+    # SQL cannot store a List directly, so we use a JSON column
+    # We use sa_column=Column(JSON) to tell the DB to treat this as a JSON string
+    description: List[str] = Field(default=[], sa_column=Column(JSON))
+    image: List[str] = Field(default=[], sa_column=Column(JSON))
+    tags: List[str] = Field(default=[], sa_column=Column(JSON))
+
+    # Relationships
+    ratings: List["Rating"] = Relationship(back_populates="place")
+
+# User <-> Place rating
+class Rating(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    score: int = Field(..., ge=1, le=5)
+    
+    # Foreign Keys
+    # It connects user and place by their id
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    place_id: Optional[int] = Field(default=None, foreign_key="place.id")
+
+    # Relationships
+    # User can check its relationship by user.ratings.place.....
+    user: Optional[User] = Relationship(back_populates="ratings")            
+    place: Optional[Place] = Relationship(back_populates="ratings")
+
+
+# ==========================================
+# API MODELS (table=False) (not create table in db)
+# Used for Requests, Responses, and LLM parsing.
+# ==========================================
+
+# --- Recommendation Flow ---
+
+class RecommendRequest(SQLModel):
+    user_text: str = Field(..., schema_extra={"example": "i like mountains in Viet Nam"})
     top_k: int = Field(5, ge=1, le=100)
 
-class GroqExtraction(BaseModel):
-    location: List[str]
+class GroqExtraction(SQLModel):
+    location: List[str] = Field(default=[], sa_column=Column(JSON))
     type: str
     budget: str
     weather: str
     crowded: str
-    # thêm exclude_locations nếu cần thiết theo prompt cũ của bạn
-    exclude_locations: List[str] = [] 
+    exclude_locations: List[str] = []
 
-class PlaceOut(BaseModel):
+class PlaceOut(SQLModel):
+    """Used to return place data to the frontend"""
     id: int
     name: str
     country: str
     province: str
     region: str
     themes: List[str]
-    score: float
-# 2. Thêm Schema cho Rating
-class RatingCreate(BaseModel):
-    place_id: int
-    score: int = Field(..., ge=1, le=5) # Điểm từ 1 đến 5
-    
-class RecommendResponse(BaseModel):
+    score: float # Similarity score (calculated, not from DB)
+
+class RecommendResponse(SQLModel):
     extraction: GroqExtraction
     results: List[PlaceOut]
 
-# --- Thêm Schema cho Auth ---
-class UserCreate(BaseModel):
-    username: str
-    password: str
+# --- Rating Flow ---
 
-class UserResponse(BaseModel):
-    username: str
+class RatingCreate(SQLModel):
+    place_id: int
+    score: int = Field(..., ge=1, le=5)
 
-class Token(BaseModel):
+# --- Auth Flow ---
+
+class UserCreate(SQLModel):
+    """Input model - contains raw password"""
+    username: str
+    password: str 
+
+class UserResponse(SQLModel):
+    """Output model - hides password"""
+    username: str
+    id: int
+
+class Token(SQLModel):
     access_token: str
     token_type: str
+
+

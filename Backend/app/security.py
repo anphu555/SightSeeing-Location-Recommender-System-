@@ -1,7 +1,7 @@
 # app/security.py
 from datetime import datetime, timedelta
 from typing import Optional
-from jose import JWTError, jwt
+from jose import jwt #, JWTError
 import bcrypt  # <--- Thay đổi: Import bcrypt trực tiếp
 from app.config import settings
 

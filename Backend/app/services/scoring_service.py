@@ -1,4 +1,5 @@
 from typing import List, Dict, Any
+# from backend.app.old.schemas import GroqExtraction, PlaceOut
 from app.schemas import GroqExtraction, PlaceOut
 from app.services.db_service import get_all_places 
 
