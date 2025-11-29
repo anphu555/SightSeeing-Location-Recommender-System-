@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
+from enum import Enum
+from typing import List
 
 class RecommendRequest(BaseModel):
     user_text: str = Field(..., example="i like mountains in Viet Nam and cool weather")
@@ -13,7 +15,6 @@ class GroqExtraction(BaseModel):
     crowded: str
     # thêm exclude_locations nếu cần thiết theo prompt cũ của bạn
     exclude_locations: List[str] = [] 
-
 class PlaceOut(BaseModel):
     id: int
     name: str
@@ -22,10 +23,17 @@ class PlaceOut(BaseModel):
     region: str
     themes: List[str]
     score: float
-# 2. Thêm Schema cho Rating
+
+class PreferenceEnum(str, Enum):
+    like = "like"
+    dislike = "dislike"
+    none = "none"
+
+# 2. Thêm Schema cho Rating với Enum
 class RatingCreate(BaseModel):
     place_id: int
-    score: int = Field(..., ge=1, le=5) # Điểm từ 1 đến 5
+    preference: PreferenceEnum = Field(..., description="Preference for the place: like, dislike, or none")
+
     
 class RecommendResponse(BaseModel):
     extraction: GroqExtraction
