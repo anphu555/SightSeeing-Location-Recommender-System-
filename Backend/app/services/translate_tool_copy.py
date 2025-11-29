@@ -4,12 +4,12 @@ import json
 import time
 
 # ======= CONFIG =======
-genai.configure(api_key="AIzaSyAP6m4EiAWgQouGrovGLj-SKvp-1LM5tDs")
+genai.configure(api_key="MY_API_KEY")
 
 model = genai.GenerativeModel("gemini-2.5-flash")
 
 INPUT_CSV = "vietnam_tourism_data_processed.csv"
-OUTPUT_CSV = "vietnam_tourism_data_en.csv"
+OUTPUT_CSV = "vietnam_tourism_data_eng.csv"
 
 BATCH_SIZE = 3          # nhỏ hơn để text dài không quá tải
 MAX_RPM = 10
