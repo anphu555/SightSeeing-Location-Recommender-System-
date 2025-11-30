@@ -38,22 +38,34 @@ def load_places_from_db():
         
         return pd.DataFrame(places_data)
 
-# Load data khi module được import
-items_df = load_places_from_db()
+# LAZY LOADING: Chỉ load khi cần, không load ngay khi import module
+items_df = None
+count_matrix = None
+vectorizer = None
 
-# 2. TẠO FEATURE SOUP (ĐÃ TẠO TRONG load_places_from_db)
-# items_df đã có cột 'soup' rồi
-
-# 3. KHỞI TẠO MODEL (CountVectorizer)
-vectorizer = CountVectorizer(stop_words='english', max_features=5000)
-try:
-    if len(items_df) > 0:
+def initialize_recsys():
+    """Khởi tạo RecSys model - gọi hàm này sau khi database đã được tạo"""
+    global items_df, count_matrix, vectorizer
+    
+    if items_df is not None:
+        return  # Đã khởi tạo rồi
+    
+    try:
+        # Load data từ database
+        items_df = load_places_from_db()
+        
+        if len(items_df) == 0:
+            print("Warning: No places found in database")
+            return
+        
+        # Khởi tạo vectorizer
+        vectorizer = CountVectorizer(stop_words='english', max_features=5000)
         count_matrix = vectorizer.fit_transform(items_df['soup'])
-    else:
-        count_matrix = None
-except ValueError:
-    print("Not enough data to fit vectorizer")
-    count_matrix = None
+        
+        print(f"RecSys initialized with {len(items_df)} places")
+    except Exception as e:
+        print(f"Failed to initialize RecSys: {e}")
+        items_df = pd.DataFrame()  # Empty dataframe để tránh lỗi
 
 # --- HÀM HỖ TRỢ ---
 
@@ -108,9 +120,11 @@ def recommend(user_prompt_extraction, user_id: Optional[int] = None):
     user_prompt_extraction: Kết quả JSON từ LLM (user_text)
     user_id: ID người dùng để lấy lịch sử ratings
     """
+    # Đảm bảo RecSys đã được khởi tạo
+    initialize_recsys()
     
-    if count_matrix is None or len(items_df) == 0:
-        return items_df  # Return empty or fallback
+    if count_matrix is None or items_df is None or len(items_df) == 0:
+        return pd.DataFrame()  # Return empty dataframe
     
     # --- BƯỚC 1: XÂY DỰNG QUERY VECTOR TỪ PROMPT ---
     search_keywords = []
