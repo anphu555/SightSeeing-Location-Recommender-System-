@@ -31,14 +31,14 @@ async function handleRegister(e) {
 
         if(msg) {
             msg.style.color = "green";
-            msg.innerText = "Đăng ký thành công! Đang chuyển hướng...";
+            msg.innerText = "Registration successful! Redirecting...";
         }
-        setTimeout(() => window.location.href = 'login.html', 1500);
+        setTimeout(() => window.location.href = 'login.html', 100);
 
     } catch (err) {
         if(msg) {
             msg.style.color = "red";
-            msg.innerText = "Có lỗi xảy ra, vui lòng thử lại.";
+            msg.innerText = "Something went wrong. Please try again.";
         }
     }
 }

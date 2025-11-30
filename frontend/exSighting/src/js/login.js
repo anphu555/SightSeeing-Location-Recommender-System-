@@ -33,7 +33,7 @@ async function handleLogin(e) {
         window.location.href = 'index.html';
     } catch (err) {
         if(errorMsg) {
-            errorMsg.innerText = "Sai tên đăng nhập hoặc mật khẩu!";
+            errorMsg.innerText = "Invalid username or password.";
             errorMsg.style.display = "block";
         }
     }
