@@ -9,14 +9,18 @@ from datetime import datetime
 
 
 # ====== CSV translate ======
-INPUT_CSV = "data880-899.csv"
-OUTPUT_CSV = "data880-899_en.csv"
-CHECKPOINT_CSV = "data880-899_en.csv"
+INPUT_CSV = "data896-899.csv"
+OUTPUT_CSV = "data896-899_en.csv"
+CHECKPOINT_CSV = "data896-899_en.csv"
 
 
 # ====== CONFIG ======
 API_KEY = "GROQ_API_KEY"
-MODEL = "llama-3.3-70b-versatile"
+# MODEL = "llama-3.3-70b-versatile"
+# MODEL = "qwen/qwen3-32b"
+MODEL = "openai/gpt-oss-120b"
+
+
 
 # Rate limiting - ƯU TIÊN TPD (Tokens Per Day)
 MAX_TOKENS_PER_DAY = 95000  # Giới hạn 95k/100k để an toàn
