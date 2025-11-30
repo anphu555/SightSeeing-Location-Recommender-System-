@@ -1,28 +1,28 @@
 from fastapi import APIRouter, Depends, HTTPException
-# from backend.app.old.schemas import RatingCreate
-from app.schemas import RatingCreate
-from app.services.db_service import add_user_rating
-# from backend.app.old.auth import get_current_user # Import hàm bảo vệ vừa viết
+
 from app.auth import get_current_user # Import hàm bảo vệ vừa viết
-from app.services.db_service import get_user_ratings_map
+from app.schemas import RatingCreate, PreferenceEnum
+from app.services.db_service import add_user_rating, get_user_ratings_map
 
 router = APIRouter()
 
 @router.post("/rate")
 def submit_rating(rating_data: RatingCreate, username: str = Depends(get_current_user)):
-    """
-    API này yêu cầu Header: Authorization: Bearer <token>
-    """
-    success = add_user_rating(username, rating_data.place_id, rating_data.score)
-    if not success:
-        raise HTTPException(status_code=500, detail="Failed to save rating")
+    # Quy đổi: like -> 1, dislike -> -1, none -> 0
+    if rating_data.preference == PreferenceEnum.like:
+        score_value = 1
+    elif rating_data.preference == PreferenceEnum.dislike:
+        score_value = -1
+    else:  # none
+        score_value = 0
     
-    return {"message": "Rating saved successfully", "place_id": rating_data.place_id, "score": rating_data.score}
+    success = add_user_rating(username, rating_data.place_id, score_value)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to save interaction")
+    
+    return {"message": f"{rating_data.preference.value} saved successfully", "place_id": rating_data.place_id, "score": score_value}
 
 @router.get("/my-ratings")
 def get_my_ratings(username: str = Depends(get_current_user)):
-    """
-    Trả về danh sách các địa điểm user đã đánh giá.
-    Output: { "1": 5, "10": 4 }
-    """
+    # Trả về: { "101": 1, "102": -1 }
     return get_user_ratings_map(username)

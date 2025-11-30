@@ -1,6 +1,8 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship, JSON, Column
 
+from enum import Enum
+
 # ==========================================
 # DATABASE TABLES (table=True) (create table in db)
 # These create the actual rows in your DB.
@@ -67,6 +69,7 @@ class GroqExtraction(SQLModel):
     budget: str
     weather: str
     crowded: str
+    # thêm exclude_locations nếu cần thiết theo prompt cũ của bạn
     exclude_locations: List[str] = []
 
 class PlaceOut(SQLModel):
@@ -79,6 +82,13 @@ class PlaceOut(SQLModel):
     themes: List[str]
     score: float # Similarity score (calculated, not from DB)
 
+
+class PreferenceEnum(str, Enum):
+    like = "like"
+    dislike = "dislike"
+    none = "none"
+
+    
 class RecommendResponse(SQLModel):
     extraction: GroqExtraction
     results: List[PlaceOut]
@@ -88,6 +98,8 @@ class RecommendResponse(SQLModel):
 class RatingCreate(SQLModel):
     place_id: int
     score: int = Field(..., ge=1, le=5)
+    preference: PreferenceEnum = Field(..., description="Preference for the place: like, dislike, or none")
+
 
 # --- Auth Flow ---
 
