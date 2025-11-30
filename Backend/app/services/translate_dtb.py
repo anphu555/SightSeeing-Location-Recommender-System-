@@ -6,6 +6,14 @@ from fastapi.concurrency import run_in_threadpool
 import time
 from datetime import datetime
 
+
+
+# ====== CSV translate ======
+INPUT_CSV = "data880-899.csv"
+OUTPUT_CSV = "data880-899_en.csv"
+CHECKPOINT_CSV = "data880-899_en.csv"
+
+
 # ====== CONFIG ======
 API_KEY = "GROQ_API_KEY"
 MODEL = "llama-3.3-70b-versatile"
@@ -103,10 +111,7 @@ async def extract_with_groq(user_text: str):
         return None, None
 
 
-# ====== CSV translate ======
-INPUT_CSV = "INPUT.csv"
-OUTPUT_CSV = "OUTPUT.csv"
-CHECKPOINT_CSV = "CHECKPOINT.csv"
+
 
 
 async def translate_csv(max_rows=None):
