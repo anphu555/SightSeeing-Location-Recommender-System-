@@ -2,37 +2,55 @@ import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import os
-from app.services.db_service import get_user_ratings_map # Hàm này bạn đã có
+from sqlmodel import Session, select
+from typing import Optional
 
-# 1. LOAD DỮ LIỆU THẬT
-# Đường dẫn đến file CSV đã xử lý của bạn
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CSV_PATH = os.path.join(BASE_DIR, "services", "vietnam_tourism_data_processed.csv")
+from app.schemas import Place, Rating
+from app.database import engine
 
-try:
-    items_df = pd.read_csv(CSV_PATH)
-    # Xử lý lấp đầy dữ liệu trống nếu cần
-    items_df.fillna('', inplace=True)
-except Exception as e:
-    print(f"Error loading data: {e}")
-    # Fallback nếu lỗi (để code không crash khi test)
-    items_df = pd.DataFrame(columns=['id', 'name', 'province', 'tourism_type', 'weather_features'])
+# ==========================================
+# 1. LOAD DỮ LIỆU TỪ DATABASE.DB
+# ==========================================
 
-# 2. TẠO FEATURE SOUP (TRỘN DATA)
-def create_soup(x):
-    # Kết hợp các đặc trưng quan trọng để Vectorizer học
-    # Giả sử cột trong CSV là: 'tourism_type', 'province', 'weather_features'
-    # Bạn kiểm tra lại tên cột trong CSV nhé
-    return f"{x.get('tourism_type', '')} {x.get('province', '')} {x.get('weather_features', '')}"
+def load_places_from_db():
+    """Load tất cả places từ database.db vào DataFrame"""
+    with Session(engine) as session:
+        statement = select(Place)
+        places = session.exec(statement).all()
+        
+        # Chuyển đổi sang list of dict
+        places_data = []
+        for place in places:
+            # Kết hợp các fields thành text để vectorize
+            # tags là List[str], description cũng là List[str]
+            tags_text = " ".join(place.tags) if place.tags else ""
+            desc_text = " ".join(place.description) if place.description else ""
+            
+            places_data.append({
+                "id": place.id,
+                "name": place.name,
+                "tags": place.tags,
+                "description": place.description,
+                "images": place.image,
+                # Tạo soup để vectorize
+                "soup": f"{place.name} {tags_text} {desc_text}"
+            })
+        
+        return pd.DataFrame(places_data)
 
-items_df['soup'] = items_df.apply(create_soup, axis=1)
+# Load data khi module được import
+items_df = load_places_from_db()
+
+# 2. TẠO FEATURE SOUP (ĐÃ TẠO TRONG load_places_from_db)
+# items_df đã có cột 'soup' rồi
 
 # 3. KHỞI TẠO MODEL (CountVectorizer)
-# Dùng max_features để giới hạn số lượng từ vựng quan trọng nhất, tránh quá nặng
 vectorizer = CountVectorizer(stop_words='english', max_features=5000)
 try:
-    count_matrix = vectorizer.fit_transform(items_df['soup'])
+    if len(items_df) > 0:
+        count_matrix = vectorizer.fit_transform(items_df['soup'])
+    else:
+        count_matrix = None
 except ValueError:
     print("Not enough data to fit vectorizer")
     count_matrix = None
@@ -41,35 +59,42 @@ except ValueError:
 
 def get_item_vector(item_id):
     """Lấy vector của một địa điểm dựa trên ID"""
+    if count_matrix is None:
+        return None
     try:
         idx = items_df.index[items_df['id'] == item_id].tolist()[0]
         return count_matrix[idx]
-    except IndexError:
+    except (IndexError, KeyError):
         return None
 
-def build_user_profile(username: str):
+def build_user_profile(user_id: int):
     """
-    Tạo vector sở thích người dùng dựa trên Like/Dislike
-    Like (+1), Dislike (-1)
+    Tạo vector sở thích người dùng dựa trên Rating history
+    Score cao (4-5) → Positive influence
+    Score thấp (1-2) → Negative influence
     """
-    # Lấy map {place_id: score} từ DB (ví dụ: {10: 1, 15: -1})
-    ratings_map = get_user_ratings_map(username) 
-    
-    if not ratings_map:
-        return None # User mới hoàn toàn (Cold start)
+    with Session(engine) as session:
+        statement = select(Rating).where(Rating.user_id == user_id)
+        ratings = session.exec(statement).all()
+        
+        if not ratings:
+            return None  # User mới hoàn toàn (Cold start)
 
-    # Khởi tạo vector rỗng (cùng kích thước với vector địa điểm)
+    # Khởi tạo vector rỗng
+    if count_matrix is None:
+        return None
+        
     user_profile = np.zeros(count_matrix.shape[1])
-    
     interaction_count = 0
     
-    for place_id, score in ratings_map.items():
-        item_vec = get_item_vector(int(place_id))
+    for rating in ratings:
+        item_vec = get_item_vector(rating.place_id)
         if item_vec is not None:
-            # ROCCHIO ALGORITHM CƠ BẢN:
-            # Cộng vector địa điểm thích, Trừ vector địa điểm ghét
-            # score là 1 (Like) hoặc -1 (Dislike)
-            user_profile += score * item_vec.toarray()[0]
+            # Chuyển đổi score (1-5) thành weight (-1 đến +1)
+            # Score 5 → +1, Score 3 → 0, Score 1 → -1
+            weight = (rating.score - 3.0) / 2.0  # Normalize về [-1, 1]
+            
+            user_profile += weight * item_vec.toarray()[0]
             interaction_count += 1
             
     if interaction_count == 0:
@@ -78,17 +103,19 @@ def build_user_profile(username: str):
     return user_profile
 
 # 4. HÀM RECOMMEND CHÍNH
-def recommend(user_prompt_extraction, username: str = None):
+def recommend(user_prompt_extraction, user_id: Optional[int] = None):
     """
     user_prompt_extraction: Kết quả JSON từ LLM (user_text)
-    username: Tên người dùng để lấy lịch sử
+    user_id: ID người dùng để lấy lịch sử ratings
     """
     
+    if count_matrix is None or len(items_df) == 0:
+        return items_df  # Return empty or fallback
+    
     # --- BƯỚC 1: XÂY DỰNG QUERY VECTOR TỪ PROMPT ---
-    # Biến đổi prompt của user thành keywords
     search_keywords = []
     
-    # Lấy thông tin từ extraction (JSON từ file llm_service)
+    # Lấy thông tin từ extraction
     if user_prompt_extraction.type and user_prompt_extraction.type != 'unknown':
         search_keywords.append(user_prompt_extraction.type)
         
@@ -107,54 +134,55 @@ def recommend(user_prompt_extraction, username: str = None):
         query_vec = np.zeros(count_matrix.shape[1])
 
     # --- BƯỚC 2: KẾT HỢP VỚI LỊCH SỬ USER (NẾU CÓ) ---
-    if username:
-        user_profile_vec = build_user_profile(username)
+    if user_id:
+        user_profile_vec = build_user_profile(user_id)
         if user_profile_vec is not None:
-            # HYBRID: Tổng hợp nhu cầu hiện tại (Prompt) + Sở thích quá khứ (History)
-            # Bạn có thể nhân trọng số (weight) nếu muốn ưu tiên cái nào hơn
-            # Ví dụ: 0.7 * Prompt + 0.3 * History
+            # HYBRID: 70% Prompt + 30% User History
             final_vec = (query_vec * 0.7) + (user_profile_vec * 0.3)
         else:
             final_vec = query_vec
     else:
         final_vec = query_vec
 
-    # --- BƯỚC 3: TÍNH TOÁN VÀ LỌC ---
-    # Nếu vector toàn số 0 (không có prompt, không có history) -> Trả về random hoặc top rate
+    # --- BƯỚC 3: TÍNH TOÁN ---
     if np.all(final_vec == 0):
-        return items_df.head(10) # Hoặc logic "Trending"
+        # Không có prompt, không có history → Trả về top items
+        results = items_df.copy()
+        results['score'] = 0.5  # Default score
+        return results.head(10)
 
-    # Tính Cosine Similarity giữa Final Vector và tất cả Items
-    # Reshape final_vec để tương thích với cosine_similarity
+    # Tính Cosine Similarity
     cosine_sim = cosine_similarity([final_vec], count_matrix)
-    
-    # Lấy điểm số
     scores = cosine_sim[0]
     
-    # Tạo bảng kết quả tạm
+    # Tạo bảng kết quả
     results = items_df.copy()
     results['score'] = scores
     
-    # --- BƯỚC 4: LỌC CỨNG (Hard Filter) ---
-    # Nếu user chỉ định rõ tỉnh thành, ta lọc bớt các tỉnh không liên quan
+    # --- BƯỚC 4: LỌC THEO LOCATION (NẾU CÓ) ---
+    # Note: Schema mới không có trường 'province', chỉ có 'tags'
+    # Bạn có thể lọc theo tags nếu tags chứa tên địa danh
     if user_prompt_extraction.location:
-        # Chuẩn hóa: lowercase và loại bỏ khoảng trắng thừa để so sánh tốt hơn
-        def normalize_location(s):
-            if pd.isna(s):
-                return ""
-            return str(s).lower().strip()
+        user_locations_lower = [loc.lower().strip() for loc in user_prompt_extraction.location]
         
-        # Chuẩn hóa danh sách location từ user
-        user_locations = [normalize_location(loc) for loc in user_prompt_extraction.location]
-        
-        # Lọc những nơi có province chứa bất kỳ location nào user yêu cầu
-        results = results[
-            results['province'].apply(
-                lambda x: any(user_loc in normalize_location(x) for user_loc in user_locations)
+        def matches_location(tags_list):
+            if not tags_list:
+                return False
+            tags_lower = [tag.lower() for tag in tags_list]
+            return any(
+                any(user_loc in tag for user_loc in user_locations_lower)
+                for tag in tags_lower
             )
-        ]
+        
+        # Filter places có tags chứa location
+        mask = results['tags'].apply(matches_location)
+        filtered = results[mask]
+        
+        # Nếu filter quá chặt (không còn kết quả), giữ nguyên
+        if len(filtered) > 0:
+            results = filtered
 
-    # Sắp xếp giảm dần theo điểm
+    # Sắp xếp giảm dần theo score
     results = results.sort_values(by='score', ascending=False)
     
     return results

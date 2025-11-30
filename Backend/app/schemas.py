@@ -43,8 +43,9 @@ class Rating(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id")
     place_id: int = Field(foreign_key="place.id")
 
-
-    score: int = Field(..., ge=1, le=5)
+    # Score tích lũy từ các interactions (1-5 scale)
+    # Score này sẽ được dùng để train collaborative filtering model
+    score: float = Field(default=3.0, ge=1.0, le=5.0)
 
     # Relationships
     # User can check its relationship by user.ratings.place.....
@@ -95,10 +96,17 @@ class RecommendResponse(SQLModel):
 
 # --- Rating Flow ---
 
+class InteractionType(str, Enum):
+    """Các loại tương tác của user với place"""
+    like = "like"
+    dislike = "dislike"
+    click = "click"
+    view = "view"  # view > 30s
+    none = "none"
+
 class RatingCreate(SQLModel):
     place_id: int
-    score: int = Field(..., ge=1, le=5)
-    preference: PreferenceEnum = Field(..., description="Preference for the place: like, dislike, or none")
+    interaction_type: InteractionType = Field(..., description="Type of interaction: like, dislike, click, view, or none")
 
 
 # --- Auth Flow ---

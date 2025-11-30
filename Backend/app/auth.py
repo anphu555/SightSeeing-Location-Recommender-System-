@@ -122,7 +122,14 @@ async def get_current_user(
     # Return the full User object (so we can access user.id in other endpoints)
     return user
 
-async def get_current_user_optional(token: str = Depends(oauth2_scheme)):
+async def get_current_user_optional(
+    token: str = Depends(oauth2_scheme),
+    session: Session = Depends(get_session)
+) -> User | None:
+    """
+    Tương tự get_current_user nhưng trả về None thay vì raise exception
+    Dùng cho các endpoint cho phép anonymous users
+    """
     try:
         if not token:
             return None
@@ -130,7 +137,12 @@ async def get_current_user_optional(token: str = Depends(oauth2_scheme)):
         username: str = payload.get("sub")
         if username is None:
             return None
-        return username
+        
+        # Fetch User from DB
+        statement = select(User).where(User.username == username)
+        user = session.exec(statement).first()
+        
+        return user  # Return User object hoặc None
     except:
         return None
     

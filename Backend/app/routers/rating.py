@@ -1,28 +1,86 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session, select
 
-from app.auth import get_current_user # Import hàm bảo vệ vừa viết
-from app.schemas import RatingCreate, PreferenceEnum
-from app.services.db_service import add_user_rating, get_user_ratings_map
+from app.auth import get_current_user
+from app.schemas import Rating, RatingCreate, InteractionType, User
+from app.database import get_session
 
 router = APIRouter()
 
+# Cấu hình điểm số cho từng loại interaction
+INTERACTION_WEIGHTS = {
+    InteractionType.like: 2.0,      # +2.0 điểm
+    InteractionType.dislike: -2.0,  # -2.0 điểm
+    InteractionType.click: 0.3,     # +0.3 điểm
+    InteractionType.view: 0.5,      # +0.5 điểm (view >30s)
+    InteractionType.none: 0.0,      # +0.0 điểm
+}
+
 @router.post("/rate")
-def submit_rating(rating_data: RatingCreate, username: str = Depends(get_current_user)):
-    # Quy đổi: like -> 1, dislike -> -1, none -> 0
-    if rating_data.preference == PreferenceEnum.like:
-        score_value = 1
-    elif rating_data.preference == PreferenceEnum.dislike:
-        score_value = -1
-    else:  # none
-        score_value = 0
+def submit_rating(
+    rating_data: RatingCreate, 
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """
+    Tích lũy score từ các interactions:
+    - like: +2.0
+    - dislike: -2.0
+    - click: +0.3
+    - view (>30s): +0.5
+    - none: +0.0
     
-    success = add_user_rating(username, rating_data.place_id, score_value)
-    if not success:
-        raise HTTPException(status_code=500, detail="Failed to save interaction")
+    Score sẽ được giới hạn trong khoảng [1.0, 5.0]
+    """
+    # Kiểm tra xem user đã rate địa điểm này chưa
+    statement = select(Rating).where(
+        Rating.user_id == current_user.id,
+        Rating.place_id == rating_data.place_id
+    )
+    existing_rating = session.exec(statement).first()
     
-    return {"message": f"{rating_data.preference.value} saved successfully", "place_id": rating_data.place_id, "score": score_value}
+    # Lấy weight của interaction type
+    weight = INTERACTION_WEIGHTS.get(rating_data.interaction_type, 0.0)
+    
+    if existing_rating:
+        # Tích lũy score (cộng dồn)
+        new_score = existing_rating.score + weight
+        # Giới hạn trong khoảng [1.0, 5.0]
+        existing_rating.score = max(1.0, min(5.0, new_score))
+        session.add(existing_rating)
+        final_score = existing_rating.score
+    else:
+        # Tạo rating mới với score khởi đầu = 3.0 + weight
+        initial_score = 3.0 + weight
+        final_score = max(1.0, min(5.0, initial_score))
+        new_rating = Rating(
+            user_id=current_user.id,
+            place_id=rating_data.place_id,
+            score=final_score
+        )
+        session.add(new_rating)
+    
+    session.commit()
+    
+    return {
+        "message": f"{rating_data.interaction_type.value} saved successfully", 
+        "place_id": rating_data.place_id, 
+        "score": round(final_score, 2),
+        "interaction_type": rating_data.interaction_type.value
+    }
 
 @router.get("/my-ratings")
-def get_my_ratings(username: str = Depends(get_current_user)):
-    # Trả về: { "101": 1, "102": -1 }
-    return get_user_ratings_map(username)
+def get_my_ratings(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """
+    Lấy tất cả ratings của user hiện tại
+    Returns: { place_id: score }
+    """
+    statement = select(Rating).where(Rating.user_id == current_user.id)
+    ratings = session.exec(statement).all()
+    
+    # Chuyển đổi thành dictionary: { place_id: score }
+    result = {rating.place_id: round(rating.score, 2) for rating in ratings}
+    return result

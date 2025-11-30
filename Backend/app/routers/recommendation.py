@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
-from app.schemas import RecommendRequest, RecommendResponse
+from app.schemas import RecommendRequest, RecommendResponse, User
 from app.services.llm_service import extract_with_groq
-from app.routers.recsysmodel import recommend # Import hàm mới viết
+from app.routers.recsysmodel import recommend
 from app.auth import get_current_user_optional
 
 router = APIRouter()
@@ -10,29 +10,30 @@ router = APIRouter()
 async def get_recommendations(
     req: RecommendRequest, 
     # Cho phép user chưa đăng nhập cũng dùng được (Optional Auth)
-    username: str = Depends(get_current_user_optional) 
+    current_user: User = Depends(get_current_user_optional) 
 ):
     # 1. Gọi AI Service để trích xuất thông tin từ text
     extraction = await extract_with_groq(req.user_text)
     
-    # 2. Gọi RecSys (Truyền thêm username để cá nhân hóa)
-    results_df = recommend(extraction, username)
+    # 2. Gọi RecSys (Truyền user_id nếu đã đăng nhập để cá nhân hóa)
+    user_id = current_user.id if current_user else None
+    results_df = recommend(extraction, user_id)
     
     # 3. Chuyển đổi DataFrame sang PlaceOut schema
-    # Map các cột từ CSV sang schema chuẩn
     results_list = []
     for _, row in results_df.head(req.top_k).iterrows():
-        # Parse themes từ tourism_type (có thể là chuỗi phân cách bằng dấu phẩy)
-        themes_str = str(row.get('tourism_type', ''))
-        themes = [t.strip() for t in themes_str.split(',') if t.strip()] if themes_str else []
+        # Schema mới: Place có tags (List[str])
+        tags = row.get('tags', [])
+        if not isinstance(tags, list):
+            tags = []
         
         place = {
             "id": int(row.get('id', 0)),
             "name": str(row.get('name', 'Unknown')),
-            "country": "Vietnam",  # Mặc định vì dữ liệu là Việt Nam
-            "province": str(row.get('province', 'Unknown')),
-            "region": str(row.get('province', 'Unknown')),  # Tạm dùng province làm region
-            "themes": themes if themes else ['tourism'],
+            "country": "Vietnam",
+            "province": tags[0] if tags else "Vietnam",  # Lấy tag đầu làm province tạm
+            "region": "Vietnam",
+            "themes": tags,
             "score": float(row.get('score', 0.0))
         }
         results_list.append(place)

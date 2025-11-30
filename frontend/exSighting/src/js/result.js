@@ -123,10 +123,14 @@ document.addEventListener('DOMContentLoaded', () => {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${token}`
               },
-              body: JSON.stringify({ place_id: placeId, preference: preference })
+              body: JSON.stringify({ 
+                  place_id: placeId, 
+                  interaction_type: preference  // Đổi từ 'preference' sang 'interaction_type'
+              })
           });
 
           if (res.ok) {
+              const data = await res.json();
               const likeBtn = container.querySelector('.btn-like');
               const dislikeBtn = container.querySelector('.btn-dislike');
               
@@ -137,10 +141,10 @@ document.addEventListener('DOMContentLoaded', () => {
               // Activate the selected button
               if (preference === 'like') {
                   likeBtn.classList.add('active');
-                  showToast("Đã thích địa điểm này!", "success");
+                  showToast(`Đã thích địa điểm này! (Score: ${data.score})`, "success");
               } else if (preference === 'dislike') {
                   dislikeBtn.classList.add('active');
-                  showToast("Đã đánh dấu không thích!", "success");
+                  showToast(`Đã đánh dấu không thích! (Score: ${data.score})`, "success");
               }
           } else {
               if (res.status === 401) {
@@ -241,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
           });
 
           if (res.ok) {
-              const ratingsMap = await res.json(); 
+              const ratingsMap = await res.json(); // { place_id: score }
               
               document.querySelectorAll('.rating-buttons').forEach(container => {
                   const placeId = container.dataset.placeId;
@@ -255,10 +259,10 @@ document.addEventListener('DOMContentLoaded', () => {
                       likeBtn.classList.remove('active');
                       dislikeBtn.classList.remove('active');
                       
-                      // Set active based on score: 1 = like, -1 = dislike
-                      if (score === 1) {
+                      // Set active based on score: >= 4 = like, <= 2 = dislike
+                      if (score >= 4.0) {
                           likeBtn.classList.add('active');
-                      } else if (score === -1) {
+                      } else if (score <= 2.0) {
                           dislikeBtn.classList.add('active');
                       }
                   }
