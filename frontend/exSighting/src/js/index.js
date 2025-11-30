@@ -144,18 +144,30 @@ function initBanner() {
 // --- 3. POPULAR PLACES ---
 async function loadPlaces() {
     // Dữ liệu mẫu Fallback (Nếu chưa nối backend)
-    const fallbackData = [
-        { id: 1, name: "HA LONG BAY", cost: "Medium", weather: "Cool", crowd: "Medium", img: "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070" },
-        { id: 2, name: "NHA TRANG", cost: "Low", weather: "Hot", crowd: "High", img: "https://images.unsplash.com/photo-1565691668615-5e60d5c08611?q=80&w=2070" },
-        { id: 3, name: "SAPA", cost: "Low", weather: "Cold", crowd: "Medium", img: "https://images.unsplash.com/photo-1599229062397-6c8418047918?q=80&w=2070" },
-        { id: 4, name: "DA LAT", cost: "Medium", weather: "Cool", crowd: "High", img: "https://images.unsplash.com/photo-1596328372690-e9b46571b402?q=80&w=2070" },
-        { id: 5, name: "PHU QUOC", cost: "High", weather: "Warm", crowd: "Low", img: "https://images.unsplash.com/photo-1592350849318-7b9c9f2b879a?q=80&w=2070" },
-        { id: 6, name: "HOI AN", cost: "Medium", weather: "Warm", crowd: "High", img: "https://images.unsplash.com/photo-1557750255-c76072a7aad1?q=80&w=2070" },
-        { id: 7, name: "HUE", cost: "Low", weather: "Cool", crowd: "Medium", img: "https://images.unsplash.com/photo-1583486337220-333e882200be?q=80&w=2070" },
-        { id: 8, name: "VUNG TAU", cost: "Low", weather: "Hot", crowd: "High", img: "https://images.unsplash.com/photo-1558611689-d64e83058814?q=80&w=2070" },
-        { id: 9, name: "NINH BINH", cost: "Low", weather: "Cool", crowd: "Low", img: "https://images.unsplash.com/photo-1616639535315-998813a45c36?q=80&w=2070" }
-    ];
+    // const fallbackData = [
+    //     { id: 1, name: "HA LONG BAY", cost: "Medium", weather: "Cool", crowd: "Medium", img: "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070" },
+    //     { id: 2, name: "NHA TRANG", cost: "Low", weather: "Hot", crowd: "High", img: "https://images.unsplash.com/photo-1565691668615-5e60d5c08611?q=80&w=2070" },
+    //     { id: 3, name: "SAPA", cost: "Low", weather: "Cold", crowd: "Medium", img: "https://images.unsplash.com/photo-1599229062397-6c8418047918?q=80&w=2070" },
+    //     { id: 4, name: "DA LAT", cost: "Medium", weather: "Cool", crowd: "High", img: "https://images.unsplash.com/photo-1596328372690-e9b46571b402?q=80&w=2070" },
+    //     { id: 5, name: "PHU QUOC", cost: "High", weather: "Warm", crowd: "Low", img: "https://images.unsplash.com/photo-1592350849318-7b9c9f2b879a?q=80&w=2070" },
+    //     { id: 6, name: "HOI AN", cost: "Medium", weather: "Warm", crowd: "High", img: "https://images.unsplash.com/photo-1557750255-c76072a7aad1?q=80&w=2070" },
+    //     { id: 7, name: "HUE", cost: "Low", weather: "Cool", crowd: "Medium", img: "https://images.unsplash.com/photo-1583486337220-333e882200be?q=80&w=2070" },
+    //     { id: 8, name: "VUNG TAU", cost: "Low", weather: "Hot", crowd: "High", img: "https://images.unsplash.com/photo-1558611689-d64e83058814?q=80&w=2070" },
+    //     { id: 9, name: "NINH BINH", cost: "Low", weather: "Cool", crowd: "Low", img: "https://images.unsplash.com/photo-1616639535315-998813a45c36?q=80&w=2070" }
+    // ];
 
+    const fallbackData = [
+        { id: "101", name: "HA LONG BAY", cost: "Medium", weather: "Cool", crowd: "Medium", img: "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070" },
+        { id: "105", name: "NHA TRANG", cost: "Low", weather: "Hot", crowd: "High", img: "https://images.unsplash.com/photo-1565691668615-5e60d5c08611?q=80&w=2070" },
+        { id: "106", name: "SAPA", cost: "Low", weather: "Cold", crowd: "Medium", img: "https://images.unsplash.com/photo-1599229062397-6c8418047918?q=80&w=2070" },
+        { id: "104", name: "DA LAT", cost: "Medium", weather: "Cool", crowd: "High", img: "https://images.unsplash.com/photo-1596328372690-e9b46571b402?q=80&w=2070" },
+        { id: "108", name: "PHU QUOC", cost: "High", weather: "Warm", crowd: "Low", img: "https://images.unsplash.com/photo-1592350849318-7b9c9f2b879a?q=80&w=2070" },
+        { id: "103", name: "HOI AN", cost: "Medium", weather: "Warm", crowd: "High", img: "https://images.unsplash.com/photo-1557750255-c76072a7aad1?q=80&w=2070" },
+        { id: "107", name: "HUE", cost: "Low", weather: "Cool", crowd: "Medium", img: "https://images.unsplash.com/photo-1583486337220-333e882200be?q=80&w=2070" },
+        { id: "109", name: "VUNG TAU", cost: "Low", weather: "Hot", crowd: "High", img: "https://images.unsplash.com/photo-1558611689-d64e83058814?q=80&w=2070" },
+        { id: "110", name: "NINH BINH", cost: "Low", weather: "Cool", crowd: "Low", img: "https://images.unsplash.com/photo-1616639535315-998813a45c36?q=80&w=2070" }
+    ];
+    
     try {
         // Gọi API thật (Nếu server chạy thì bỏ comment dòng dưới)
         // const res = await fetch(`${API_BASE}/places`);
@@ -175,19 +187,19 @@ function renderCarousel(data) {
     const next = document.getElementById('nextBtn');
     
     list.innerHTML = data.map(item => `
-        <div class="place-card" onclick="window.location.href='results.html?q=${item.name}'">
-            <img src="${item.img}" class="card-image">
-            <div class="card-name-overlay"><h3>${item.name}</h3></div>
-            <div class="card-content-wrapper">
-                <div class="card-content">
-                    <p><strong>Cost:</strong> ${item.cost}</p>
-                    <p><strong>Weather:</strong> ${item.weather}</p>
-                    <p><strong>Crowd:</strong> ${item.crowd}</p>
-                    <button class="explore-btn">Explore Now!</button>
-                </div>
+    <div class="place-card" onclick="window.location.href='detail.html?id=${item.id}'" style="cursor: pointer;">
+        <img src="${item.img}" class="card-image">
+        <div class="card-name-overlay"><h3>${item.name}</h3></div>
+        <div class="card-content-wrapper">
+            <div class="card-content">
+                <p><strong>Cost:</strong> ${item.cost}</p>
+                <p><strong>Weather:</strong> ${item.weather}</p>
+                <p><strong>Crowd:</strong> ${item.crowd}</p>
+                <button class="explore-btn" onclick="event.stopPropagation(); window.location.href='detail.html?id=${item.id}'">Explore Now!</button>
             </div>
         </div>
-    `).join('');
+    </div>
+`).join('');
 
     // Logic Carousel (3 thẻ/lần, lặp vô tận)
     let step = 0;
@@ -223,3 +235,7 @@ function initSearch() {
         if(e.key === 'Enter') goSearch();
     });
 }
+
+window.goToDetail = function(id) {
+    window.location.href = `detail.html?id=${id}`;
+};
