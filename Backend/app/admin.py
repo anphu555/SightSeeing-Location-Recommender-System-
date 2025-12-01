@@ -51,11 +51,11 @@ class UserAdmin(ModelView, model=User):
     icon = "fa-solid fa-user"
 
 class PlaceAdmin(ModelView, model=Place):
-    column_list = [Place.id, Place.name] # Add fields you want to see
+    column_list = [Place.id, Place.name, Place.tags] # Add fields you want to see
     icon = "fa-solid fa-map-pin"
 
 class RatingAdmin(ModelView, model=Rating):
-    column_list = [Rating.id, Rating.user_id, Rating.place_id] # Add fields you want to see
+    column_list = [Rating.id, Rating.user_id, Rating.place_id, Rating.score] # Add fields you want to see
     icon = "fa-solid fa-star"
 # ---------------------------------
 
