@@ -1,6 +1,8 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship, JSON, Column
 
+from enum import Enum
+
 # ==========================================
 # DATABASE TABLES (table=True) (create table in db)
 # These create the actual rows in your DB.
@@ -41,8 +43,9 @@ class Rating(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id")
     place_id: int = Field(foreign_key="place.id")
 
-
-    score: int = Field(..., ge=1, le=5)
+    # Score tích lũy từ các interactions (1-5 scale)
+    # Score này sẽ được dùng để train collaborative filtering model
+    score: float = Field(default=3.0, ge=1.0, le=5.0)
 
     # Relationships
     # User can check its relationship by user.ratings.place.....
@@ -67,6 +70,7 @@ class GroqExtraction(SQLModel):
     budget: str
     weather: str
     crowded: str
+    # thêm exclude_locations nếu cần thiết theo prompt cũ của bạn
     exclude_locations: List[str] = []
 
 class PlaceOut(SQLModel):
@@ -79,15 +83,31 @@ class PlaceOut(SQLModel):
     themes: List[str]
     score: float # Similarity score (calculated, not from DB)
 
+
+class PreferenceEnum(str, Enum):
+    like = "like"
+    dislike = "dislike"
+    none = "none"
+
+    
 class RecommendResponse(SQLModel):
     extraction: GroqExtraction
     results: List[PlaceOut]
 
 # --- Rating Flow ---
 
+class InteractionType(str, Enum):
+    """Các loại tương tác của user với place"""
+    like = "like"
+    dislike = "dislike"
+    click = "click"
+    view = "view"  # view > 30s
+    none = "none"
+
 class RatingCreate(SQLModel):
     place_id: int
-    score: int = Field(..., ge=1, le=5)
+    interaction_type: InteractionType = Field(..., description="Type of interaction: like, dislike, click, view, or none")
+
 
 # --- Auth Flow ---
 

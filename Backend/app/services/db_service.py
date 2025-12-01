@@ -138,8 +138,8 @@ def get_user_ratings_map(username: str):
         cursor.execute("SELECT place_id, rating FROM ratings WHERE username = ?", (username,))
         rows = cursor.fetchall()
         
-        # Chuyển đổi thành dạng Dictionary: { 1: 5, 3: 4, ... }
-        # Nghĩa là: ID 1 được 5 sao, ID 3 được 4 sao...
+        # Chuyển đổi thành dạng Dictionary: { 101: 1, 102: -1, 103: 0 }
+        # Nghĩa là: ID 101 được like (1), ID 102 bị dislike (-1), ID 103 là none (0)
         result = {row["place_id"]: row["rating"] for row in rows}
         return result
     except Exception as e:

@@ -18,11 +18,12 @@ from app.schemas import User, UserCreate, UserResponse, Token
 # If so, import it: from app.database import get_session, engine
 from app.database import get_session
 
+from app.services.db_service import create_user, get_user_by_username
 
 
 # --- ROUTER SETUP ---
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
 # ==========================================
 # 1. REGISTER
@@ -120,3 +121,30 @@ async def get_current_user(
         
     # Return the full User object (so we can access user.id in other endpoints)
     return user
+
+async def get_current_user_optional(
+    token: str = Depends(oauth2_scheme),
+    session: Session = Depends(get_session)
+) -> User | None:
+    """
+    Tương tự get_current_user nhưng trả về None thay vì raise exception
+    Dùng cho các endpoint cho phép anonymous users
+    """
+    try:
+        if not token:
+            return None
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            return None
+        
+        # Fetch User from DB
+        statement = select(User).where(User.username == username)
+        user = session.exec(statement).first()
+        
+        return user  # Return User object hoặc None
+    except:
+        return None
+    
+
+    

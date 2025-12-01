@@ -86,27 +86,29 @@ document.addEventListener('DOMContentLoaded', () => {
     meta.style.color='#666'; 
     meta.textContent = `${item.province ?? ''} • Score: ${parseFloat(item.score).toFixed(2)}`;
 
-    const starContainer = document.createElement('div');
-    starContainer.className = 'star-rating';
+    const btnContainer = document.createElement('div');
+    btnContainer.className = 'rating-buttons';
+    btnContainer.dataset.placeId = item.id;
     
-    for (let i = 1; i <= 5; i++) {
-        const star = document.createElement('span');
-        star.innerHTML = '&#9733;'; 
-        star.className = 'star';
-        star.dataset.value = i; 
-        star.dataset.id = item.id; 
-        
-        star.onclick = (e) => handleRating(item.id, i, starContainer);
-        
-        starContainer.appendChild(star);
-    }
+    const likeBtn = document.createElement('button');
+    likeBtn.className = 'btn-like';
+    likeBtn.innerHTML = '👍 Like';
+    likeBtn.onclick = () => handleRating(item.id, 'like', btnContainer);
+    
+    const dislikeBtn = document.createElement('button');
+    dislikeBtn.className = 'btn-dislike';
+    dislikeBtn.innerHTML = '👎 Dislike';
+    dislikeBtn.onclick = () => handleRating(item.id, 'dislike', btnContainer);
+    
+    btnContainer.appendChild(likeBtn);
+    btnContainer.appendChild(dislikeBtn);
 
-    div.append(img, name, meta, starContainer);
+    div.append(img, name, meta, btnContainer);
     return div;
   }
 
   // --- HÀM XỬ LÝ ĐÁNH GIÁ ---
-  async function handleRating(placeId, score, container) {
+  async function handleRating(placeId, preference, container) {
       const token = localStorage.getItem('token');
       if (!token) {
           showToast("Bạn cần đăng nhập để đánh giá!", "warning");
@@ -115,23 +117,35 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       try {
-          // Đã xóa khai báo apiBase trùng lặp ở đây
           const res = await fetch(`${apiBase}/api/v1/user/rate`, {
               method: 'POST',
               headers: { 
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${token}`
               },
-              body: JSON.stringify({ place_id: placeId, score: score })
+              body: JSON.stringify({ 
+                  place_id: placeId, 
+                  interaction_type: preference  // Đổi từ 'preference' sang 'interaction_type'
+              })
           });
 
           if (res.ok) {
-              const stars = container.querySelectorAll('.star');
-              stars.forEach((s, index) => {
-                  if (index < score) s.classList.add('active');
-                  else s.classList.remove('active');
-              });
-              showToast(`Đã đánh giá ${score} sao!`, "success");
+              const data = await res.json();
+              const likeBtn = container.querySelector('.btn-like');
+              const dislikeBtn = container.querySelector('.btn-dislike');
+              
+              // Reset both buttons
+              likeBtn.classList.remove('active');
+              dislikeBtn.classList.remove('active');
+              
+              // Activate the selected button
+              if (preference === 'like') {
+                  likeBtn.classList.add('active');
+                  showToast(`Đã thích địa điểm này! (Score: ${data.score})`, "success");
+              } else if (preference === 'dislike') {
+                  dislikeBtn.classList.add('active');
+                  showToast(`Đã đánh dấu không thích! (Score: ${data.score})`, "success");
+              }
           } else {
               if (res.status === 401) {
                   showToast("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.", "error");
@@ -163,12 +177,26 @@ document.addEventListener('DOMContentLoaded', () => {
     isLoading = true;
 
     try {
-      // Sử dụng apiBase chung
+// 1. Lấy token từ localStorage
+      const token = localStorage.getItem('token');
+      
+      // 2. Chuẩn bị headers
+      const headers = { 
+        'Content-Type': 'application/json' 
+      };
+
+      // 3. Nếu có token (đã đăng nhập), đính kèm vào header Authorization
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // 4. Gọi fetch với headers mới
       const r = await fetch(`${apiBase}/api/v1/recommend`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: headers, // <--- Dùng biến headers vừa tạo
         body: JSON.stringify({ user_text: text, top_k: kValue })
       });
+      // --------------------
 
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
 
@@ -209,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!token) return;
 
       try {
-          // Đã xóa khai báo apiBase trùng lặp ở đây
           const res = await fetch(`${apiBase}/api/v1/user/my-ratings`, {
               method: 'GET',
               headers: { 
@@ -218,21 +245,26 @@ document.addEventListener('DOMContentLoaded', () => {
           });
 
           if (res.ok) {
-              const ratingsMap = await res.json(); 
+              const ratingsMap = await res.json(); // { place_id: score }
               
-              document.querySelectorAll('.star-rating').forEach(container => {
-                  const firstStar = container.querySelector('.star');
-                  if (!firstStar) return;
-                  
-                  const placeId = firstStar.dataset.id;
+              document.querySelectorAll('.rating-buttons').forEach(container => {
+                  const placeId = container.dataset.placeId;
                   
                   if (ratingsMap[placeId]) {
-                      const userScore = ratingsMap[placeId];
-                      const stars = container.querySelectorAll('.star');
-                      stars.forEach((s, index) => {
-                          if (index < userScore) s.classList.add('active');
-                          else s.classList.remove('active');
-                      });
+                      const score = ratingsMap[placeId];
+                      const likeBtn = container.querySelector('.btn-like');
+                      const dislikeBtn = container.querySelector('.btn-dislike');
+                      
+                      // Reset
+                      likeBtn.classList.remove('active');
+                      dislikeBtn.classList.remove('active');
+                      
+                      // Set active based on score: >= 4 = like, <= 2 = dislike
+                      if (score >= 4.0) {
+                          likeBtn.classList.add('active');
+                      } else if (score <= 2.0) {
+                          dislikeBtn.classList.add('active');
+                      }
                   }
               });
           }

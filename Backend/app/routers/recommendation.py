@@ -1,19 +1,42 @@
-from fastapi import APIRouter, HTTPException
-from app.schemas import RecommendRequest, RecommendResponse
+from fastapi import APIRouter, HTTPException, Depends
+from app.schemas import RecommendRequest, RecommendResponse, User
 from app.services.llm_service import extract_with_groq
-from app.services.scoring_service import rank_places
-
-# api endpoint
+from app.routers.recsysmodel import recommend
+from app.auth import get_current_user_optional
 
 router = APIRouter()
 
 @router.post("/recommend", response_model=RecommendResponse)
-async def recommend(req: RecommendRequest):
-    # 1. Gọi AI Service để trích xuất thông tin
+async def get_recommendations(
+    req: RecommendRequest, 
+    # Cho phép user chưa đăng nhập cũng dùng được (Optional Auth)
+    current_user: User = Depends(get_current_user_optional) 
+):
+    # 1. Gọi AI Service để trích xuất thông tin từ text
     extraction = await extract_with_groq(req.user_text)
     
-    # 2. Gọi Scoring Service để tìm địa điểm
-    results = rank_places(extraction, req.top_k)
+    # 2. Gọi RecSys (Truyền user_id nếu đã đăng nhập để cá nhân hóa)
+    user_id = current_user.id if current_user else None
+    results_df = recommend(extraction, user_id)
     
-    # 3. Trả về kết quả
-    return RecommendResponse(extraction=extraction, results=results)
+    # 3. Chuyển đổi DataFrame sang PlaceOut schema
+    results_list = []
+    for _, row in results_df.head(req.top_k).iterrows():
+        # Schema mới: Place có tags (List[str])
+        tags = row.get('tags', [])
+        if not isinstance(tags, list):
+            tags = []
+        
+        place = {
+            "id": int(row.get('id', 0)),
+            "name": str(row.get('name', 'Unknown')),
+            "country": "Vietnam",
+            "province": tags[0] if tags else "Vietnam",  # Lấy tag đầu làm province tạm
+            "region": "Vietnam",
+            "themes": tags,
+            "score": float(row.get('score', 0.0))
+        }
+        results_list.append(place)
+    
+    # 4. Trả về kết quả
+    return RecommendResponse(extraction=extraction, results=results_list)
