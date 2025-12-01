@@ -38,7 +38,7 @@ with open(CSV_URL, mode='r', encoding='utf-8') as csvfile:
         
         # Tạo object Place
         place = Place(
-            id=id,
+            # id=id,
             name=title,
             description=desc_list, # SQLModel tự động handle việc convert sang JSON
             image=reversed_image_list
