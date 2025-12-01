@@ -33,13 +33,15 @@ with open(CSV_URL, mode='r', encoding='utf-8') as csvfile:
             continue
 
         image_list = image_links.split('|||')
+        reversed_image_list = image_list[::-1]
+
         
         # Tạo object Place
         place = Place(
             id=id,
             name=title,
             description=desc_list, # SQLModel tự động handle việc convert sang JSON
-            image=image_list
+            image=reversed_image_list
         )
 
         session.merge(place)
