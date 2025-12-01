@@ -6,7 +6,7 @@ from app.database import get_session
 from app.schemas import Place
 
 
-CSV_URL = 'app/services/a.csv'
+CSV_URL = 'app/services/vietnam_tourism_data_en.csv'
 
 
 
