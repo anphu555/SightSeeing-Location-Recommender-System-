@@ -76,9 +76,9 @@ def root():
     }
 
 
-@app.get("/health")
-def health():
-    return {"status": "ok"}
+# @app.get("/health")
+# def health():
+#     return {"status": "ok"}
 
 
 # Đăng ký router
