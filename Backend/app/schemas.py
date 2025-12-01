@@ -126,3 +126,6 @@ class Token(SQLModel):
     token_type: str
 
 
+# Define request body structure for Chatbot
+class ChatbotRequest(SQLModel):
+    message: str
