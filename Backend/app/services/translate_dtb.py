@@ -6,24 +6,12 @@ from fastapi.concurrency import run_in_threadpool
 import time
 from datetime import datetime
 
-
-
-# ====== CSV translate ======
-INPUT_CSV = "data896-899.csv"
-OUTPUT_CSV = "data896-899_en.csv"
-CHECKPOINT_CSV = "data896-899_en.csv"
-
-
 # ====== CONFIG ======
 API_KEY = "GROQ_API_KEY"
-# MODEL = "llama-3.3-70b-versatile"
-# MODEL = "qwen/qwen3-32b"
-MODEL = "openai/gpt-oss-120b"
-
-
+MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 
 # Rate limiting - ƯU TIÊN TPD (Tokens Per Day)
-MAX_TOKENS_PER_DAY = 95000  # Giới hạn 95k/100k để an toàn
+MAX_TOKENS_PER_DAY = 395000  # Giới hạn 95k/100k để an toàn
 ESTIMATED_TOKENS_PER_ROW = 150  # Ước tính token cho mỗi row
 MAX_ROWS_PER_DAY = MAX_TOKENS_PER_DAY // ESTIMATED_TOKENS_PER_ROW  # ~633 rows/day
 
@@ -35,46 +23,33 @@ DELAY_BETWEEN_BATCHES = 65
 client = Groq(api_key=API_KEY)
 
 SYSTEM_PROMPT = """
-You are a professional travel writer and translator specializing in Vietnamese tourism content for international audiences.
+You are a JSON translator. Your output must be ONLY one valid JSON object.
 
-TRANSLATION PRINCIPLES:
-1. Write naturally for native English speakers - avoid literal translations
-2. Use engaging, descriptive language that inspires travel
-3. Simplify complex Vietnamese cultural terms with brief explanations
-4. Break long sentences into shorter, readable ones
-5. Keep the tone warm, inviting, and informative
-6. Preserve specific names of places, but skip the marks in Vietnamese and translate their meanings in parentheses when helpful
+TASK:
+Translate Vietnamese to English for the fields "title" and "description" ONLY. Do not change anything else.
 
-SPECIFIC GUIDELINES:
-- Historical dates: Use simple format "built in 1070" instead of "the second year of Thien Vu reign"
-- Vietnamese terms: Either translate them or keep the term with a brief English explanation
-- Measurements: Keep meters (m), hectares (ha) as-is
-- Species names: Use common English names, scientific names in parentheses only if important
-- Architecture terms: Use simple English equivalents (e.g., "pagoda" not "chùa")
-- Preserve "|||" separators exactly as-is
+TRANSLATION RULES:
+1. Translate naturally, not word-for-word.
+2. Keep Vietnamese place names but remove diacritics (Văn Miếu → Van Mieu).
+3. Simplify dates (e.g., "built in 1070").
+4. Break long Vietnamese sentences into shorter, clear English sentences.
+5. Preserve the exact "|||" separators in the description.
 
-CRITICAL CSV FORMATTING RULES:
-- DO NOT add line breaks or indentation in the description
-- Each paragraph/section should be separated ONLY by "|||"
-- Write continuously without pressing Enter/Return
-- Use single spaces between words, no extra whitespace
+STRICT JSON RULES:
+- Output MUST start with "{" and end with "}".
+- Output MUST be valid JSON.
+- NO text before or after the JSON.
+- NO markdown, NO code blocks.
+- NO line breaks inside any string — replace with a space.
+- Escape characters correctly: " → \\" and \\ → \\\\
 
-OUTPUT FORMAT:
-- Only translate "title" and "description" fields
-- Output MUST be valid JSON only - no markdown, no extra text
-- NO line breaks inside description text
-- Preserve all "|||" separators
-- If a field is empty, leave it empty
+Example Input:
+{"title":"Văn Miếu","description":"Văn Miếu được xây năm 1070 dưới vua Lý Thánh Tông.|||Đây là di tích quan trọng."}
 
-GOOD EXAMPLES:
+Example Output:
+{"title":"Temple of Literature","description":"Built in 1070 under King Ly Thanh Tong.|||This is an important historical site."}
 
-Input: {"title": "Chùa Một Cột", "description": "Chùa Một Cột được xây dựng năm 1049 dưới thời vua Lý Thái Tông. Chùa có hình dạng độc đáo như bông sen nở trên mặt nước."}
-Output: {"title": "One Pillar Pagoda", "description": "Built in 1049 under Emperor Ly Thai Tong, this unique pagoda rises from the water like a lotus blossom in full bloom."}
-
-Input: {"title": "Rừng tràm Trà Sư", "description": "Rừng tràm Trà Sư có diện tích gần 850ha, là nơi sinh sống của 70 loài chim thuộc 13 bộ và 31 họ.|||Mùa nước nổi là thời điểm đẹp nhất để thăm rừng."}
-Output: {"title": "Tra Su Cajuput Forest", "description": "Spanning nearly 850 hectares, Tra Su Forest is a sanctuary for 70 bird species, creating a paradise for nature lovers and birdwatchers.|||The flooding season is the best time to visit the forest."}
-
-Now translate this input JSON:
+Now translate:
 """
 
 
@@ -115,7 +90,10 @@ async def extract_with_groq(user_text: str):
         return None, None
 
 
-
+# ====== CSV translate ======
+INPUT_CSV = "INPUT.csv"
+OUTPUT_CSV = "OUTPUT.csv"
+CHECKPOINT_CSV = "CHECKPOINT.csv"
 
 
 async def translate_csv(max_rows=None):
@@ -145,21 +123,25 @@ async def translate_csv(max_rows=None):
     # Kiểm tra checkpoint
     translated_rows = []
     start_index = 0
-    total_tokens_used = 0
+    # total_tokens_used = 0
+    print("🔁 Always translating from beginning (no checkpoint used)")
     
-    try:
-        with open(CHECKPOINT_CSV, newline='', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            translated_rows = list(reader)
-            start_index = len(translated_rows)
-            print(f"📌 Resuming from row {start_index}")
-    except FileNotFoundError:
-        print("🆕 Starting fresh translation")
+    # try:
+    #     with open(CHECKPOINT_CSV, newline='', encoding='utf-8') as f:
+    #         reader = csv.DictReader(f)
+    #         translated_rows = list(reader)
+    #         start_index = len(translated_rows)
+    #         print(f"📌 Resuming from row {start_index}")
+    # except FileNotFoundError:
+    #     print("🆕 Starting fresh translation")
     
     # Token tracking
     print(f"\n💡 Token budget: {MAX_TOKENS_PER_DAY:,} tokens/day")
     print(f"💡 Estimated: ~{ESTIMATED_TOKENS_PER_ROW} tokens/row")
     print(f"💡 Safe limit: {MAX_ROWS_PER_DAY} rows/day")
+
+    total_tokens_used = 0
+
     
     # Dịch từng batch
     for batch_num in range(start_index // BATCH_SIZE, (total_rows + BATCH_SIZE - 1) // BATCH_SIZE):
@@ -255,15 +237,15 @@ async def translate_csv(max_rows=None):
             if total_tokens_used >= MAX_TOKENS_PER_DAY:
                 print(f"\n⚠️  TOKEN LIMIT REACHED ({total_tokens_used:,}/{MAX_TOKENS_PER_DAY:,})")
                 print(f"   Saving progress and stopping...")
-                save_checkpoint(translated_rows)
+                # save_checkpoint(translated_rows)
                 save_final_output(translated_rows)
                 print(f"\n📊 Translated {len(translated_rows)}/{len(all_rows)} rows")
                 print(f"💾 Resume tomorrow or upgrade plan!")
                 return
             
             # Lưu checkpoint mỗi 5 rows
-            if current_row % 5 == 0:
-                save_checkpoint(translated_rows)
+            # if current_row % 5 == 0:
+            #     save_checkpoint(translated_rows)
         
         # Batch summary
         batch_elapsed = time.time() - batch_start_time
