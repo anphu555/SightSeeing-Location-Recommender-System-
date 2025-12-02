@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
-from app.auth import get_current_user
+from app.routers.auth import get_current_user
 from app.schemas import Rating, RatingCreate, InteractionType, User
 from app.database import get_session
 

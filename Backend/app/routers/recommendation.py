@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.schemas import RecommendRequest, RecommendResponse, User
 from app.services.llm_service import extract_with_groq
 from app.routers.recsysmodel import recommend
-from app.auth import get_current_user_optional
+from app.routers.auth import get_current_user_optional
 
 router = APIRouter()
 
