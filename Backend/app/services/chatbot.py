@@ -7,7 +7,7 @@ from app.main import app
 from app.schemas import ChatbotRequest
 
 # Load API Key from .env file
-genai.configure(api_key="AIzaSyBXJfsVsgmt0lLrHVoIdTPtjzsa0qXcGtQ")
+genai.configure(api_key=settings.GEMINI_API_KEY)
 
 # Cái này để giới hạn nội dung chatbot
 
