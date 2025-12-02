@@ -11,6 +11,7 @@ alembic==1.17.2
 
 # AI
 groq==0.33.0
+google-generativeai==0.8.5
 
 # Security & Auth
 bcrypt==5.0.0
@@ -18,6 +19,6 @@ python-jose[cryptography]==3.5.0
 itsdangerous==2.2.0
 
 # Data Science (Fixed)
-# numpy<2.0.0            # <--- ADD THIS LINE
+numpy<2.0.0            # <--- ADD THIS LINE
 scikit-learn==1.3.0
-# pandas==2.3.3
+pandas==2.3.3
