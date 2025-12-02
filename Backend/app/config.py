@@ -6,6 +6,13 @@ load_dotenv()
 class Settings:
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
     GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+
+
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    if not GEMINI_API_KEY:
+        raise ValueError("No GEMINI_API_KEY found in environment variables")
+
+
     PROJECT_NAME = "Smart Tourism API"
     VERSION = "1.0.0"
 
