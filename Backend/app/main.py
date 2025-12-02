@@ -75,6 +75,7 @@ def root():
         "admin": "localhost:8000/admin" # Added link to admin for convenience
     }
 
+from app.services.chatbot import *
 
 # @app.get("/health")
 # def health():
