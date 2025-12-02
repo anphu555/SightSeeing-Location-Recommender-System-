@@ -1,88 +1,74 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <link rel="icon" type="image/png" href="src/images/TUYU_umbrella.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>exSighting - Khám Phá Địa Điểm</title>
-    <link rel="stylesheet" href="src/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>Welcome to exSighting</title>
+    
+    <link rel="icon" type="image/png" href="src/images/TUYU_umbrella.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <link rel="stylesheet" href="src/css/style.css"> 
+    <link rel="stylesheet" href="src/css/welcome.css"> 
 </head>
 <body>
 
-    <header class="navbar-v3">
-        <div class="logo" onclick="window.location.href='index.html'" style="cursor: pointer;">
-            <i class="fas fa-umbrella"></i>
+    <video class="video-bg" autoplay muted loop playsinline>
+        <source src="src/images/welcome.mp4" type="video/mp4">
+        <img src="src/images/halong_bg.jpg" alt="Background">
+    </video>
+    
+    <div class="overlay-bg"></div>
+
+    <div class="welcome-header">
+        <div class="header-left">
+            <a href="#">About Us</a>
+            <a href="#">Contact</a>
+            
+            <span id="welcomeAuthBlock">
+                </span>
+        </div>
+
+        <div class="header-right">
+            <i class="fas fa-umbrella" style="color: #14838B;"></i>
             <span>exSighting</span>
         </div>
-        <nav class="nav-links">
-            <a href="#" class="nav-item">Contact</a>
-            <a href="#" class="nav-item">About us</a>
-        </nav>
-        
-        <div id="authSection">
-            <button class="user-actions-unsigned-in" id="unsignedBlock" onclick="window.location.href='login.html'">
-                <div class="user-icon-bg"><i class="fas fa-user-circle"></i></div>
-                <span class="sign-in-text">Sign In</span>
-            </button>
-
-          <div class="user-actions-signed-in" id="signedBlock" style="display: none;">
-    
-    <button class="user-profile-toggle">
-        <div class="user-icon-bg"><i class="fas fa-user-circle"></i></div>
-        <span class="username-text" id="displayUsername">User</span>
-        <i class="fas fa-caret-down" style="margin-left: 5px;"></i>
-    </button>
-    
-    <div class="user-dropdown-menu">
-        <a href="#"><i class="fas fa-user-circle"></i> Profile</a>
-        <a href="#"><i class="fas fa-cog"></i> Settings</a>
-        <div class="menu-divider"></div>
-        <a href="#" id="btnLogout"><i class="fas fa-sign-out-alt"></i> Log Out</a>
     </div>
 
-</div>
-        </div>
-    </header>
+    <div class="welcome-content">
+        <h1 class="main-title">DISCOVER VIETNAM</h1>
+        <p class="sub-quote">"Not all those who wander are lost."</p>
+        <a href="home.html" class="cta-btn">Start Your Journey</a>
+    </div>
 
-    <main>
-        <section class="hero-banner">
-            <div class="banner-slider" id="bannerSlider">
-                </div>
-            <div class="overlay"></div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const authBlock = document.getElementById('welcomeAuthBlock');
+            const token = localStorage.getItem('token');
+            const username = localStorage.getItem('username');
 
-            <div class="search-container">
-                <h1>What type of place would you like to go?</h1>
-                <div class="search-box">
-                    <input type="text" id="homeSearchInput" placeholder="For example: the mountains, the beaches,...">
-                    <button id="homeSearchBtn"><i class="fas fa-search"></i></button>
-                </div>
-            </div>
+            if (token && username) {
+                // Nếu ĐÃ ĐĂNG NHẬP
+                authBlock.innerHTML = `
+                    <span style="opacity: 0.8;">Hi, ${username}</span>
+                    <a href="#" id="welcomeLogout" style="margin-left: 5px;">(Logout)</a>
+                `;
 
-            <div class="dots-container" id="bannerDots">
-                </div>
-        </section>
+                // Xử lý nút logout
+                document.getElementById('welcomeLogout').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.clear();
+                    window.location.reload(); 
+                });
 
-        <section class="popular-places-section">
-            <h2 class="section-title">Popular Places</h2>
+            } else {
+                // Nếu CHƯA ĐĂNG NHẬP
+                authBlock.innerHTML = `<a href="login.html">Login</a>`;
+            }
+        });
+    </script>
 
-            <div class="places-carousel">
-                <button class="arrow-btn prev-btn" id="prevBtn"><i class="fas fa-chevron-left"></i></button>
-                
-                <div class="carousel-viewport">
-                    <div class="place-card-list" id="placeCardList">
-                        <p style="text-align:center; width:100%">Loading places...</p>
-                    </div>
-                </div>
-
-                <button class="arrow-btn next-btn" id="nextBtn"><i class="fas fa-chevron-right"></i></button>
-            </div>
-            
-            <button class="view-all-btn" onclick="window.location.href='results.html?mode=popular'">View All</button>
-        </section>
-    </main>
-
-    <script type="module" src="src/js/index.js"></script>
 </body>
-</html>
+</html> 
