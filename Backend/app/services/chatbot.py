@@ -7,7 +7,7 @@ from app.main import app
 from app.schemas import ChatbotRequest
 
 # Load API Key from .env file
-genai.configure(api_key=settings.GEMINI_API_KEY)
+genai.configure(api_key="AIzaSyBXJfsVsgmt0lLrHVoIdTPtjzsa0qXcGtQ")
 
 # Cái này để giới hạn nội dung chatbot
 
@@ -25,7 +25,7 @@ IMPORTANT RULES:
 
 # 2. Initialize the Model with the instruction
 model = genai.GenerativeModel(
-    'gemini-1.5-flash',
+    'gemini-2.5-flash',
     system_instruction=system_instruction
 )
 
