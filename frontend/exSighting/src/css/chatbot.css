@@ -1,84 +1,200 @@
+/* --- CẤU HÌNH CHUNG --- */
+:root {
+    --primary-color: #14838B; /* Màu xanh chủ đạo */
+    --bg-color: #f4f6f8;
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f9;
+    font-family: var(--font-family);
+    margin: 0;
+    padding: 0;
+}
+
+/* --- NÚT CHAT KHI ĐÓNG --- */
+.chat-widget-closed {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    z-index: 9999;
+    transition: all 0.3s ease;
+}
+
+.chat-tooltip {
+    background-color: white;
+    padding: 10px 15px;
+    border-radius: 50px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-right: 15px;
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+
+.chat-button {
+    width: 60px;
+    height: 60px;
+    background-color: var(--primary-color);
+    border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    margin: 0;
+    box-shadow: 0 4px 15px rgba(20, 131, 139, 0.4);
+    color: white;
+    transition: transform 0.3s ease, background 0.3s;
 }
 
-.chat-container {
-    width: 400px;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    overflow: hidden;
+.chat-button.opened {
+    transform: rotate(90deg);
+    background-color: #333; /* Đổi màu nút khi mở */
+}
+
+/* Ẩn tooltip khi mở chat */
+.hide-tooltip {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* --- CỬA SỔ CHAT --- */
+.chat-window {
+    position: fixed;
+    bottom: 90px;
+    right: 20px;
+    width: 360px;
+    height: 600px;
+    background-color: #fff;
+    border-radius: 15px;
+    box-shadow: 0 5px 40px rgba(0,0,0,0.15);
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    
+    /* Hiệu ứng ẩn/hiện */
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    z-index: 9999;
 }
 
-header {
-    background: #4a90e2;
+.chat-window.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
+}
+
+/* --- HEADER --- */
+.chat-header {
+    background-color: var(--primary-color);
+    padding: 20px;
     color: white;
-    padding: 15px;
-    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.chat-box {
-    height: 400px;
-    padding: 15px;
+.header-content { display: flex; align-items: center; }
+
+.header-logo {
+    width: 40px; height: 40px; 
+    background: white; 
+    border-radius: 50%; 
+    padding: 4px; 
+    margin-right: 12px;
+    object-fit: contain;
+}
+
+.header-info h3 { margin: 0; font-size: 16px; font-weight: 700; }
+.header-info p { margin: 2px 0 0 0; font-size: 11px; opacity: 0.9; }
+.close-btn { cursor: pointer; font-size: 20px; opacity: 0.8; }
+
+/* --- BODY CHAT (QUAN TRỌNG) --- */
+.chat-body {
+    flex: 1;
+    background-color: #f9f9f9;
+    padding: 20px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
+    scroll-behavior: smooth;
 }
 
+/* CSS Cho Tin Nhắn */
 .message {
-    padding: 10px 15px;
-    border-radius: 20px;
-    max-width: 75%;
-    line-height: 1.4;
+    max-width: 80%;
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    position: relative;
+    word-wrap: break-word;
 }
 
-.user-message {
-    background: #4a90e2;
-    color: white;
-    align-self: flex-end;
-    border-bottom-right-radius: 5px;
-}
-
+/* Tin nhắn BOT (Bên trái, màu xám) */
 .bot-message {
-    background: #e5e5ea;
-    color: black;
     align-self: flex-start;
-    border-bottom-left-radius: 5px;
+    background-color: #f0f0f0;
+    color: #333;
+    border-radius: 15px 15px 15px 2px;
 }
 
-.input-area {
+/* Tin nhắn USER (Bên phải, màu xanh) */
+.user-message {
+    align-self: flex-end;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 15px 15px 2px 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* --- FOOTER NHẬP LIỆU --- */
+.chat-footer {
+    padding: 15px;
+    border-top: 1px solid #eee;
+    background-color: white;
+}
+
+.input-group {
     display: flex;
-    border-top: 1px solid #ddd;
-    padding: 10px;
+    align-items: center;
+    background-color: #f5f5f5;
+    border-radius: 25px;
+    padding: 5px 15px;
 }
 
-input {
+.input-group input {
+    border: none;
+    background: transparent;
     flex: 1;
     padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 20px;
     outline: none;
+    font-size: 14px;
 }
 
-button {
-    background: #4a90e2;
-    color: white;
+.input-group button {
     border: none;
-    padding: 10px 20px;
-    margin-left: 10px;
-    border-radius: 20px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    color: white;
     cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.2s;
 }
 
-button:hover {
-    background: #357abd;
+.input-group button:hover { opacity: 0.9; }
+
+.powered-by { 
+    text-align: center; 
+    font-size: 11px; 
+    color: #aaa; 
+    margin-top: 8px; 
 }

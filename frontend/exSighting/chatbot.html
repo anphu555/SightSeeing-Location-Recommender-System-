@@ -1,26 +1,73 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini Chatbot</title>
+    <title>exSighting Assistant</title>
     <link rel="stylesheet" href="src/css/chatbot.css">
 </head>
 <body>
-    <div class="chat-container">
-        <header>
-            <h1>exSighting Assistant</h1>
-        </header>
-        <div id="chat-box" class="chat-box">
-            <div class="message bot-message">
-                Hello! I'm your travel assistant. Ask me about destinations, hotels, or trip planning!
-            </div>
+
+    <div class="chat-widget-closed" onclick="toggleChat()">
+        <div class="chat-tooltip" id="chatTooltip">
+            <span>✈️</span> Are you looking for a travel tour?
         </div>
-        <div class="input-area">
-            <input type="text" id="user-input" placeholder="Type a message...">
-            <button onclick="sendMessage()">Send</button>
+        <div class="chat-button" id="chatButton">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
         </div>
     </div>
+
+    <div class="chat-window" id="chatWindow">
+        <div class="chat-header">
+            <div class="header-content">
+                <img src="src/images/tuyu.png" alt="Logo" class="header-logo">
+                <div class="header-info">
+                    <h3>exSighting Assistant</h3>
+                    <p>🟢 Online - Ready to help</p>
+                </div>
+            </div>
+            <div class="close-btn" onclick="toggleChat()">✕</div>
+        </div>
+
+        <div class="chat-body" id="chat-box">
+            <div class="message bot-message">
+                Hello! I'm your virtual travel assistant 🏝️<br>
+                I can help you plan trips, recommend destinations, explain local cultures, and provide travel tips in Vietnam.<br><br>
+                <strong>Which service are you interested in? 👇</strong>
+            </div>
+        </div>
+
+        <div class="chat-footer">
+            <div class="input-group">
+                <input type="text" id="user-input" placeholder="Enter your question..." autocomplete="off">
+                <button onclick="sendMessage()">➤</button>
+            </div>
+            <div class="powered-by">Powered by exSighting Travel</div>
+        </div>
+    </div>
+
     <script src="src/js/chatbot.js"></script>
+
+    <script>
+        function toggleChat() {
+            const window = document.getElementById("chatWindow");
+            const tooltip = document.getElementById("chatTooltip");
+            const btn = document.getElementById("chatButton");
+
+            if (window.classList.contains("active")) {
+                // Đang mở -> Đóng
+                window.classList.remove("active");
+                tooltip.classList.remove("hide-tooltip");
+                btn.classList.remove("opened");
+                btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+            } else {
+                // Đang đóng -> Mở
+                window.classList.add("active");
+                tooltip.classList.add("hide-tooltip");
+                btn.classList.add("opened");
+                btn.innerHTML = '<span style="color:white; font-size: 24px;">✕</span>';
+            }
+        }
+    </script>
 </body>
 </html>
