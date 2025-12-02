@@ -1,20 +1,14 @@
 import os
-from fastapi import FastAPI, HTTPException
-from dotenv import load_dotenv
+from fastapi import HTTPException
 import google.generativeai as genai
+
+from app.config import settings
 
 from app.main import app
 from app.schemas import ChatbotRequest
 
 # Load API Key from .env file
-load_dotenv()
-API_KEY = os.getenv("GEMINI_API_KEY")
-
-if not API_KEY:
-    raise ValueError("No GEMINI_API_KEY found in environment variables")
-
-
-genai.configure(api_key=API_KEY)
+genai.configure(api_key=settings.GEMINI_API_KEY)
 
 # Cái này để giới hạn nội dung chatbot
 
@@ -61,9 +55,9 @@ async def chat_endpoint(request: ChatbotRequest):
 # from dotenv import load_dotenv
 
 # load_dotenv()
-# API_KEY = os.getenv("GEMINI_API_KEY")
+# GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# genai.configure(api_key=API_KEY)
+# genai.configure(api_key=GEMINI_API_KEY)
 
 # # --- 1. THE DATABASE (Simple List) ---
 # tour_data = [
