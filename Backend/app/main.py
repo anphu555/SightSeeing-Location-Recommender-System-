@@ -3,19 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 
-# from backend.app.old import auth
-from app import auth
+from app.routers import auth
 
-# from backend.app.routers import recommendation
-from app.routers import recommendation
-from app.routers import rating
-# from app.services.db_service import init_db
-
-from contextlib import asynccontextmanager
 from app.database import create_db_and_tables
+
+from app.routers import recommendation, rating, chatbot
+
 
 
 # Define the Lifespan (Startup Event). 
+from contextlib import asynccontextmanager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # This runs when the app starts: Create tables in .db file (SQLModel)
@@ -75,7 +72,6 @@ def root():
         "admin": "localhost:8000/admin" # Added link to admin for convenience
     }
 
-from app.services.chatbot import *
 
 # @app.get("/health")
 # def health():
@@ -86,6 +82,8 @@ from app.services.chatbot import *
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])         # đăng nhập đăng ký
 app.include_router(recommendation.router, prefix="/api/v1", tags=["Recommendation"])    # gợi ý địa điểm
 app.include_router(rating.router, prefix="/api/v1/user", tags=["User Actions"])         # đánh giá địa điểm
+
+app.include_router(chatbot.router, prefix="/chat", tags=["Chatbot"])         # chatbot
 
 # admin interface
 from app.admin import * 
