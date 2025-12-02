@@ -1,4 +1,3 @@
-import os
 from fastapi import HTTPException
 import google.generativeai as genai
 
