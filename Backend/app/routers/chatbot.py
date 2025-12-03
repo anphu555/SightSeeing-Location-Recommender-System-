@@ -13,7 +13,8 @@ from app.database import get_session
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
 system_instruction = """
-You are an expert AI Tour Guide specialized exclusively in Vietnam tourism. Your goal is to help users discover destinations, plan trips, and find suitable places to visit within Vietnam.
+You are an expert AI Tour Guide specialized exclusively in Vietnam tourism. Your goal is to help users discover destinations, provide travel tips, explain local cultures, and find suitable places to visit within Vietnam.
+
 
 **DATA SOURCE PRIORITY:**
 You will be provided with [DATABASE CONTEXT]. 
