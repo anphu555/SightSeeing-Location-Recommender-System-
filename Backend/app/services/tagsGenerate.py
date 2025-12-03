@@ -2,11 +2,19 @@ import google.generativeai as genai
 import pandas as pd
 import json
 import time
+import os
+from datetime import datetime
+from dotenv import load_dotenv
+
+# Load biến môi trường từ file .env
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../../.env'))
 
 # ---------------------------------------------------------
 # 1. CẤU HÌNH API
 # ---------------------------------------------------------
-API_KEY = "AIzaSyArPMZdcyNXAJFqqRh_QRnenuyFaEe68tc"  # <--- Dán API Key của bạn vào đây
+API_KEY = os.getenv("GEMINI_API_KEY")
+if not API_KEY:
+    raise ValueError("GEMINI_API_KEY không tìm thấy trong file .env")
 genai.configure(api_key=API_KEY)
 
 # Sử dụng model Gemini 1.5 Flash để tối ưu tốc độ và chi phí
@@ -15,6 +23,12 @@ model = genai.GenerativeModel(
     'gemini-2.5-flash',
     generation_config={"response_mime_type": "application/json"}
 )
+
+# CẤU HÌNH AN TOÀN TUYỆT ĐỐI
+DELAY_SECONDS = 7       # 7 giây/request => ~8.5 RPM (Đảm bảo < 10 RPM)
+DAILY_LIMIT = 240       # Dừng sau 240 request (Đảm bảo < 250 RPD)
+INPUT_FILE = 'vietnam_tourism_data_cleaned.csv'
+OUTPUT_FILE = 'vietnam_tourism_data_with_tags.csv'
 
 # ---------------------------------------------------------
 # 2. HÀM GỌI GEMINI ĐỂ SINH TAGS
@@ -54,41 +68,94 @@ def generate_tags_with_gemini(description_text):
         return []
 
 # ---------------------------------------------------------
-# 3. CHẠY TRÊN DỮ LIỆU CỦA BẠN
+# 3. HÀM MAIN - CHẠY VỚI CƠ CHẾ RESUME
 # ---------------------------------------------------------
-# Đọc file đã làm sạch
-df = pd.read_csv('vietnam_tourism_data_cleaned.csv')
+def main():
+    # Bước 1: Load dữ liệu
+    if not os.path.exists(INPUT_FILE):
+        print(f"Lỗi: Không tìm thấy file {INPUT_FILE}")
+        return
 
-# --- TEST THỬ TRÊN 5 DÒNG ĐẦU TIÊN (để kiểm tra trước) ---
-print("Đang test sinh tags cho 5 địa điểm đầu tiên...")
-sample_df = df.head(5).copy()
+    df = pd.read_csv(INPUT_FILE)
+    total_rows = len(df)
+    
+    # Bước 2: Kiểm tra file kết quả để resume (chạy tiếp)
+    if os.path.exists(OUTPUT_FILE):
+        print(f"Tìm thấy file kết quả cũ '{OUTPUT_FILE}'. Đang tải để chạy tiếp...")
+        df_result = pd.read_csv(OUTPUT_FILE)
+        # Đảm bảo cột tags tồn tại
+        if 'tags' not in df_result.columns:
+            df_result['tags'] = None
+    else:
+        print("Tạo file kết quả mới...")
+        df_result = df.copy()
+        df_result['tags'] = None # Khởi tạo cột tags rỗng
 
-# Áp dụng hàm (Có delay nhẹ để tránh lỗi Rate Limit nếu dùng bản Free)
-tags_results = []
-for index, row in sample_df.iterrows():
-    print(f"Đang xử lý ID {row['id']}: {row['name']}...")
-    tags = generate_tags_with_gemini(row['ai_input_text'])
-    tags_results.append(json.dumps(tags)) # Lưu dạng string JSON để ghi vào CSV
-    time.sleep(2) # Nghỉ 2 giây giữa mỗi lần gọi (quan trọng với Free Tier)
+    # Bước 3: Xác định các dòng chưa có tags
+    # Chỉ lấy các dòng mà cột 'tags' bị null (NaN)
+    rows_to_process = df_result[df_result['tags'].isnull()]
+    count_remaining = len(rows_to_process)
+    
+    print(f"Tổng số dòng: {total_rows}")
+    print(f"Đã xử lý xong: {total_rows - count_remaining}")
+    print(f"Còn lại: {count_remaining}")
+    
+    if count_remaining == 0:
+        print("🎉 Chúc mừng! Bạn đã xử lý xong toàn bộ dữ liệu.")
+        return
 
-sample_df['tags'] = tags_results
+    print("-" * 40)
+    print(f"🚀 Bắt đầu chạy batch hôm nay (Giới hạn: {DAILY_LIMIT} requests)...")
+    print(f"⏳ Tốc độ: 1 request mỗi {DELAY_SECONDS} giây.")
+    print("-" * 40)
 
-# In kết quả kiểm tra
-print("\n--- KẾT QUẢ MẪU ---")
-print(sample_df[['name', 'tags']].head())
+    request_count = 0
+    
+    # Bước 4: Vòng lặp xử lý
+    for index, row in rows_to_process.iterrows():
+        # Kiểm tra giới hạn ngày
+        if request_count >= DAILY_LIMIT:
+            print(f"\n🛑 ĐÃ ĐẠT GIỚI HẠN {DAILY_LIMIT} REQUESTS HÔM NAY.")
+            print("Hãy dừng lại và chạy tiếp code này vào ngày mai.")
+            break
+
+        print(f"[{request_count + 1}/{DAILY_LIMIT}] Processing ID {row['id']}: {row['name']}...", end=" ")
+        
+        # Gọi API
+        tags = generate_tags_with_gemini(row['ai_input_text'])
+        
+        # Lưu kết quả vào DataFrame (đổi thành chuỗi JSON để lưu CSV)
+        df_result.at[index, 'tags'] = json.dumps(tags)
+        
+        request_count += 1
+        
+        # In kết quả ngắn gọn
+        if tags:
+            print("✅ OK")
+        else:
+            print("⚠️ Empty")
+
+        # Lưu file ngay sau mỗi 5 request để tránh mất điện/lỗi mạng
+        if request_count % 5 == 0:
+            df_result.to_csv(OUTPUT_FILE, index=False)
+        
+        # Sleep để đảm bảo RPM < 10
+        time.sleep(DELAY_SECONDS)
+
+    # Lưu lần cuối trước khi thoát
+    df_result.to_csv(OUTPUT_FILE, index=False)
+    print("\n" + "=" * 40)
+    print(f"✅ Đã lưu tiến độ vào '{OUTPUT_FILE}'")
+    print(f"📊 Hôm nay đã chạy: {request_count} dòng.")
+    print(f"📉 Còn lại: {count_remaining - request_count} dòng.")
+    
+    if count_remaining - request_count > 0:
+        print("👉 Hẹn gặp lại vào ngày mai!")
+    else:
+        print("🎉 Đã hoàn thành toàn bộ dataset!")
 
 # ---------------------------------------------------------
-# 4. (TÙY CHỌN) CHẠY CHO TOÀN BỘ FILE
-# Uncomment (bỏ comment) phần dưới nếu bạn muốn chạy hết 900 dòng
+# 4. CHẠY CHƯƠNG TRÌNH
 # ---------------------------------------------------------
-# print("\nĐang chạy toàn bộ dữ liệu (sẽ mất thời gian)...")
-# all_tags = []
-# for index, row in df.iterrows():
-#     if index % 10 == 0: print(f"Đã xử lý {index} dòng...")
-#     tags = generate_tags_with_gemini(row['ai_input_text'])
-#     all_tags.append(json.dumps(tags))
-#     time.sleep(4) # Tăng delay lên 4s nếu chạy số lượng lớn ở Free Tier (giới hạn 15 RPM)
-# 
-# df['tags'] = all_tags
-# df.to_csv('vietnam_tourism_final_with_tags.csv', index=False)
-# print("Hoàn tất! Đã lưu file vietnam_tourism_final_with_tags.csv")
+if __name__ == "__main__":
+    main()
