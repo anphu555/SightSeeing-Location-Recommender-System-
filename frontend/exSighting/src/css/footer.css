@@ -1,0 +1,21 @@
+/* --- FOOTER GLOBAL STYLES --- */
+.site-footer {
+    background-color: #14838B; /* Mã màu nền bạn yêu cầu */
+    color: hsl(0, 0%, 100%);            /* Chữ màu trắng */
+    padding: 70px 0 70px 0;    /* Khoảng cách trên dưới */
+    font-family: 'Poppins', sans-serif; /* Dùng font Poppins cho đồng bộ */
+    margin-top: auto;          /* Đẩy footer xuống đáy */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.footer-container {
+    display: flex;             /* Chia cột */
+    flex-wrap: wrap;           /* Cho phép xuống dòng trên mobile */
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/*

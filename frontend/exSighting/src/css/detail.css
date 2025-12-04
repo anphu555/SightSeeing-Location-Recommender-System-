@@ -87,7 +87,7 @@ body {
     /* Hiệu ứng 3D Nổi */
  
     box-shadow: 0 15px 35px rgba(0,0,0,0.35); /* Bóng đổ sâu */
-    transform: translateY(-5px); /* Nhấc ảnh lên */
+    transform: translateY(-15px); /* Nhấc ảnh lên */
     transition: all 0.4s ease;
 }
 
