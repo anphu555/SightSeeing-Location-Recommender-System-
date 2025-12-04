@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - exSighting</title>
+    
+    <link rel="icon" type="image/png" href="src/images/TUYU_umbrella.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="src/css/style.css"> 
+    <link rel="stylesheet" href="src/css/header.css"> <link rel="stylesheet" href="src/css/footer.css"> <style>
+        /* --- CHUNG --- */
+        body {
+            background-color: #f9f9f9;
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .section-container {
+            max-width: 1200px; /* Tăng độ rộng để chứa đủ 4 người */
+            margin: 0 auto;
+            padding: 80px 20px;
+        }
+
+        .sub-heading {
+            color: #14838B;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        h2 { font-size: 36px; color: #333; margin-bottom: 20px; font-weight: 800; }
+        p { color: #666; line-height: 1.7; margin-bottom: 15px; }
+        .center { text-align: center; }
+
+        /* --- HERO SECTION --- */
+        .about-hero {
+            position: relative;
+            height: 60vh;
+            background: url('https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070') no-repeat center center/cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            margin-top: -1px; /* Dính liền với header nếu cần */
+        }
+
+        .hero-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .hero-content { position: relative; z-index: 2; padding: 0 20px; }
+        .hero-content h1 { font-size: 4rem; font-weight: 800; margin-bottom: 10px; }
+        .hero-content p { font-size: 1.2rem; color: #e0f7fa; max-width: 600px; margin: 0 auto; }
+
+        /* --- STORY SECTION --- */
+        .story-section { display: flex; align-items: center; gap: 50px; }
+        .story-img { flex: 1; }
+        .story-img img { width: 100%; border-radius: 10px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .story-text { flex: 1; }
+
+        /* --- VALUES SECTION --- */
+        .values-section { background-color: #fff; }
+        .values-grid { display: flex; gap: 30px; text-align: center; }
+        .value-card { padding: 40px 20px; flex: 1; border: 1px solid #eee; border-radius: 10px; transition: 0.3s; }
+        .value-card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(20, 131, 139, 0.1); border-color: #14838B; }
+        .value-card i { font-size: 40px; color: #14838B; margin-bottom: 20px; }
+
+        /* --- TEAM SECTION (4 NGƯỜI) --- */
+        .team-grid {
+            display: flex;
+            gap: 30px;
+            margin-top: 50px;
+            justify-content: center; /* Căn giữa */
+            flex-wrap: wrap; /* Tự xuống dòng nếu màn hình nhỏ */
+        }
+
+        .team-member {
+            text-align: center;
+            width: 250px; /* Định kích thước chuẩn cho mỗi người */
+            transition: 0.3s;
+        }
+
+        .team-member:hover { transform: translateY(-5px); }
+
+        .member-img {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin: 0 auto 20px auto;
+            border: 4px solid #14838B; /* Viền ảnh màu Teal */
+            padding: 4px;
+            background: white;
+        }
+
+        .member-img img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .team-member h3 { font-size: 18px; margin-bottom: 5px; color: #333; font-weight: 700; }
+        .team-member span { color: #14838B; font-size: 14px; font-weight: 600; text-transform: uppercase; }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .story-section, .values-grid { flex-direction: column; }
+            .hero-content h1 { font-size: 2.5rem; }
+            .team-grid { gap: 40px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="header-placeholder"></div>
+
+    <section class="about-hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h1>Our Journey</h1>
+            <p>We don't just show you the sights. We show you the soul of Vietnam.</p>
+        </div>
+    </section>
+
+    <section class="section-container story-section">
+        <div class="story-img">
+            <img src="https://images.unsplash.com/photo-1523592121529-f6dde35f079e?q=80&w=2070" alt="Team Working">
+        </div>
+        <div class="story-text">
+            <h4 class="sub-heading">WHO WE ARE</h4>
+            <h2>More than just Sightseeing</h2>
+            <p>Started in 2025, <strong>exSighting</strong> was born from a simple idea: Travel should be exciting, not exhausting.</p>
+            <p>The name <strong>"exSighting"</strong> is a blend of <em>"Excitement"</em> and <em>"Sightseeing"</em>. We believe that every destination has a hidden story waiting to be told.</p>
+        </div>
+    </section>
+
+    <section class="values-section">
+        <div class="section-container">
+            <div class="values-grid">
+                <div class="value-card">
+                    <i class="fas fa-heart"></i>
+                    <h3>Passion</h3>
+                    <p>We love Vietnam, and we want you to fall in love with it too.</p>
+                </div>
+                <div class="value-card">
+                    <i class="fas fa-compass"></i>
+                    <h3>Guidance</h3>
+                    <p>Local insights that guide you to the hidden gems.</p>
+                </div>
+                <div class="value-card">
+                    <i class="fas fa-users"></i>
+                    <h3>Community</h3>
+                    <p>Building a community of travelers who respect local culture.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section-container team-section">
+        <h4 class="sub-heading center">THE CREATORS</h4>
+        <h2 class="center">Meet the Team</h2>
+        
+        <div class="team-grid">
+            
+            <div class="team-member">
+                <div class="member-img">
+                    <img src="src/images/an.jpg" alt="Member 1">
+                </div>
+                <h3>Nguyen Tuan An</h3>
+                <span>Gai Nhat Dam dang</span>
+            </div>
+
+            <div class="team-member">
+                <div class="member-img">
+                    <img src="src/images/phu.png" alt="Member 2">
+                </div>
+                <h3>Vo An Phu</h3>
+                <span>Gai Nhat Gay</span>
+            </div>
+
+            <div class="team-member">
+                <div class="member-img">
+                    <img src="src/images/nam.png" alt="Member 3">
+                </div>
+                <h3>Nguyen Hai Nam</h3>
+                <span>Lolicon master</span>
+            </div>
+
+            <div class="team-member">
+                <div class="member-img">
+                    <img src="src/images/khanh.png" alt="Member 4">
+                </div>
+                <h3>Pham Dinh Gia Khanh</h3>
+                <span>Dep trai thom tho</span>
+            </div>
+
+        </div>
+    </section>
+
+    <div id="footer-placeholder"></div>
+    
+    <script src="src/js/header.js"></script>
+    <script src="src/js/footer.js"></script>
+
+</body>
+</html>
