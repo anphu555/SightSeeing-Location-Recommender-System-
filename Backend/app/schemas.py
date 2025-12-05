@@ -14,6 +14,9 @@ class User(SQLModel, table=True):
     username: str = Field(index=True, unique=True)
     hashed_password: str  # We store the hash, not the raw password
 
+    # Ví dụ: ["Nature", "Beach", "Food"]
+    preferences: List[str] = Field(default=[], sa_column=Column(JSON))
+
     # Relationships (Optional but recommended)
     ratings: List["Rating"] = Relationship(back_populates="user")
 
@@ -141,12 +144,13 @@ class UserCreate(SQLModel):
     """Input model - contains raw password"""
     username: str
     password: str 
-
+    # Cho phép user chọn sở thích ngay lúc đăng ký (tùy chọn)
+    # preferences: List[str] = []
 class UserResponse(SQLModel):
     """Output model - hides password"""
     username: str
     id: int
-
+    preferences: List[str] # Trả về preferences để frontend hiển thị
 class Token(SQLModel):
     access_token: str
     token_type: str
