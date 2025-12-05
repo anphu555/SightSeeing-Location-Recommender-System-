@@ -1,13 +1,20 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Tắt warning CUDA
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # Force TensorFlow dùng CPU
+
 import tensorflow as tf
 import pickle
 import pandas as pd
 import numpy as np
 import ast
-import os
+import warnings
+
+# Tắt cảnh báo sklearn version
+warnings.filterwarnings('ignore', category=UserWarning)
 
 # Đường dẫn đến file model và data
-MODEL_PATH = 'two_tower_model.keras' # Cập nhật đúng đường dẫn
-MLB_PATH = 'mlb_vocab.pkl'           # Cập nhật đúng đường dẫn
+MODEL_PATH = 'app/routers/two_tower_model.keras' # Đường dẫn từ thư mục Backend
+MLB_PATH = 'app/routers/mlb_vocab.pkl'           # Đường dẫn từ thư mục Backend
 PLACES_CSV_PATH = 'app/services/vietnam_tourism_data_200tags.csv' # File csv chứa places
 
 # Biến toàn cục để lưu model đã load
@@ -23,7 +30,9 @@ def load_resources():
     if loaded_model is None:
         print("Loading Two-Tower Model...")
         loaded_model = tf.keras.models.load_model(MODEL_PATH)
-        loaded_mlb = pickle.load(open(MLB_PATH, 'rb'))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            loaded_mlb = pickle.load(open(MLB_PATH, 'rb'))
         
         # Load places và pre-calculate item vectors
         places_df = pd.read_csv(PLACES_CSV_PATH)
