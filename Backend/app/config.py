@@ -22,7 +22,7 @@ class Settings:
     BACKEND_DIR = os.path.dirname(CURRENT_DIR)
     
     # Nối với tên file database
-    DATABASE_PATH = os.path.join(BACKEND_DIR, "travel_final.db")
+    DATABASE_PATH = os.path.join(BACKEND_DIR, "vietnamtravel.db")
 
     
     # --- Cấu hình bảo mật ---
