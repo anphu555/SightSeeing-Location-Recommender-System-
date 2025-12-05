@@ -1,303 +1,173 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // --- CẤU HÌNH API (Sửa 1 chỗ duy nhất tại đây) ---
-  const apiBase = 'http://localhost:8000'; 
-  
-  const params  = new URLSearchParams(location.search);
-  
-  // Toast notification function - accessible alternative to alert()
-  function showToast(message, type = 'info', duration = 4000) {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.setAttribute('role', 'status');
+    checkAuth();
     
-    const icons = {
-      success: '✓',
-      error: '✕',
-      warning: '⚠',
-      info: 'ℹ'
-    };
+    // Khởi tạo chức năng tìm kiếm ngay khi trang load
+    handleResultPageSearch(); 
     
-    const iconSpan = document.createElement('span');
-    iconSpan.className = 'toast-icon';
-    iconSpan.textContent = icons[type] || icons.info;
+    // --- 1. DỮ LIỆU GIẢ LẬP ĐẦY ĐỦ (10 ĐỊA ĐIỂM) ---
+    // Khớp ID với file detail.html để khi bấm vào không bị lỗi
+    const mockResults = [
+        { id: "101", name: "Ha Long Bay", province: "Quang Ninh", score: 4.8, themes: ['beach', 'island'] },
+        { id: "102", name: "Tuan Chau Park", province: "Quang Ninh", score: 4.2, themes: ['beach'] },
+        { id: "103", name: "Hoi An", province: "Quang Nam", score: 4.9, themes: ['city'] },
+        { id: "104", name: "Da Lat", province: "Lam Dong", score: 4.6, themes: ['mountain', 'flower'] },
+        { id: "105", name: "Nha Trang", province: "Khanh Hoa", score: 4.5, themes: ['beach'] },
+        { id: "106", name: "Sapa", province: "Lao Cai", score: 4.7, themes: ['mountain'] },
+        { id: "107", name: "Hue", province: "Thua Thien Hue", score: 4.6, themes: ['city'] },
+        { id: "108", name: "Phu Quoc", province: "Kien Giang", score: 4.9, themes: ['island', 'beach'] },
+        { id: "109", name: "Vung Tau", province: "Ba Ria - Vung Tau", score: 4.3, themes: ['beach'] },
+        { id: "110", name: "Ninh Binh", province: "Ninh Binh", score: 4.7, themes: ['mountain'] }
+    ];
+
+    // --- 2. XỬ LÝ LỌC KẾT QUẢ ---
+    const grid = document.getElementById('resultsGrid');
+    const count = document.getElementById('totalCount');
+
+    // Lấy từ khóa từ URL (ví dụ: results.html?q=Hoi An)
+    const params = new URLSearchParams(window.location.search);
+    const query = params.get('q') || "";
     
-    const messageSpan = document.createElement('span');
-    messageSpan.className = 'toast-message';
-    messageSpan.textContent = message;
-    
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'toast-close';
-    closeBtn.setAttribute('aria-label', 'Close notification');
-    closeBtn.textContent = '×';
-    closeBtn.addEventListener('click', () => removeToast(toast));
-    
-    toast.appendChild(iconSpan);
-    toast.appendChild(messageSpan);
-    toast.appendChild(closeBtn);
-    
-    container.appendChild(toast);
-    
-    const timeoutId = setTimeout(() => removeToast(toast), duration);
-    toast._timeoutId = timeoutId;
-  }
-  
-  function removeToast(toast) {
-    if (!toast.parentElement) return;
-    if (toast._timeoutId) {
-      clearTimeout(toast._timeoutId);
-    }
-    toast.style.animation = 'fadeOut 0.3s ease-out forwards';
-    setTimeout(() => toast.remove(), 300);
-  }
-  
-  // Lấy text tìm kiếm
-  const text = (params.get('text') || '').trim();
-  
-  // Khởi tạo số lượng k ban đầu
-  let currentK = Number(params.get('k') || '6');
-  const stepK  = 6; 
-  
-  let isLoading = false; 
-  let isFull    = false; 
+    // Logic lọc: Tìm theo tên HOẶC theo tỉnh thành (không phân biệt hoa thường)
+    const filteredResults = query 
+        ? mockResults.filter(p => 
+            p.name.toLowerCase().includes(query.toLowerCase()) || 
+            p.province.toLowerCase().includes(query.toLowerCase())
+          )
+        : mockResults;
 
-  // DOM Elements
-  const headerH2      = document.querySelector('.results-header h2');
-  const cardsContainer= document.querySelector('.cards');
-  const loader        = document.querySelector('.loading-indicator');
-  const headerInput   = document.querySelector('.search-bar input');
-  const headerBtn     = document.querySelector('.search-bar button');
-
-  if (headerInput) headerInput.value = text;
-
-  // Hàm tạo thẻ HTML cho 1 địa điểm
-  function renderCard(item){
-    const div = document.createElement('div');
-    div.className = 'card';
-    const img = document.createElement('img');
-    img.src = 'images/halong.jpg'; 
-    img.alt = item.name;
-    
-    const name = document.createElement('p'); 
-    name.textContent = item.name;
-    
-    const meta = document.createElement('p');
-    meta.style.fontWeight='normal'; 
-    meta.style.color='#666'; 
-    meta.textContent = `${item.province ?? ''} • Score: ${parseFloat(item.score).toFixed(2)}`;
-
-    const btnContainer = document.createElement('div');
-    btnContainer.className = 'rating-buttons';
-    btnContainer.dataset.placeId = item.id;
-    
-    const likeBtn = document.createElement('button');
-    likeBtn.className = 'btn-like';
-    likeBtn.innerHTML = '👍 Like';
-    likeBtn.onclick = () => handleRating(item.id, 'like', btnContainer);
-    
-    const dislikeBtn = document.createElement('button');
-    dislikeBtn.className = 'btn-dislike';
-    dislikeBtn.innerHTML = '👎 Dislike';
-    dislikeBtn.onclick = () => handleRating(item.id, 'dislike', btnContainer);
-    
-    btnContainer.appendChild(likeBtn);
-    btnContainer.appendChild(dislikeBtn);
-
-    div.append(img, name, meta, btnContainer);
-    return div;
-  }
-
-  // --- HÀM XỬ LÝ ĐÁNH GIÁ ---
-  async function handleRating(placeId, preference, container) {
-      const token = localStorage.getItem('token');
-      if (!token) {
-          showToast("Bạn cần đăng nhập để đánh giá!", "warning");
-          window.location.href = "login.html";
-          return;
-      }
-
-      try {
-          const res = await fetch(`${apiBase}/api/v1/user/rate`, {
-              method: 'POST',
-              headers: { 
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
-              },
-              body: JSON.stringify({ 
-                  place_id: placeId, 
-                  interaction_type: preference  // Đổi từ 'preference' sang 'interaction_type'
-              })
-          });
-
-          if (res.ok) {
-              const data = await res.json();
-              const likeBtn = container.querySelector('.btn-like');
-              const dislikeBtn = container.querySelector('.btn-dislike');
-              
-              // Reset both buttons
-              likeBtn.classList.remove('active');
-              dislikeBtn.classList.remove('active');
-              
-              // Activate the selected button
-              if (preference === 'like') {
-                  likeBtn.classList.add('active');
-                  showToast(`Đã thích địa điểm này! (Score: ${data.score})`, "success");
-              } else if (preference === 'dislike') {
-                  dislikeBtn.classList.add('active');
-                  showToast(`Đã đánh dấu không thích! (Score: ${data.score})`, "success");
-              }
-          } else {
-              if (res.status === 401) {
-                  showToast("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.", "error");
-                  window.location.href = "login.html";
-              } else {
-                  showToast("Có lỗi xảy ra khi gửi đánh giá.", "error");
-              }
-          }
-      } catch (e) {
-          console.error(e);
-          showToast("Không thể kết nối tới server.", "error");
-      }
-  }
-
-  // Hàm gọi API chính
-  async function fetchResults(kValue, isLoadMore = false) {
-    if (!text) {
-      headerH2.textContent = '0 results';
-      return;
-    }
-    
-    if (!isLoadMore) {
-      headerH2.textContent = 'Loading...';
-      cardsContainer.innerHTML = ''; 
-    } else {
-      loader.classList.add('active'); 
-    }
-
-    isLoading = true;
-
-    try {
-// 1. Lấy token từ localStorage
-      const token = localStorage.getItem('token');
-      
-      // 2. Chuẩn bị headers
-      const headers = { 
-        'Content-Type': 'application/json' 
-      };
-
-      // 3. Nếu có token (đã đăng nhập), đính kèm vào header Authorization
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      // 4. Gọi fetch với headers mới
-      const r = await fetch(`${apiBase}/api/v1/recommend`, {
-        method: 'POST',
-        headers: headers, // <--- Dùng biến headers vừa tạo
-        body: JSON.stringify({ user_text: text, top_k: kValue })
-      });
-      // --------------------
-
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-
-      const data = await r.json();
-      const items = data.results || [];
-
-      if (!isLoadMore) {
-        headerH2.textContent = `${items.length} results`;
-        items.forEach(it => cardsContainer.appendChild(renderCard(it)));
-      } else {
-        const oldLength = currentK - stepK; 
-        const newItems = items.slice(oldLength); 
-
-        if (newItems.length === 0) {
-          isFull = true; 
-          loader.textContent = "Đã hiển thị hết kết quả.";
+    // --- 3. RENDER GIAO DIỆN ---
+    if (grid) {
+        // Cập nhật số lượng
+        if(count) count.innerText = filteredResults.length;
+        
+        if (filteredResults.length === 0) {
+            grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; font-size: 1.2rem; color: #666; margin-top: 50px;">
+                No results found for "<b>${query}</b>". 
+            </p>`;
         } else {
-          newItems.forEach(it => cardsContainer.appendChild(renderCard(it)));
-          headerH2.textContent = `${items.length} results`; 
+            // Tạo HTML danh sách
+            grid.innerHTML = filteredResults.map(item => {
+                // Chọn ảnh ngẫu nhiên theo chủ đề
+                let imgSrc = "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070"; // Mặc định: Biển
+                
+                if(item.themes.includes('mountain')) {
+                    imgSrc = "https://images.unsplash.com/photo-1599229062397-6c8418047918?q=80&w=2070";
+                } else if(item.themes.includes('city')) {
+                    imgSrc = "https://images.unsplash.com/photo-1557750255-c76072a7aad1?q=80&w=2070";
+                }
+
+                return `
+                <div class="result-card" onclick="goToDetail('${item.id}')" style="cursor: pointer;">
+                    <div class="card-img-top">
+                        <img src="${imgSrc}" alt="${item.name}">
+                        <div class="view-badge"><i class="fas fa-star"></i> ${item.score}</div>
+                    </div>
+                    <div class="card-body">
+                        <h4 class="card-title">${item.name}</h4>
+                        <p class="card-subtitle">${item.province}</p>
+                    </div>
+                    <div class="card-footer">
+                        <button class="icon-action like-btn" onclick="event.stopPropagation()"><i class="fas fa-thumbs-up"></i></button>
+                        <button class="icon-action dislike-btn" onclick="event.stopPropagation()"><i class="fas fa-thumbs-down"></i></button>
+                    </div>
+                </div>
+                `;
+            }).join('');
         }
-      }
-
-    } catch (e) {
-      console.error(e);
-      if (!isLoadMore) {
-        headerH2.textContent = 'Error loading data';
-        cardsContainer.innerHTML = `<div style="color:red; padding:10px">${e.message}</div>`;
-      }
-    } finally {
-      isLoading = false;
-      loader.classList.remove('active');
     }
-  }
 
-  // --- HÀM MỚI: Tải lại lịch sử đánh giá ---
-  async function loadUserRatings() {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-
-      try {
-          const res = await fetch(`${apiBase}/api/v1/user/my-ratings`, {
-              method: 'GET',
-              headers: { 
-                  'Authorization': `Bearer ${token}`
-              }
-          });
-
-          if (res.ok) {
-              const ratingsMap = await res.json(); // { place_id: score }
-              
-              document.querySelectorAll('.rating-buttons').forEach(container => {
-                  const placeId = container.dataset.placeId;
-                  
-                  if (ratingsMap[placeId]) {
-                      const score = ratingsMap[placeId];
-                      const likeBtn = container.querySelector('.btn-like');
-                      const dislikeBtn = container.querySelector('.btn-dislike');
-                      
-                      // Reset
-                      likeBtn.classList.remove('active');
-                      dislikeBtn.classList.remove('active');
-                      
-                      // Set active based on score: >= 4 = like, <= 2 = dislike
-                      if (score >= 4.0) {
-                          likeBtn.classList.add('active');
-                      } else if (score <= 2.0) {
-                          dislikeBtn.classList.add('active');
-                      }
-                  }
-              });
-          }
-      } catch (e) {
-          console.error("Lỗi tải lịch sử đánh giá:", e);
-      }
-  }
-
-  // Chạy lần đầu tiên
-  (async () => {
-        await fetchResults(currentK, false);
-        await loadUserRatings();
-    })();
-
-  window.addEventListener('scroll', () => {
-    if (isLoading || isFull) return;
-    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 100) {
-      currentK += stepK; 
-      fetchResults(currentK, true); 
-    }
-  });
-
-  function triggerSearch() {
-    const q = (headerInput?.value || '').trim();
-    if (!q) return;
-    const newParams = new URLSearchParams();
-    newParams.set('text', q);
-    newParams.set('k', '6'); 
-    window.location.search = newParams.toString();
-  }
-
-  headerBtn?.addEventListener('click', triggerSearch);
-  headerInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') triggerSearch();
-  });
+    initSortDropdown();
 });
+
+// === HÀM XỬ LÝ TÌM KIẾM (SEARCH LOGIC) ===
+function handleResultPageSearch() {
+    const input = document.getElementById('resultsPageInput');
+    const btn = document.getElementById('resultsPageSearchBtn');
+
+    // 1. Điền lại từ khóa cũ vào ô input để người dùng biết mình đang tìm gì
+    const params = new URLSearchParams(window.location.search);
+    const currentQuery = params.get('q');
+    if (input && currentQuery) {
+        input.value = currentQuery;
+    }
+
+    // 2. Hàm thực thi tìm kiếm
+    const doSearch = () => {
+        if (!input) return;
+        const val = input.value.trim();
+        if (val) {
+            // Reload trang với tham số ?q=...
+            window.location.href = `results.html?q=${encodeURIComponent(val)}`;
+        } else {
+            // Nếu rỗng thì về trang result gốc (hiện tất cả)
+            window.location.href = `results.html`;
+        }
+    };
+
+    // 3. Gắn sự kiện Click và Enter
+    if (btn) {
+        btn.onclick = doSearch; // Gán trực tiếp để tránh duplicate event
+    }
+    if (input) {
+        input.onkeypress = (e) => {
+            if (e.key === 'Enter') doSearch();
+        };
+    }
+}
+
+// --- CÁC HÀM HỖ TRỢ KHÁC ---
+window.goToDetail = function(id) {
+    window.location.href = `detail.html?id=${id}`;
+};
+
+function checkAuth() {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('username');
+    const unsigned = document.getElementById('unsignedBlock');
+    const signed = document.getElementById('signedBlock');
+    
+    if (token && user) {
+        const nameDisplay = document.getElementById('displayUsername');
+        if(nameDisplay) nameDisplay.textContent = user;
+        if(unsigned) unsigned.style.display = 'none';
+        if(signed) signed.style.display = 'flex';
+    } else {
+        if(unsigned) unsigned.style.display = 'flex';
+        if(signed) signed.style.display = 'none';
+    }
+
+    const logoutBtn = document.getElementById('btnLogout');
+    if(logoutBtn) {
+        logoutBtn.onclick = (e) => {
+            e.preventDefault();
+            localStorage.clear();
+            window.location.reload();
+        };
+    }
+}
+
+function initSortDropdown() {
+    const dropdown = document.getElementById('customSort');
+    if (!dropdown) return;
+    const trigger = dropdown.querySelector('.sort-trigger');
+    const options = dropdown.querySelectorAll('.sort-option');
+    const display = document.getElementById('currentSortValue');
+
+    trigger.onclick = (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('open');
+    };
+
+    options.forEach(opt => {
+        opt.onclick = () => {
+            if(display) display.innerText = opt.innerText;
+            options.forEach(o => o.classList.remove('active'));
+            opt.classList.add('active');
+            dropdown.classList.remove('open');
+        };
+    });
+
+    document.onclick = (e) => {
+        if(!dropdown.contains(e.target)) dropdown.classList.remove('open');
+    };
+}

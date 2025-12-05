@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <link rel="icon" type="image/png" href="src/images/TUYU_umbrella.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi tiết địa điểm - exSighting</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <link rel="stylesheet" href="src/css/style.css"> 
+    <link rel="stylesheet" href="src/css/detail.css"> 
+    <link rel="stylesheet" href="src/css/footer.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+
+    <header class="navbar-v3">
+        <div class="logo" onclick="window.location.href='home.html'" style="cursor: pointer;">
+            <i class="fas fa-umbrella"></i>
+            <span>exSighting</span>
+        </div>
+        <nav class="nav-links">
+            
+            <a href="about.html" class="nav-item">About us</a>
+        </nav>
+        
+        <div id="authSection">
+            <button class="user-actions-unsigned-in" id="unsignedBlock" onclick="window.location.href='login.html'">
+                <div class="user-icon-bg"><i class="fas fa-user-circle"></i></div>
+                <span class="sign-in-text">Sign In</span>
+            </button>
+            <div class="user-actions-signed-in" id="signedBlock" style="display: none;">
+                <button class="user-profile-toggle">
+                    <div class="user-icon-bg"><i class="fas fa-user-circle"></i></div>
+                    <span class="username-text" id="displayUsername">User</span>
+                    <i class="fas fa-caret-down" style="margin-left: 5px;"></i>
+                </button>
+                <div class="user-dropdown-menu">
+                    <a href="#"><i class="fas fa-user-circle"></i> Profile</a>
+                    <a href="#"><i class="fas fa-cog"></i> Settings</a>
+                    <div class="menu-divider"></div>
+                    <a href="#" id="btnLogout"><i class="fas fa-sign-out-alt"></i> Log Out</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="sub-search-bar">
+        <div class="search-input-wrapper">
+            <button class="search-icon-btn" onclick="handleDetailSearch()">
+                <i class="fas fa-search"></i>
+            </button>
+            <input type="text" id="detailSearchInput" class="search-input-field" 
+                   placeholder="Look for somewhere else..." 
+                   onkeypress="if(event.key === 'Enter') handleDetailSearch()">
+        </div>
+    </div>
+
+    <main class="details-page-wrapper">
+        
+        <div class="place-intro-card">
+            <div class="intro-left">
+                <div class="main-img-frame">
+                    <img id="detailMainImg" src="" alt="Place">
+                </div>
+
+                <div class="thumb-slider-container">
+                    <button class="slider-btn prev-btn" onclick="slideThumbs(-1)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+
+                    <div class="thumb-viewport">
+                        <div class="thumbs-row" id="detailThumbs"></div>
+                    </div>
+
+                    <button class="slider-btn next-btn" onclick="slideThumbs(1)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="intro-right">
+                <div class="place-header-group">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <h1 class="place-title" id="detailTitle">LOADING...</h1>
+                            <div class="place-subtitle">
+                                <span id="detailLocation">Vietnam</span>
+                            </div>
+                            <span class="distance-tag" id="detailDistance" style="display: none;">... km from you</span>
+                        </div>
+                        <div class="action-icons">
+                            <button><i class="far fa-thumbs-up"></i></button>
+                            <button><i class="far fa-thumbs-down"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="place-desc-group">
+                    <div id="detailDesc">Loading description...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-container">
+            <h3 class="section-title">Users' Reviews</h3>
+            <div class="add-review-box">
+                <h4>Write a Review</h4>
+                <textarea class="review-textarea" rows="3" placeholder="Share your experience..."></textarea>
+                <button class="submit-btn">Post Review</button>
+            </div>
+            <div id="reviewsList"></div>
+        </div>
+
+        <div class="section-container">
+            <h3 class="section-title">Recommended Places</h3>
+            <div id="recommendationList" style="display: flex; gap: 25px; flex-wrap: wrap;"></div>
+        </div>
+
+    </main>
+
+    <script>
+        // === 1. DỮ LIỆU ĐỊA ĐIỂM ===
+        const placesData = {
+            "101": {
+                name: "HA LONG BAY",
+                location: "Quang Ninh", distance: "123",
+                desc: `Ha Long Bay features thousands of limestone karsts and isles.<br><br><b>Highlights:</b><ul style="margin-top:5px; padding-left:20px; list-style-type: disc;"><li>Boat cruises</li><li>Cave exploration</li><li>Kayaking</li></ul>`,
+                images: [
+                    "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070",
+                    "https://images.unsplash.com/photo-1504457047772-27faf1c00561?q=80&w=2070",
+                    "https://images.unsplash.com/photo-1464983308960-49ad68803cc2?q=80&w=2070",
+                    "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=2070",
+                    "https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?q=80&w=2070",
+                    "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=2070",
+                    "https://images.unsplash.com/photo-1533285860268-c9c004c27a20?q=80&w=2070",
+                    "https://images.unsplash.com/photo-1616383637651-72251a700320?q=80&w=2070"
+                ],
+                reviews: [
+    { 
+        user: "Vo Rikka cua Phu' xinh vl", 
+        avatar: "src/images/rikka.png", 
+        comment: "Dep qua em ra roi!", 
+        photos: [] 
+    }, 
+    { 
+        user: "Gai Nhat dam dang", 
+        avatar: "src/images/an.jpg", 
+        comment: "So beautiful...Toi da ra", 
+        photos: [] 
+    }
+]
+            },
+            // Fallback data cho các ID khác
+            "102": { name: "TUAN CHAU PARK", location: "Quang Ninh", distance: "130", desc: "An entertainment complex.", images: ["https://images.unsplash.com/photo-1565691668615-5e60d5c08611?q=80&w=2070"], reviews: [] },
+            "103": { name: "HOI AN", location: "Quang Nam", distance: "800", desc: "Ancient Town.", images: ["https://images.unsplash.com/photo-1557750255-c76072a7aad1?q=80&w=2070"], reviews: [] },
+            "104": { name: "DA LAT", location: "Lam Dong", distance: "300", desc: "City of Flowers.", images: ["https://images.unsplash.com/photo-1596328372690-e9b46571b402?q=80&w=2070"], reviews: [] },
+            "105": { name: "NHA TRANG", location: "Khanh Hoa", distance: "450", desc: "Beach City.", images: ["https://images.unsplash.com/photo-1570535926348-18302f741544?q=80&w=2070"], reviews: [] }
+        };
+
+        // === 2. CẤU HÌNH SLIDER ===
+        let currentImgIndex = 0;
+        let currentImagesList = [];
+        const ITEMS_PER_PAGE = 4; // Số ảnh mỗi trang slider
+
+        // === 3. HÀM TRƯỢT ẢNH (Batch Slider) ===
+        window.slideThumbs = function(direction) {
+            let newIndex = currentImgIndex + direction;
+            if (newIndex < 0) newIndex = currentImagesList.length - 1;
+            if (newIndex >= currentImagesList.length) newIndex = 0;
+            updateGallery(newIndex);
+        };
+
+        window.clickThumb = function(index) {
+            updateGallery(index);
+        };
+
+        function updateGallery(index) {
+            currentImgIndex = index;
+            
+            // Đổi ảnh lớn
+            const mainImg = document.getElementById('detailMainImg');
+            if(mainImg) mainImg.src = currentImagesList[index];
+
+            // Highlight thumbnail
+            const allThumbs = document.querySelectorAll('.thumb-box');
+            allThumbs.forEach((box, i) => {
+                if (i === index) box.classList.add('active');
+                else box.classList.remove('active');
+            });
+
+            // Tự động trượt slider
+            const track = document.getElementById('detailThumbs');
+            const viewport = document.querySelector('.thumb-viewport');
+            
+            if (track && viewport) {
+                const pageIndex = Math.floor(index / ITEMS_PER_PAGE);
+                const viewportWidth = viewport.clientWidth; 
+                const scrollAmount = -(pageIndex * viewportWidth);
+                track.style.transform = `translateX(${scrollAmount}px)`;
+            }
+        }
+
+        // === 4. KHỞI TẠO ===
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            initHeaderDropdown();
+
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id') || "101"; 
+            const data = placesData[id] || placesData["101"];
+            currentImagesList = data.images;
+
+            renderPage(data);
+            renderRecs(id);
+
+            // Bàn phím
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowRight') { e.preventDefault(); window.slideThumbs(1); }
+                else if (e.key === 'ArrowLeft') { e.preventDefault(); window.slideThumbs(-1); }
+            });
+        });
+
+        function renderPage(data) {
+            document.getElementById('detailTitle').innerText = data.name;
+            document.getElementById('detailLocation').innerText = data.location;
+            document.getElementById('detailDistance').innerText = data.distance + " km from you";
+            document.getElementById('detailDesc').innerHTML = data.desc;
+            
+            const thumbsContainer = document.getElementById('detailThumbs');
+            if (thumbsContainer) {
+                thumbsContainer.innerHTML = data.images.map((img, i) => `
+                    <div class="thumb-box" onclick="clickThumb(${i})">
+                        <img src="${img}">
+                    </div>
+                `).join('');
+            }
+            updateGallery(0);
+
+            const reviewsContainer = document.getElementById('reviewsList');
+            if(data.reviews.length > 0) {
+                reviewsContainer.innerHTML = data.reviews.map(rev => `
+                    <div class="review-card">
+                        <img src="${rev.avatar}" class="reviewer-avatar">
+                        <div class="review-content">
+                            <h4>${rev.user}</h4><p>${rev.comment}</p>
+                        </div>
+                    </div>`).join('');
+            }
+        }
+
+        function handleDetailSearch() {
+            const input = document.getElementById('detailSearchInput');
+            const query = input.value.trim();
+            if (query) window.location.href = `results.html?q=${encodeURIComponent(query)}`;
+            else {
+                input.focus();
+                input.style.borderBottomColor = "red";
+                setTimeout(() => input.style.borderBottomColor = "#ccc", 500);
+            }
+        }
+
+        // Các hàm phụ (Auth, Recs, Dropdown...) giữ nguyên
+        function renderRecs(currentId) {
+            const list = document.getElementById('recommendationList');
+            if(list) {
+                const otherIds = Object.keys(placesData).filter(k => k !== currentId).slice(0, 3);
+                list.innerHTML = otherIds.map(k => {
+                    const item = placesData[k];
+                    return `<div class="rec-card" onclick="window.location.href='detail.html?id=${k}'"><img src="${item.images[0]}"><div class="rec-info"><h4>${item.name}</h4><p>${item.location}</p></div></div>`;
+                }).join('');
+            }
+        }
+        function initHeaderDropdown() {
+            const toggle = document.querySelector('.user-profile-toggle');
+            const menu = document.querySelector('.user-dropdown-menu');
+            if (toggle && menu) {
+                toggle.addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('active'); });
+                document.addEventListener('click', (e) => { if (!toggle.contains(e.target)) menu.classList.remove('active'); });
+            }
+        }
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('username');
+            const unsigned = document.getElementById('unsignedBlock');
+            const signed = document.getElementById('signedBlock');
+            if (token && user) {
+                document.getElementById('displayUsername').textContent = user;
+                unsigned.style.display = 'none'; signed.style.display = 'block';
+            } else {
+                unsigned.style.display = 'flex'; signed.style.display = 'none';
+            }
+            const logout = document.getElementById('btnLogout');
+            if(logout) logout.addEventListener('click', (e) => { e.preventDefault(); localStorage.clear(); window.location.reload(); });
+        }
+    </script>
+
+    <div id="footer-placeholder"></div>
+    <script src="src/js/footer.js"></script>
+</body>
+</html>

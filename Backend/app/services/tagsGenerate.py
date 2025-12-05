@@ -86,6 +86,12 @@ def main():
         # Đảm bảo cột tags tồn tại
         if 'tags' not in df_result.columns:
             df_result['tags'] = None
+        # Merge với df gốc để đảm bảo có đầy đủ dữ liệu
+        # Ưu tiên giữ tags từ df_result nếu đã có
+        df_result = df.merge(df_result[['id', 'tags']], on='id', how='left', suffixes=('', '_old'))
+        if 'tags_old' in df_result.columns:
+            df_result['tags'] = df_result['tags_old']
+            df_result = df_result.drop(columns=['tags_old'])
     else:
         print("Tạo file kết quả mới...")
         df_result = df.copy()
@@ -107,6 +113,7 @@ def main():
     print("-" * 40)
     print(f"🚀 Bắt đầu chạy batch hôm nay (Giới hạn: {DAILY_LIMIT} requests)...")
     print(f"⏳ Tốc độ: 1 request mỗi {DELAY_SECONDS} giây.")
+    print(f"⏭️  Bắt đầu từ ID: {rows_to_process.iloc[0]['id']}")
     print("-" * 40)
 
     request_count = 0

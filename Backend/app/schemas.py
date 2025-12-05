@@ -17,6 +17,9 @@ class User(SQLModel, table=True):
     # Relationships (Optional but recommended)
     ratings: List["Rating"] = Relationship(back_populates="user")
 
+    # comments: List["Comment"] = Relationship(back_populates="user")
+
+
 class Place(SQLModel, table=True):
     # 1. ID: Standard Auto-Incrementing Primary Key
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -33,6 +36,9 @@ class Place(SQLModel, table=True):
 
     # Relationships
     ratings: List["Rating"] = Relationship(back_populates="place")
+
+    # comments: List["Comment"] = Relationship(back_populates="place")
+
 
 # User <-> Place rating
 class Rating(SQLModel, table=True):
@@ -60,6 +66,23 @@ class PlaceDetailResponse(SQLModel):
     description: List[str]
     image: List[str]
     tags: List[str]
+# from datetime import datetime
+
+# class Comment(SQLModel, table=True):
+#     id: Optional[int] = Field(default=None, primary_key=True)
+
+#     # Foreign Keys
+#     user_id: int = Field(foreign_key="user.id")
+#     place_id: int = Field(foreign_key="place.id")
+
+
+#     content: str
+#     created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+#     # Relationships
+#     user: Optional[User] = Relationship(back_populates="comments")
+#     place: Optional[Place] = Relationship(back_populates="comments")
+
 
 
 # ==========================================
@@ -138,3 +161,7 @@ class Token(SQLModel):
 # Define request body structure for Chatbot
 class ChatbotRequest(SQLModel):
     message: str
+
+
+
+
