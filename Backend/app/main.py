@@ -9,6 +9,8 @@ from app.database import create_db_and_tables
 
 from app.routers import recommendation, rating, chatbot
 
+from app.routers import place
+
 
 
 # Define the Lifespan (Startup Event). 
@@ -84,6 +86,8 @@ app.include_router(recommendation.router, prefix="/api/v1", tags=["Recommendatio
 app.include_router(rating.router, prefix="/api/v1/user", tags=["User Actions"])         # đánh giá địa điểm
 
 app.include_router(chatbot.router, prefix="/chat", tags=["Chatbot"])         # chatbot
+
+app.include_router(place.router, prefix="/api/v1/place", tags=["Place Details"])        # place details
 
 # admin interface
 from app.admin import * 

@@ -60,6 +60,12 @@ class Rating(SQLModel, table=True):
 
 
 
+class PlaceDetailResponse(SQLModel):
+    id: int
+    name: str
+    description: List[str]
+    image: List[str]
+    tags: List[str]
 # from datetime import datetime
 
 # class Comment(SQLModel, table=True):
