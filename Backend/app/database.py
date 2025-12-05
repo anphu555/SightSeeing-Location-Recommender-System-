@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel, create_engine, Session
 
 # 1. Setup the Database URL (SQLite in this case)
-sqlite_file_name = "database.db"
+sqlite_file_name = "vietnamtravel.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
 # 2. Create the Engine
