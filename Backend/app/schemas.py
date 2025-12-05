@@ -53,6 +53,15 @@ class Rating(SQLModel, table=True):
     place: Optional[Place] = Relationship(back_populates="ratings")
 
 
+
+class PlaceDetailResponse(SQLModel):
+    id: int
+    name: str
+    description: List[str]
+    image: List[str]
+    tags: List[str]
+
+
 # ==========================================
 # API MODELS (table=False) (not create table in db)
 # Used for Requests, Responses, and LLM parsing.
