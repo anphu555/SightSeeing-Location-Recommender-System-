@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | exSighting</title>
+    <link rel="stylesheet" href="./src/css/style.css">
+    <link rel="stylesheet" href="./src/css/header.css">
+    <link rel="stylesheet" href="./src/css/footer.css">
+    <link rel="stylesheet" href="./src/css/profile.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div id="header-placeholder"></div>
+
+    <div class="profile-wrapper">
+        <div class="profile-header-card">
+            <div class="cover-photo">
+                <img src="./src/images/background.jpg" alt="Cover" id="coverImg">
+                <button class="btn-edit-cover"><i class="fas fa-camera"></i> Edit Cover</button>
+            </div>
+            <div class="user-info-bar">
+                <div class="avatar-holder">
+                    <img src="./src/images/tuyu.png" alt="Avatar">
+                    <button class="btn-edit-avatar"><i class="fas fa-camera"></i></button>
+                </div>
+                <h1 class="user-name">User Name</h1>
+                <p class="user-bio">"Travel far enough, you meet yourself."</p>
+                <div class="user-stats">
+                    <div class="stat-item"><strong>12</strong> <span>Trips</span></div>
+                    <div class="stat-item"><strong>05</strong> <span>Wishlist</span></div>
+                    <div class="stat-item"><strong>08</strong> <span>Reviews</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-nav-tabs">
+            <button class="tab-link active" data-tab="info">
+                <i class="fas fa-user"></i> Personal Info
+            </button>
+            <button class="tab-link" data-tab="wishlist">
+                <i class="fas fa-heart"></i> Wishlist
+            </button>
+            <button class="tab-link" data-tab="reviews">
+                <i class="fas fa-star"></i> My Reviews
+            </button>
+            <button class="tab-link" data-tab="settings">
+                <i class="fas fa-cog"></i> Settings
+            </button>
+        </div>
+
+        <div class="profile-body">
+            
+            <div id="info" class="tab-content active">
+                <div class="content-card fade-in">
+                    <div class="card-header">
+                        <h3><i class="fas fa-id-card"></i> About Me</h3>
+                        <button class="btn-teal-outline">Edit Profile</button>
+                    </div>
+                    <form class="modern-form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" value="Nguyen Van A" class="input-field">
+                            </div>
+                            <div class="form-group">
+                                <label>Email Address</label>
+                                <input type="email" value="user@example.com" disabled class="input-field disabled">
+                            </div>
+                            <div class="form-group">
+                                <label>Phone Number</label>
+                                <input type="text" value="+84 987 654 321" class="input-field">
+                            </div>
+                            <div class="form-group">
+                                <label>Location</label>
+                                <input type="text" value="Ho Chi Minh City, Vietnam" class="input-field">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="wishlist" class="tab-content">
+                <div class="places-grid fade-in">
+                    <div class="place-card">
+                        <div class="place-img">
+                            <img src="./src/images/halong.jpg" alt="Ha Long Bay">
+                            <div class="place-overlay">
+                                <button class="btn-icon-remove" title="Remove"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>
+                        <div class="place-info">
+                            <h4>Ha Long Bay</h4>
+                            <p class="location"><i class="fas fa-map-marker-alt"></i> Quang Ninh</p>
+                            <div class="rating-badge">4.8 <i class="fas fa-star"></i></div>
+                        </div>
+                    </div>
+                    <div class="place-card">
+                        <div class="place-img">
+                            <img src="./src/images/yentu.jpg" alt="Yen Tu Mountain">
+                            <div class="place-overlay">
+                                <button class="btn-icon-remove" title="Remove"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>
+                        <div class="place-info">
+                            <h4>Yen Tu Mountain</h4>
+                            <p class="location"><i class="fas fa-map-marker-alt"></i> Quang Ninh</p>
+                            <div class="rating-badge">4.5 <i class="fas fa-star"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="reviews" class="tab-content">
+                <div class="empty-state">
+                    <i class="far fa-comment-dots fa-3x" style="color:#ccc; margin-bottom:15px"></i>
+                    <p>No reviews yet.</p>
+                </div>
+            </div>
+
+            <div id="settings" class="tab-content">
+                <div class="empty-state">
+                    <p>Account settings will appear here.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="./src/js/header.js"></script>
+    <script src="./src/js/footer.js"></script>
+    <script src="./src/js/profile.js"></script>
+</body>
+</html>
