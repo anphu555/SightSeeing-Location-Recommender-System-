@@ -3,6 +3,9 @@ from app.schemas import RecommendRequest, RecommendResponse, User
 from app.services.llm_service import extract_with_groq
 from app.routers.recsysmodel import recommend
 from app.routers.auth import get_current_user_optional
+# from sqlmodel import Session, select
+# from app.database import engine
+# from app.schemas import Place, PlaceDetailResponse # Import thêm Place và Schema mới
 
 router = APIRouter()
 
@@ -40,3 +43,21 @@ async def get_recommendations(
     
     # 4. Trả về kết quả
     return RecommendResponse(extraction=extraction, results=results_list)
+
+# @router.get("/place/{place_id}", response_model=PlaceDetailResponse)
+# def get_place_detail(place_id: int):
+#     with Session(engine) as session:
+#         # Truy vấn địa điểm theo ID
+#         place = session.get(Place, place_id)
+
+#         if not place:
+#             raise HTTPException(status_code=404, detail="Place not found")
+
+#         # Trả về dữ liệu
+#         return PlaceDetailResponse(
+#             id=place.id,
+#             name=place.name,
+#             description=place.description, # Lấy description từ DB
+#             image=place.image,             # Lấy ảnh từ DB
+#             tags=place.tags
+#         )
