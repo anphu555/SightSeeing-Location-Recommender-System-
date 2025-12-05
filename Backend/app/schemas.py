@@ -8,6 +8,14 @@ from enum import Enum
 # These create the actual rows in your DB.
 # ==========================================
 
+
+# --- ENUMS ---
+class InteractionType(str, Enum):
+    like = "like"       # User bấm like/tim (trọng số cao nhất)
+    dislike = "dislike" # User không thích
+    click = "click"     # User bấm vào xem chi tiết (trọng số thấp)
+    view = "view"       # User xem lâu (>30s) (trọng số trung bình)
+
 # table = true để tạo bảng cho db (trong file sqlite)
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -54,7 +62,7 @@ class Rating(SQLModel, table=True):
 
     # Score tích lũy từ các interactions (1-5 scale)
     # Score này sẽ được dùng để train collaborative filtering model
-    score: float = Field(default=3.0, ge=1.0, le=5.0)
+    score: float = Field(default=0.0)
 
     # Relationships
     # User can check its relationship by user.ratings.place.....
@@ -91,7 +99,7 @@ class Rating(SQLModel, table=True):
 
 class RecommendRequest(SQLModel):
     user_text: str = Field(..., schema_extra={"example": "i like mountains in Viet Nam"})
-    top_k: int = Field(5, ge=1, le=100)
+    top_k: int = Field(5)
 
 class GroqExtraction(SQLModel):
     location: List[str] = Field(default=[], sa_column=Column(JSON))
@@ -103,20 +111,17 @@ class GroqExtraction(SQLModel):
     exclude_locations: List[str] = []
 
 class PlaceOut(SQLModel):
-    """Used to return place data to the frontend"""
     id: int
     name: str
-    country: str
     province: str
-    region: str
     themes: List[str]
-    score: float # Similarity score (calculated, not from DB)
+    score: float
 
 
-class PreferenceEnum(str, Enum):
-    like = "like"
-    dislike = "dislike"
-    none = "none"
+# class PreferenceEnum(str, Enum):
+#     like = "like"
+#     dislike = "dislike"
+#     none = "none"
 
     
 class RecommendResponse(SQLModel):
@@ -125,13 +130,9 @@ class RecommendResponse(SQLModel):
 
 # --- Rating Flow ---
 
-class InteractionType(str, Enum):
-    """Các loại tương tác của user với place"""
-    like = "like"
-    dislike = "dislike"
-    click = "click"
-    view = "view"  # view > 30s
-    none = "none"
+class InteractionCreate(SQLModel):
+    place_id: int
+    interaction_type: InteractionType
 
 class RatingCreate(SQLModel):
     place_id: int

@@ -1,86 +1,65 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
-
-from app.routers.auth import get_current_user
-from app.schemas import Rating, RatingCreate, InteractionType, User
 from app.database import get_session
+from app.schemas import InteractionCreate, InteractionType, Rating, User
+from app.routers.auth import get_current_user
 
 router = APIRouter()
 
-# Cấu hình điểm số cho từng loại interaction
-INTERACTION_WEIGHTS = {
-    InteractionType.like: 2.0,      # +2.0 điểm
-    InteractionType.dislike: -2.0,  # -2.0 điểm
-    InteractionType.click: 0.3,     # +0.3 điểm
-    InteractionType.view: 0.5,      # +0.5 điểm (view >30s)
-    InteractionType.none: 0.0,      # +0.0 điểm
+# Bảng quy đổi điểm số cho hành vi
+SCORE_MAP = {
+    InteractionType.like: 5.0,
+    InteractionType.view: 3.0,  # Xem lâu
+    InteractionType.click: 1.0, # Click vào xem
+    InteractionType.dislike: -1.0
 }
 
-@router.post("/rate")
-def submit_rating(
-    rating_data: RatingCreate, 
+@router.post("/interact")
+async def track_interaction(
+    interaction: InteractionCreate,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
-    Tích lũy score từ các interactions:
-    - like: +2.0
-    - dislike: -2.0
-    - click: +0.3
-    - view (>30s): +0.5
-    - none: +0.0
-    
-    Score sẽ được giới hạn trong khoảng [1.0, 5.0]
+    API này nhận hành vi (click, like...) và cập nhật điểm số (score)
+    vào bảng Rating để model Two-Tower học.
     """
-    # Kiểm tra xem user đã rate địa điểm này chưa
+    
+    # 1. Tìm xem user đã từng tương tác với địa điểm này chưa
     statement = select(Rating).where(
         Rating.user_id == current_user.id,
-        Rating.place_id == rating_data.place_id
+        Rating.place_id == interaction.place_id
     )
     existing_rating = session.exec(statement).first()
     
-    # Lấy weight của interaction type
-    weight = INTERACTION_WEIGHTS.get(rating_data.interaction_type, 0.0)
-    
+    new_score = SCORE_MAP.get(interaction.interaction_type, 1.0)
+
     if existing_rating:
-        # Tích lũy score (cộng dồn)
-        new_score = existing_rating.score + weight
-        # Giới hạn trong khoảng [1.0, 5.0]
-        existing_rating.score = max(1.0, min(5.0, new_score))
-        session.add(existing_rating)
-        final_score = existing_rating.score
+        # LOGIC UPDATE:
+        # Nếu hành vi mới có trọng số cao hơn (vd: Like > Click), ta cập nhật điểm lên.
+        # Nếu user đã Like (5.0) rồi mà click lại (1.0), ta giữ nguyên 5.0.
+        if new_score > existing_rating.score:
+            existing_rating.score = new_score
+            session.add(existing_rating)
+            session.commit()
+            return {"status": "updated", "score": new_score}
+        
+        # Trường hợp đặc biệt: Nếu dislike thì set luôn
+        if interaction.interaction_type == InteractionType.dislike:
+            existing_rating.score = -1.0 # Hoặc xóa luôn tùy logic
+            session.add(existing_rating)
+            session.commit()
+            return {"status": "disliked"}
+
+        return {"status": "kept_existing", "score": existing_rating.score}
+
     else:
-        # Tạo rating mới với score khởi đầu = 3.0 + weight
-        initial_score = 3.0 + weight
-        final_score = max(1.0, min(5.0, initial_score))
+        # LOGIC CREATE: Chưa tương tác bao giờ -> Tạo mới
         new_rating = Rating(
             user_id=current_user.id,
-            place_id=rating_data.place_id,
-            score=final_score
+            place_id=interaction.place_id,
+            score=new_score
         )
         session.add(new_rating)
-    
-    session.commit()
-    
-    return {
-        "message": f"{rating_data.interaction_type.value} saved successfully", 
-        "place_id": rating_data.place_id, 
-        "score": round(final_score, 2),
-        "interaction_type": rating_data.interaction_type.value
-    }
-
-@router.get("/my-ratings")
-def get_my_ratings(
-    current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session)
-):
-    """
-    Lấy tất cả ratings của user hiện tại
-    Returns: { place_id: score }
-    """
-    statement = select(Rating).where(Rating.user_id == current_user.id)
-    ratings = session.exec(statement).all()
-    
-    # Chuyển đổi thành dictionary: { place_id: score }
-    result = {rating.place_id: round(rating.score, 2) for rating in ratings}
-    return result
+        session.commit()
+        return {"status": "created", "score": new_score}
