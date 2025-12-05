@@ -42,8 +42,10 @@
 .footer-desc {
     font-size: 13px;
     line-height: 1.5;
+    color: #f0fdf4;
     opacity: 0.8;
     max-width: 90%;
+    margin-top: 0;
 }
 
 /* --- XỬ LÝ LINK (QUAN TRỌNG) --- */

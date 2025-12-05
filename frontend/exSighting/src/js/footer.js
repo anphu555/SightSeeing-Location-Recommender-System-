@@ -30,9 +30,9 @@ document.addEventListener("DOMContentLoaded", function() {
             <div class="footer-col">
                 <h4>Connect</h4>
                 <div class="social-icons">
-                    <a href="#" aria-label="Github"><i class="fab fa-github"></i></a>
-                    <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ&start_radio=1&pp=ygUXbmV2ZXIgZ29ubmEgZ2l2ZSB5b3UgdXCgBwE%3D" target="_blank" rel="noopener noreferrer" aria-label="Github"><i class="fab fa-github"></i></a>                    
+                    <a href="https://www.youtube.com/watch?v=6TkN923BKdI&pp=ygUVc8OzaSBob2FuZyBjw7QgxJHhu5lj" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://www.youtube.com/watch?v=0SErsQ_IB0I&t=22s" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
                 </div>
             </div>
         </div>
