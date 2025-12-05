@@ -30,9 +30,7 @@ def load_resources():
     if loaded_model is None:
         print("Loading Two-Tower Model...")
         loaded_model = tf.keras.models.load_model(MODEL_PATH)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            loaded_mlb = pickle.load(open(MLB_PATH, 'rb'))
+        loaded_mlb = pickle.load(open(MLB_PATH, 'rb'))
         
         # Load places và pre-calculate item vectors
         places_df = pd.read_csv(PLACES_CSV_PATH)
