@@ -38,7 +38,13 @@ def load_resources():
         if isinstance(places_df['tags'].iloc[0], str):
             places_df['tags'] = places_df['tags'].apply(ast.literal_eval)
             
-        item_vectors = loaded_mlb.transform(places_df['tags'])
+        # Convert sang dense array để tương thích với Keras
+        item_vectors_raw = loaded_mlb.transform(places_df['tags'])
+        # Kiểm tra nếu là sparse matrix thì convert, nếu không thì giữ nguyên
+        if hasattr(item_vectors_raw, 'toarray'):
+            item_vectors = item_vectors_raw.toarray()
+        else:
+            item_vectors = item_vectors_raw
         print("Model loaded successfully!")
 
 def recommend_two_tower(user_tags_list: list, top_k=5):
@@ -53,9 +59,21 @@ def recommend_two_tower(user_tags_list: list, top_k=5):
     # user_tags_list ví dụ: ['Nature', 'Beach'] lấy từ User.preferences hoặc Chatbot extraction
     if not user_tags_list:
         # Nếu user không có tags nào, trả về ngẫu nhiên hoặc top trending
-        return places_df.head(top_k)
+        results = places_df.head(top_k).copy()
+        results['score'] = 3.0  # Default neutral score
+        return results
 
-    user_vector = loaded_mlb.transform([user_tags_list])
+    # Chuẩn hóa tags: viết hoa chữ cái đầu mỗi từ để khớp với vocabulary
+    # Ví dụ: 'beach' -> 'Beach', 'local cuisine' -> 'Local Cuisine'
+    normalized_tags = [tag.title() for tag in user_tags_list]
+    
+    # Convert user tags sang dense array
+    user_vector_raw = loaded_mlb.transform([normalized_tags])
+    # Kiểm tra nếu là sparse matrix thì convert, nếu không thì giữ nguyên
+    if hasattr(user_vector_raw, 'toarray'):
+        user_vector = user_vector_raw.toarray()
+    else:
+        user_vector = user_vector_raw
     
     # 2. Repeat user vector để khớp với số lượng item
     user_vectors_repeated = np.repeat(user_vector, len(item_vectors), axis=0)
