@@ -1,0 +1,205 @@
+/* =========================================
+   2. NAVBAR (HEADER) - STYLE MỚI
+   ========================================= */
+.navbar-v3 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 100px; 
+    background-color: white; 
+    border-bottom: 1px solid #eee;
+    position: relative; 
+    z-index: 1000; 
+}
+
+/* Logo */
+.navbar-v3 .logo {
+    display: flex;
+    align-items: center;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #14838B; 
+}
+
+.navbar-v3 .logo i {
+    color: #14838B; 
+    margin-right: 5px;
+    font-size: 2.2rem;
+}
+
+/* Nav Links */
+.navbar-v3 .nav-links {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    margin-right: 20px; 
+}
+
+/* Link Item */
+.navbar-v3 .nav-links .nav-item {
+    color: #14838B; 
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    position: relative; 
+    padding-bottom: 3px; 
+    transition: color 0.3s;
+    cursor: pointer;
+}
+
+/* Gạch chân trượt ra từ giữa */
+.navbar-v3 .nav-links .nav-item::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 50%; 
+    transform: translateX(-50%); 
+    background: #0c6a6f; 
+    transition: width 0.3s ease;
+}
+
+.navbar-v3 .nav-links .nav-item:hover::after { width: 100%; }
+.navbar-v3 .nav-links .nav-item:hover { color: #0c6a6f; }
+
+/* --- KHU VỰC USER / LOGIN --- */
+
+/* 1. Nút Sign In (Chưa đăng nhập) */
+button.user-actions-unsigned-in {
+    display: flex;
+    align-items: center;
+    background-color: #14838B; 
+    color: white;
+    border: none; 
+    padding: 0; 
+    border-radius: 25px; 
+    overflow: hidden; 
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s;
+    height: 45px; 
+    position: relative;
+    z-index: 1001; 
+}
+
+button.user-actions-unsigned-in:hover { background-color: #0c6a6f; }
+
+/* Style chung cho icon tròn trắng */
+.user-icon-bg {
+    background-color: white; 
+    color: #14838B; 
+    border-radius: 50%; 
+    width: 35px;
+    height: 35px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    flex-shrink: 0; 
+    margin: 5px; 
+}
+
+.sign-in-text {
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 0 20px 0 5px; 
+}
+
+/* 2. Trạng thái ĐÃ ĐĂNG NHẬP */
+.user-actions-signed-in {
+    position: relative; 
+    z-index: 1001;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+/* Nút bấm profile */
+.user-profile-toggle {
+    display: flex;
+    align-items: center;
+    
+    background-color: #14838B; 
+    color: white;
+    
+    border: none;
+    border-radius: 25px; /* Bo tròn giống nút Sign In */
+    
+    /* Padding quan trọng: Bên trái 5px để icon sát lề giống nút Sign In */
+    padding: 0 15px 0 5px; 
+    
+    height: 45px; /* Chiều cao cố định bằng nút Sign In */
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s;
+}
+
+.user-profile-toggle:hover { background-color: #0c6a6f; }
+
+/* Icon bên trong nút profile */
+.user-profile-toggle .user-icon-bg {
+    margin: 5px 10px 5px 5px; /* Căn chỉnh lại margin cho đẹp */
+}
+
+.username-text {
+    max-width: 120px; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 3. Menu Dropdown (Dùng Hover theo CSS của bạn) */
+.user-dropdown-menu {
+    position: absolute;
+    top: 115%; 
+    right: 0;  
+    width: 200px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    border: 1px solid #eee;
+    
+    /* Ẩn mặc định */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.2s ease;
+    
+    overflow: hidden;
+    z-index: 1002;
+}
+
+/* Logic Hover để hiện menu */
+.user-actions-signed-in:hover .user-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.user-dropdown-menu a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    text-decoration: none;
+    color: #333;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.user-dropdown-menu a i { width: 20px; text-align: center; color: #14838B; }
+
+.user-dropdown-menu a:hover {
+    background-color: #f0fdfd;
+    color: #14838B;
+}
+
+.menu-divider {
+    height: 1px;
+    background-color: #eee;
+    margin: 0;
+}

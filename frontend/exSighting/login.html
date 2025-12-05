@@ -1,28 +1,72 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
+    <link rel="icon" type="image/png" href="src/images/TUYU_umbrella.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sigma-Alpha</title>
-    <link rel="stylesheet" href="src/css/index.css"> <style>
-        .auth-container { max-width: 400px; margin: 100px auto; padding: 20px; text-align: center; }
-        .auth-input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; }
-        .auth-btn { padding: 10px 20px; background: #333; color: white; border: none; cursor: pointer; width: 100%; }
-        .error { color: red; display: none; margin-top: 10px; }
-    </style>
+    <title>Đăng nhập - exSighting</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <link rel="stylesheet" href="src/css/login.css">
 </head>
-<body>
-    <div class="auth-container">
-        <h2 style="color:black;">Login</h2>
-        <input type="text" id="username" class="auth-input" placeholder="Username" autofocus>
-        <input type="password" id="password" class="auth-input" placeholder="Password">
-        <!-- <button class="auth-btn" onclick="handleLogin()">Login</button> -->
-         <button id="btn-login" class="auth-btn">Login</button>
-        <p class="error" id="error-msg"></p>
-        <p style="margin: 15px; color:black;">Don't have an account? <a href="register.html">Register here</a></p>
-        <p><a href="index.html">Back to Home</a></p>
+<body class="login-page">
+
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo-icon">
+                    <i class="fas fa-umbrella"></i>
+                </div>
+                <h2>Welcome Back!</h2>
+                <p>Please enter your details to sign in.</p>
+            </div>
+
+            <form id="loginForm">
+                
+                <div class="input-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Enter your username" required autofocus>
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="password" placeholder="Enter your password" required>
+                        <i class="fas fa-eye toggle-password" id="togglePassword"></i>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="#" class="forgot-pass">Forgot password?</a>
+                </div>
+
+                <p id="error-msg" class="error-message" style="display: none; text-align: center;"></p>
+
+                <button type="button" id="btn-login" class="btn-primary" onclick="handleLogin()">
+                    Sign In
+                </button>
+
+            </form>
+
+            <div class="divider">
+                <span>Or sign in with</span>
+            </div>
+
+            <button class="btn-google">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google Logo">
+                <span>Google</span>
+            </button>
+
+            <div class="register-link">
+                Don't have an account? <a href="register.html">Create free account</a>
+            </div>
+        </div>
     </div>
 
+    <!-- <script src="src/js/login.js"></script> -->
     <script type="module" src="src/js/login.js"></script>
+
 </body>
 </html>

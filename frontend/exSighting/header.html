@@ -1,0 +1,105 @@
+document.addEventListener("DOMContentLoaded", function() {
+    // 1. CHUỖI HTML CỦA HEADER
+    const headerHTML = `
+    <header class="navbar-v3">
+        <div class="logo" onclick="window.location.href='home.html'" style="cursor: pointer;">
+            <i class="fas fa-umbrella"></i>
+            <span>exSighting</span>
+        </div>
+
+        <nav class="nav-links">
+            <a href="home.html" class="nav-item">Home</a>
+            <a href="destinations.html" class="nav-item">Destinations</a>
+            <a href="about.html" class="nav-item">About Us</a>
+            
+        </nav>
+        
+        <div id="authSection">
+            <button class="user-actions-unsigned-in" id="unsignedBlock" onclick="window.location.href='login.html'">
+                <div class="user-icon-bg"><i class="fas fa-user-circle"></i></div>
+                <span class="sign-in-text">Sign In</span>
+            </button>
+
+            <div class="user-actions-signed-in" id="signedBlock" style="display: none;">
+                <button class="user-profile-toggle" id="userMenuBtn">
+                    <div class="user-icon-bg"><i class="fas fa-user-circle"></i></div>
+                    <span class="username-text" id="displayUsername">User</span>
+                    <i class="fas fa-caret-down" style="margin-left: 5px;"></i>
+                </button>
+                <div class="user-dropdown-menu" id="userDropdown">
+                    <a href="#"><i class="fas fa-user-circle"></i> Profile</a>
+                    <a href="#"><i class="fas fa-cog"></i> Settings</a>
+                    <div class="menu-divider"></div>
+                    <a href="#" id="btnLogout"><i class="fas fa-sign-out-alt"></i> Log Out</a>
+                </div>
+            </div>
+        </div>
+    </header>
+    `;
+
+    // 2. NHÚNG VÀO TRANG
+    const placeholder = document.getElementById('header-placeholder');
+    if(placeholder) placeholder.innerHTML = headerHTML;
+
+    // 3. CHẠY CÁC HÀM XỬ LÝ (Sau khi HTML đã được nhúng)
+    initAuthLogic();      // Kiểm tra đăng nhập
+    highlightActiveLink(); // Tô đậm menu trang hiện tại
+});
+
+// --- CÁC HÀM HỖ TRỢ ---
+
+function initAuthLogic() {
+    const token = localStorage.getItem('token');
+    const username = localStorage.getItem('username');
+    
+    const unsigned = document.getElementById('unsignedBlock');
+    const signed = document.getElementById('signedBlock');
+    const nameDisplay = document.getElementById('displayUsername');
+
+    if (token && username) {
+        // Nếu ĐÃ Đăng nhập
+        if(unsigned) unsigned.style.display = 'none';
+        if(signed) signed.style.display = 'flex';
+        if(nameDisplay) nameDisplay.textContent = username;
+
+        // Xử lý nút Logout
+        const btnLogout = document.getElementById('btnLogout');
+        if(btnLogout) {
+            btnLogout.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.clear();
+                window.location.href = 'home.html';
+            });
+        }
+
+        // Xử lý Dropdown (Bấm vào avatar hiện menu)
+        const menuBtn = document.getElementById('userMenuBtn');
+        const dropdown = document.getElementById('userDropdown');
+        if(menuBtn && dropdown) {
+            menuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('active');
+            });
+            document.addEventListener('click', (e) => {
+                if (!menuBtn.contains(e.target)) dropdown.classList.remove('active');
+            });
+        }
+    } else {
+        // Nếu CHƯA Đăng nhập
+        if(unsigned) unsigned.style.display = 'flex';
+        if(signed) signed.style.display = 'none';
+    }
+}
+
+function highlightActiveLink() {
+    // Lấy tên file hiện tại (ví dụ: about.html)
+    const currentPath = window.location.pathname.split("/").pop();
+    
+    const links = document.querySelectorAll('.nav-item');
+    links.forEach(link => {
+        // So sánh href với tên file. Ví dụ: href="about.html" == "about.html"
+        if(link.getAttribute('href') === currentPath) {
+            link.classList.add('active'); // Thêm class active
+        }
+    });
+}

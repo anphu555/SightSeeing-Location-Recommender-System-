@@ -1,0 +1,136 @@
+/* === src/css/welcome.css === */
+
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden; /* Không cho cuộn */
+    font-family: 'Poppins', sans-serif;
+}
+
+/* 1. VIDEO BACKGROUND */
+.video-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Video phủ kín màn hình */
+    z-index: -2;
+}
+
+/* Lớp phủ màu đen mờ để chữ dễ đọc hơn */
+.overlay-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4); /* Độ tối 40% */
+    z-index: -1;
+}
+
+/* 2. HEADER (GÓC TRÁI & PHẢI) */
+.welcome-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 30px 50px;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    color: white;
+}
+
+/* Link bên trái (About, Contact, Login) */
+.header-left {
+    display: flex;
+    gap: 30px;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.header-left a {
+    text-decoration: none;
+    color: white;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.header-left a:hover {
+    color: #14838B; /* Màu Teal khi hover */
+}
+
+/* Logo bên phải */
+.header-right {
+    font-size: 1.2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: 1px;
+}
+
+/* 3. NỘI DUNG CHÍNH (CENTER) */
+.welcome-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+    width: 100%;
+    padding: 0 20px;
+}
+
+.main-title {
+    font-size: 5rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    line-height: 1.1;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.sub-quote {
+    font-size: 1.2rem;
+    font-style: italic;
+    font-weight: 300;
+    margin: 15px 0 40px 0;
+    opacity: 0.9;
+}
+
+/* Nút Start Journey */
+.cta-btn {
+    display: inline-block;
+    background-color: #14838B; /* Màu Teal chủ đạo */
+    color: white;
+    padding: 15px 40px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 1rem;
+    text-decoration: none;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    text-transform: uppercase;
+}
+
+.cta-btn:hover {
+    background-color: #0e6f75;
+    transform: translateY(-7px);
+    box-shadow: 0 8px 20px rgba(20, 131, 139, 0.4);
+}
+
+/* Responsive Mobile */
+@media (max-width: 768px) {
+    .welcome-header { padding: 20px; flex-direction: column-reverse; gap: 20px; }
+    .header-left { gap: 15px; font-size: 0.9rem; }
+    .main-title { font-size: 3rem; }
+}

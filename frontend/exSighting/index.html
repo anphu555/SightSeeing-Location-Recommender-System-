@@ -1,38 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sigma-Alpha Sightseeing</title>
-    <link rel="stylesheet" href="src/css/index.css"> 
+    <title>Welcome to exSighting</title>
+    
+    <link rel="icon" type="image/png" href="src/images/TUYU_umbrella.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <link rel="stylesheet" href="src/css/style.css"> 
+    <link rel="stylesheet" href="src/css/welcome.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-
 <body>
-    <div id="user-status" style="position: absolute; top: 20px; right: 20px; color: white; z-index: 1000;">
-        <a href="login.html" style="color: white; text-decoration: none; font-weight: bold;">Login</a>
+
+    <video class="video-bg" autoplay muted loop playsinline>
+        <source src="src/images/welcome.mp4" type="video/mp4">
+        <img src="src/images/halong_bg.jpg" alt="Background">
+    </video>
+    
+    <div class="overlay-bg"></div>
+
+    <div class="welcome-header">
+        <div class="header-left">
+            <a href="about.html" class="nav-item">About us</a>
+            
+            <span id="welcomeAuthBlock">
+                </span>
+        </div>
+
+        <div class="header-right">
+            <i class="fas fa-umbrella" style="color: #14838B;"></i>
+            <span>exSighting</span>
+        </div>
     </div>
 
-    <div class="hero-section">
-        <header>
-            <img src="src/images/TUYU_umbrella.png" alt="Umbrella Logo" class="logo">
-            <h1>SIGMA-ALPHA SIGHTSEEING</h1>
-        </header>
-
-        <main class="search-container">
-            <p class="query-text">What type of place would you like to go?</p>
-            <div class="search-bar">
-                <input type="text" placeholder="For example: the mountains, the beaches,..." class="search-input">
-                <button class="search-button">
-                    🔍
-                </button>
-            </div>
-        </main>
+    <div class="welcome-content">
+        <h1 class="main-title">DISCOVER VIETNAM</h1>
+        <p class="sub-quote">"Sight the Extraordinary."</p>
+        <a href="home.html" class="cta-btn">Start Your Journey</a>
     </div>
 
-    <div id="user-status" style="position: absolute; top: 20px; left: 20px; color: white; z-index: 1000;">
-        <a href="chatbot.html" style="color: white; text-decoration: none; font-weight: bold;">Chatbot</a>
-    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const authBlock = document.getElementById('welcomeAuthBlock');
+            const token = localStorage.getItem('token');
+            const username = localStorage.getItem('username');
 
-    <script type="module" src="src/js/index.js"></script>
+            if (token && username) {
+                // Nếu ĐÃ ĐĂNG NHẬP
+                authBlock.innerHTML = `
+                    <span style="opacity: 0.8;">Hi, ${username}</span>
+                    <a href="#" id="welcomeLogout" style="margin-left: 5px;">(Logout)</a>
+                `;
+
+                // Xử lý nút logout
+                document.getElementById('welcomeLogout').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.clear();
+                    window.location.reload(); 
+                });
+
+            } else {
+                // Nếu CHƯA ĐĂNG NHẬP
+                authBlock.innerHTML = `<a href="login.html">Login</a>`;
+            }
+        });
+    </script>
+
 </body>
-</html>
+</html> 
