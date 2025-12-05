@@ -125,7 +125,7 @@ class PlaceOut(SQLModel):
 
     
 class RecommendResponse(SQLModel):
-    extraction: GroqExtraction
+    extraction: Optional[GroqExtraction] = None
     results: List[PlaceOut]
 
 # --- Rating Flow ---

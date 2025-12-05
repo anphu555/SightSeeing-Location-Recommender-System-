@@ -6,11 +6,11 @@ from app.routers.auth import get_current_user
 
 router = APIRouter()
 
-# Bảng quy đổi điểm số cho hành vi
+# Quy tắc tính điểm
 SCORE_MAP = {
     InteractionType.like: 5.0,
-    InteractionType.view: 3.0,  # Xem lâu
-    InteractionType.click: 1.0, # Click vào xem
+    InteractionType.view: 3.0,  # Xem > 30s
+    InteractionType.click: 1.0, # Click xem
     InteractionType.dislike: -1.0
 }
 
@@ -21,40 +21,34 @@ async def track_interaction(
     session: Session = Depends(get_session)
 ):
     """
-    API này nhận hành vi (click, like...) và cập nhật điểm số (score)
-    vào bảng Rating để model Two-Tower học.
+    API này được gọi ngầm (background) khi user tương tác với UI.
+    Nó cập nhật điểm số (Implicit Feedback) để dùng cho lần gợi ý sau.
     """
     
-    # 1. Tìm xem user đã từng tương tác với địa điểm này chưa
+    # 1. Kiểm tra rating cũ
     statement = select(Rating).where(
         Rating.user_id == current_user.id,
         Rating.place_id == interaction.place_id
     )
     existing_rating = session.exec(statement).first()
     
+    # 2. Lấy điểm số tương ứng hành vi mới
     new_score = SCORE_MAP.get(interaction.interaction_type, 1.0)
 
     if existing_rating:
-        # LOGIC UPDATE:
-        # Nếu hành vi mới có trọng số cao hơn (vd: Like > Click), ta cập nhật điểm lên.
-        # Nếu user đã Like (5.0) rồi mà click lại (1.0), ta giữ nguyên 5.0.
-        if new_score > existing_rating.score:
-            existing_rating.score = new_score
-            session.add(existing_rating)
-            session.commit()
-            return {"status": "updated", "score": new_score}
-        
-        # Trường hợp đặc biệt: Nếu dislike thì set luôn
+        # LOGIC: Chỉ update nếu hành vi mới có trọng số cao hơn (Vd: đã Click(1) giờ Like(5) -> Lên 5)
+        # Hoặc nếu là dislike thì update ngay để loại bỏ
         if interaction.interaction_type == InteractionType.dislike:
-            existing_rating.score = -1.0 # Hoặc xóa luôn tùy logic
-            session.add(existing_rating)
-            session.commit()
-            return {"status": "disliked"}
-
-        return {"status": "kept_existing", "score": existing_rating.score}
+            existing_rating.score = -1.0 # Đánh dấu tiêu cực
+        elif new_score > existing_rating.score:
+            existing_rating.score = new_score
+        
+        session.add(existing_rating)
+        session.commit()
+        return {"status": "updated", "score": existing_rating.score}
 
     else:
-        # LOGIC CREATE: Chưa tương tác bao giờ -> Tạo mới
+        # Tạo rating mới
         new_rating = Rating(
             user_id=current_user.id,
             place_id=interaction.place_id,
