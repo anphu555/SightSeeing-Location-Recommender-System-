@@ -56,3 +56,42 @@ def rank_places(ex: GroqExtraction, top_k: int) -> List[PlaceOut]:
             
     scored.sort(key=lambda x: x.score, reverse=True)
     return scored[:top_k]
+
+def calculate_interest_score(interactions: Dict[str, Any]) -> int:
+    """
+    Calculates a user's interest score for a location on a scale of 1-10.
+
+    Args:
+        interactions (Dict[str, Any]): A dictionary of user interactions.
+            Expected keys:
+            - "clicked" (bool): True if the user clicked on the location.
+            - "time_spent_seconds" (int): Time in seconds spent on the location page.
+            - "liked" (bool): True if the user liked the location.
+            - "disliked" (bool): True if the user disliked the location.
+
+    Returns:
+        int: An interest score from 1 to 10.
+    """
+    score = 5  # Start with a neutral score
+
+    if interactions.get("disliked"):
+        return 1
+
+    if interactions.get("liked"):
+        return 10
+
+    if interactions.get("clicked"):
+        score = 6  # Initial interest shown by clicking
+        time_spent = interactions.get("time_spent_seconds", 0)
+
+        if time_spent < 10:
+            score -= 2  # Quick bounce, not interested
+        elif time_spent <= 30:
+            pass  # Neutral interest
+        elif time_spent <= 60:
+            score += 1  # Shows interest
+        else:
+            score += 2  # Shows strong interest
+    
+    # Ensure score is within 1-10 range
+    return max(1, min(10, score))
