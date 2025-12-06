@@ -6,8 +6,8 @@ from sqlalchemy import pool
 from alembic import context
 
 from sqlmodel import SQLModel 
-from app.schemas import User, Place, Rating 
-
+# Import all models to ensure Alembic can detect them
+from app.schemas import User, Place, Rating, Comment
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
