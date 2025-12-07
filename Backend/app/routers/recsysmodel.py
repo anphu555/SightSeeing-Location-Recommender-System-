@@ -12,87 +12,129 @@ import warnings
 # Tắt cảnh báo sklearn version
 warnings.filterwarnings('ignore', category=UserWarning)
 
-# Đường dẫn đến file model và data
-MODEL_PATH = 'app/routers/two_tower_model.keras' # Đường dẫn từ thư mục Backend
-MLB_PATH = 'app/routers/mlb_vocab.pkl'           # Đường dẫn từ thư mục Backend
-PLACES_CSV_PATH = 'app/services/vietnam_tourism_data_200tags.csv' # File csv chứa places
+# --- CẤU HÌNH ĐƯỜNG DẪN ---
+# Đảm bảo bạn đã có đủ 3 file pickle/keras này
+MODEL_PATH = 'app/routers/two_tower_model.keras'
+MLB_PATH = 'app/routers/mlb_vocab.pkl'
+PROVINCE_MAP_PATH = 'app/routers/province_map.pkl' # <-- FILE MỚI
+PLACES_CSV_PATH = 'app/services/vietnam_tourism_data_200tags_with_province.csv' # <-- Dùng file có province
 
-# Biến toàn cục để lưu model đã load
+# Biến toàn cục
 loaded_model = None
 loaded_mlb = None
-item_vectors = None
+loaded_province_map = None # <-- Biến mới
+item_features_cache = None # Lưu cache (tags_vec, province_id) của tất cả items
 places_df = None
 
 def load_resources():
-    """Hàm này nên được gọi 1 lần khi start server (trong main.py lifespan)"""
-    global loaded_model, loaded_mlb, item_vectors, places_df
+    """Hàm này nên được gọi 1 lần khi start server"""
+    global loaded_model, loaded_mlb, loaded_province_map, item_features_cache, places_df
     
     if loaded_model is None:
-        print("Loading Two-Tower Model...")
-        loaded_model = tf.keras.models.load_model(MODEL_PATH)
-        loaded_mlb = pickle.load(open(MLB_PATH, 'rb'))
+        print("Loading Two-Tower Model System...")
         
-        # Load places và pre-calculate item vectors
-        places_df = pd.read_csv(PLACES_CSV_PATH)
-        # Đảm bảo tags là list
-        if isinstance(places_df['tags'].iloc[0], str):
-            places_df['tags'] = places_df['tags'].apply(ast.literal_eval)
-            
-        # Convert sang dense array để tương thích với Keras
-        item_vectors_raw = loaded_mlb.transform(places_df['tags'])
-        # Kiểm tra nếu là sparse matrix thì convert, nếu không thì giữ nguyên
-        if hasattr(item_vectors_raw, 'toarray'):
-            item_vectors = item_vectors_raw.toarray()
-        else:
-            item_vectors = item_vectors_raw
-        print("Model loaded successfully!")
+        # 1. Load Model & Disctionaries
+        try:
+            loaded_model = tf.keras.models.load_model(MODEL_PATH)
+            with open(MLB_PATH, 'rb') as f:
+                loaded_mlb = pickle.load(f)
+            with open(PROVINCE_MAP_PATH, 'rb') as f:
+                loaded_province_map = pickle.load(f)
+        except Exception as e:
+            print(f"Lỗi khi load model/pickle: {e}")
+            return
 
-def recommend_two_tower(user_tags_list: list, top_k=5):
+        # 2. Load Data Places
+        places_df = pd.read_csv(PLACES_CSV_PATH)
+        
+        # 3. Pre-process Data (Tách Tỉnh & Tags giống hệt lúc Train)
+        # Hàm parse tags
+        def parse_and_split(x):
+            try:
+                tags = ast.literal_eval(x)
+                if not tags: return "Unknown", []
+                # Quy ước: Tag đầu tiên là Tỉnh
+                return tags[0], tags[1:] 
+            except:
+                return "Unknown", []
+
+        # Tách cột
+        print("Processing Places Data...")
+        places_df[['province', 'clean_tags']] = places_df['tags'].apply(
+            lambda x: pd.Series(parse_and_split(x))
+        )
+        
+        # 4. Tạo Cache Features cho toàn bộ Items (để predict cho nhanh)
+        # a. Tags Vector (One-hot)
+        all_item_tags_vec = loaded_mlb.transform(places_df['clean_tags'])
+        
+        # b. Province Index
+        # Map tên tỉnh sang ID. Nếu tỉnh mới lạ ko có trong map thì gán 0
+        all_item_prov_idx = places_df['province'].apply(
+            lambda x: loaded_province_map.get(x, 0)
+        ).values
+        
+        # Lưu vào cache để dùng cho hàm predict
+        item_features_cache = {
+            'item_tags_input': all_item_tags_vec,
+            'item_province_input': all_item_prov_idx
+        }
+        
+        print("✅ Load Resources Complete!")
+
+def get_recommendations(user_prefs_tags, top_k=10):
     """
-    Hàm gợi ý sử dụng logic từ testModel.py
+    Hàm gợi ý cho 1 user dựa trên tags sở thích.
+    Args:
+        user_prefs_tags (list): List các tags user thích (VD: ['Nature', 'Cave'])
     """
-    # Đảm bảo resources đã load
+    global loaded_model, loaded_mlb, item_features_cache, places_df
+    
     if loaded_model is None:
         load_resources()
+        
+    # 1. Chuẩn bị Input cho User Tower
+    # Biến đổi tags user nhập vào thành vector
+    user_vec = loaded_mlb.transform([user_prefs_tags]) # Shape (1, num_features)
+    
+    # Lặp lại vector user cho bằng số lượng items để đưa vào model
+    num_items = len(places_df)
+    user_vec_repeated = np.repeat(user_vec, num_items, axis=0)
+    
+    # 2. Dự đoán (Batch Predict)
+    # Input dictionary phải đúng tên layer trong model
+    inputs = {
+        'user_input': user_vec_repeated,
+        'item_tags_input': item_features_cache['item_tags_input'],
+        'item_province_input': item_features_cache['item_province_input']
+    }
+    
+    predictions = loaded_model.predict(inputs, batch_size=512, verbose=0)
+    
+    # 3. Lấy kết quả
+    scores = predictions.flatten()
+    
+    # Tạo bảng kết quả tạm
+    results = places_df.copy()
+    results['score'] = scores
+    
+    # Sort và lấy top K
+    top_results = results.sort_values(by='score', ascending=False).head(top_k)
+    
+    # Trả về các trường cần thiết (json)
+    return top_results[['id', 'name', 'province', 'score']].to_dict(orient='records')
 
-    # 1. Chuyển đổi tags của user thành vector
-    # user_tags_list ví dụ: ['Nature', 'Beach'] lấy từ User.preferences hoặc Chatbot extraction
-    if not user_tags_list:
-        # Nếu user không có tags nào, trả về ngẫu nhiên hoặc top trending
-        results = places_df.head(top_k).copy()
-        results['score'] = 3.0  # Default neutral score
-        return results
-
-    # Chuẩn hóa tags: viết hoa chữ cái đầu mỗi từ để khớp với vocabulary
-    # Ví dụ: 'beach' -> 'Beach', 'local cuisine' -> 'Local Cuisine'
-    normalized_tags = [tag.title() for tag in user_tags_list]
+# --- TEST CODE (Chạy thử khi execute file này) ---
+if __name__ == "__main__":
+    load_resources()
     
-    # Convert user tags sang dense array
-    user_vector_raw = loaded_mlb.transform([normalized_tags])
-    # Kiểm tra nếu là sparse matrix thì convert, nếu không thì giữ nguyên
-    if hasattr(user_vector_raw, 'toarray'):
-        user_vector = user_vector_raw.toarray()
-    else:
-        user_vector = user_vector_raw
+    # Giả lập user thích đi Chùa & Lễ hội
+    demo_tags = ['Temple', 'Festival', 'Historical']
+    print(f"\nUser thích: {demo_tags}")
     
-    # 2. Repeat user vector để khớp với số lượng item
-    user_vectors_repeated = np.repeat(user_vector, len(item_vectors), axis=0)
-    
-    # 3. Dự đoán
-    raw_scores = loaded_model.predict([user_vectors_repeated, item_vectors], verbose=0).flatten()
-    
-    # 4. Quy đổi về thang điểm (như trong testModel.py)
-    star_scores = raw_scores * 4.0 + 1.0
-    
-    # 5. Lấy Top K
-    top_indices = star_scores.argsort()[-top_k:][::-1]
-    
-    # 6. Format kết quả trả về DataFrame để khớp với code cũ
-    results = places_df.iloc[top_indices].copy()
-    results['score'] = star_scores[top_indices]
-    
-    return results
-
+    recs = get_recommendations(demo_tags)
+    for r in recs:
+        print(f"- [{r['province']}] {r['name']} (Score: {r['score']:.2f})")
 
 
 
