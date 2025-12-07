@@ -6,6 +6,7 @@ import json  # Import thêm thư viện JSON
 
 # Thêm thư mục hiện tại vào sys.path
 sys.path.append(os.getcwd())
+import json
 
 from sqlmodel import Session, select, create_engine, SQLModel
 from app.schemas import Place

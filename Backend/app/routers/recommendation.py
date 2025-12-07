@@ -1,47 +1,120 @@
-from fastapi import APIRouter, HTTPException, Depends
-from app.schemas import RecommendRequest, RecommendResponse, User
-from app.services.llm_service import extract_with_groq
-from app.routers.recsysmodel import recommend
+from fastapi import APIRouter, Depends
+from sqlmodel import Session, select
+from collections import Counter
+from typing import List
+
+from app.schemas import RecommendRequest, RecommendResponse, User, PlaceOut, Rating, Place
+from app.database import get_session
 from app.routers.auth import get_current_user_optional
+from app.services.llm_service import extract_with_groq
+from app.routers.recsysmodel import recommend_two_tower 
 # from sqlmodel import Session, select
 # from app.database import engine
 # from app.schemas import Place, PlaceDetailResponse # Import thêm Place và Schema mới
 
 router = APIRouter()
 
+def get_history_tags(user_id: int, session: Session, limit=5) -> List[str]:
+    """Lấy tags từ những nơi user đã tương tác tốt (score >= 3.0)"""
+    statement = select(Rating).where(Rating.user_id == user_id, Rating.score >= 3.0)
+    ratings = session.exec(statement).all()
+    
+    tags_pool = []
+    for r in ratings:
+        place = session.get(Place, r.place_id)
+        if place and place.tags:
+            tags_pool.extend(place.tags)
+            
+    if not tags_pool: return []
+    # Lấy top tags xuất hiện nhiều nhất
+    return [tag for tag, _ in Counter(tags_pool).most_common(limit)]
+
 @router.post("/recommend", response_model=RecommendResponse)
 async def get_recommendations(
-    req: RecommendRequest, 
-    # Cho phép user chưa đăng nhập cũng dùng được (Optional Auth)
-    current_user: User = Depends(get_current_user_optional) 
+    req: RecommendRequest,
+    current_user: User = Depends(get_current_user_optional),
+    session: Session = Depends(get_session)
 ):
-    # 1. Gọi AI Service để trích xuất thông tin từ text
-    extraction = await extract_with_groq(req.user_text)
+    # ==========================
+    # 1. SHORT-TERM INTENT (Từ Input Text + Groq)
+    # ==========================
+    current_intent_tags = []
+    extraction = None
     
-    # 2. Gọi RecSys (Truyền user_id nếu đã đăng nhập để cá nhân hóa)
-    user_id = current_user.id if current_user else None
-    results_df = recommend(extraction, user_id)
-    
-    # 3. Chuyển đổi DataFrame sang PlaceOut schema
-    results_list = []
-    for _, row in results_df.head(req.top_k).iterrows():
-        # Schema mới: Place có tags (List[str])
-        tags = row.get('tags', [])
-        if not isinstance(tags, list):
-            tags = []
+    if req.user_text and len(req.user_text.strip()) > 0:
+        # Gọi Groq để hiểu ý định (đây là cái bạn đã tin tưởng)
+        extraction = await extract_with_groq(req.user_text)
         
-        place = {
-            "id": int(row.get('id', 0)),
-            "name": str(row.get('name', 'Unknown')),
-            "country": "Vietnam",
-            "province": tags[0] if tags else "Vietnam",  # Lấy tag đầu làm province tạm
-            "region": "Vietnam",
-            "themes": tags,
-            "score": float(row.get('score', 0.0))
-        }
-        results_list.append(place)
+        # --- QUAN TRỌNG: Flatten GroqOutput thành Tags ---
+        # Groq trả về object (type, budget...), ta cần biến nó thành list strings cho Two-Tower
+        
+        # 1. Location (Ưu tiên cao nhất)
+        if extraction.location:
+            current_intent_tags.extend(extraction.location)
+            
+        # 2. Type (Vd: "Nature", "Historical"...)
+        if extraction.type and extraction.type.lower() != "none":
+            current_intent_tags.append(extraction.type)
+            
+        # 3. Budget (Vd: "Cheap", "Luxury" - nếu trong data tags của bạn có)
+        if extraction.budget and extraction.budget.lower() != "none":
+            current_intent_tags.append(extraction.budget)
+
+        # 4. Weather/Crowded (Nếu data tags có, vd: "Sunny", "Quiet")
+        if extraction.weather and extraction.weather.lower() != "none":
+            current_intent_tags.append(extraction.weather)
     
-    # 4. Trả về kết quả
+    # ==========================
+    # 2. LONG-TERM PREFERENCE (Từ Lịch sử & Profile)
+    # ==========================
+    history_tags = []
+    if current_user:
+        # Lấy từ hành vi (Click, Like)
+        history_tags = get_history_tags(current_user.id, session)
+        # Lấy từ profile tĩnh (nếu có lúc đăng ký)
+        if current_user.preferences:
+            history_tags.extend(current_user.preferences)
+
+    # ==========================
+    # 3. HYBRID STRATEGY (Kết hợp)
+    # ==========================
+    # Logic: Nếu user đang tìm kiếm (có intent), dùng intent là chính.
+    # Lịch sử chỉ dùng để bổ trợ hoặc fill nếu intent quá ít thông tin.
+    
+    final_tags = []
+    
+    if current_intent_tags:
+        final_tags = current_intent_tags
+        # Có thể thêm 1 chút lịch sử để cá nhân hóa (optional)
+        # final_tags.extend(history_tags[:2]) 
+    else:
+        # Nếu không gõ gì (Trang chủ), dùng hoàn toàn lịch sử
+        final_tags = history_tags
+    
+    # Fallback cho user mới tinh
+    if not final_tags:
+        final_tags = ["Vietnam", "Nature", "Beach"] # Default trending tags
+
+    # Clean duplicates
+    final_tags = list(set(final_tags))
+
+    # ==========================
+    # 4. PREDICT & RETURN
+    # ==========================
+    # Truyền tags vào Two-Tower model
+    results_df = recommend_two_tower(final_tags, top_k=req.top_k)
+    
+    results_list = []
+    for _, row in results_df.iterrows():
+        tags = row.get('tags', [])
+        results_list.append(PlaceOut(
+            id=int(row.get('id')),
+            name=str(row.get('name')),
+            province=tags[0] if tags else "Vietnam",
+            themes=tags,
+            score=float(row.get('score', 0.0))
+        ))
+
     return RecommendResponse(extraction=extraction, results=results_list)
 
 # @router.get("/place/{place_id}", response_model=PlaceDetailResponse)
