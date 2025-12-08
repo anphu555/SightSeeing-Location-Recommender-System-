@@ -1,8 +1,9 @@
 from sqlmodel import SQLModel, create_engine, Session
+from app.config import settings
 
 # 1. Setup the Database URL (SQLite in this case)
-sqlite_file_name = "vietnamtravel.db"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
+# Use absolute path from settings to avoid confusion
+sqlite_url = f"sqlite:///{settings.DATABASE_PATH}"
 
 # 2. Create the Engine
 # echo=True prints SQL statements to the console (good for debugging)
