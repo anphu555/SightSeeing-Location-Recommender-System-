@@ -124,6 +124,52 @@ def get_recommendations(user_prefs_tags, top_k=10):
     # Trả về các trường cần thiết (json)
     return top_results[['id', 'name', 'province', 'score']].to_dict(orient='records')
 
+def recommend_two_tower(user_prefs_tags, top_k=10):
+    """
+    Wrapper function for get_recommendations to match the import name.
+    Returns a DataFrame instead of dict for compatibility with recommendation.py
+    
+    Args:
+        user_prefs_tags (list): List các tags user thích
+        top_k (int): Số lượng gợi ý trả về
+    
+    Returns:
+        pd.DataFrame: DataFrame chứa các địa điểm được gợi ý
+    """
+    global loaded_model, loaded_mlb, item_features_cache, places_df
+    
+    if loaded_model is None:
+        load_resources()
+        
+    # 1. Chuẩn bị Input cho User Tower
+    user_vec = loaded_mlb.transform([user_prefs_tags])
+    
+    # 2. Lặp lại vector user cho bằng số lượng items
+    num_items = len(places_df)
+    user_vec_repeated = np.repeat(user_vec, num_items, axis=0)
+    
+    # 3. Dự đoán
+    inputs = {
+        'user_input': user_vec_repeated,
+        'item_tags_input': item_features_cache['item_tags_input'],
+        'item_province_input': item_features_cache['item_province_input']
+    }
+    
+    predictions = loaded_model.predict(inputs, batch_size=512, verbose=0)
+    
+    # 4. Lấy kết quả
+    scores = predictions.flatten()
+    
+    # Tạo DataFrame kết quả
+    results = places_df.copy()
+    results['score'] = scores
+    
+    # Sort và lấy top K
+    top_results = results.sort_values(by='score', ascending=False).head(top_k)
+    
+    # Trả về DataFrame (không phải dict)
+    return top_results[['id', 'name', 'tags', 'province', 'score']]
+
 # --- TEST CODE (Chạy thử khi execute file này) ---
 if __name__ == "__main__":
     load_resources()
