@@ -183,7 +183,7 @@ async function loadPlaces() {
             let imgSrc = "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070";
             
             if (item.image && Array.isArray(item.image) && item.image.length > 0) {
-                imgSrc = item.image[0]; // Lấy ảnh đầu tiên từ database
+                imgSrc = item.image[0]; // Lấy ảnh đầu tiên
             } else if (item.themes && item.themes.length > 0) {
                 // Fallback: chọn ảnh dựa trên themes nếu không có ảnh
                 const theme = item.themes[0].toLowerCase();

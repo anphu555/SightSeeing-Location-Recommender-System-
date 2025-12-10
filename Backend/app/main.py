@@ -7,7 +7,7 @@ from app.routers import auth
 
 from app.database import create_db_and_tables
 
-from app.routers import recommendation, rating, chatbot
+from app.routers import recommendation, rating, chatbot, comment
 
 from app.routers import place
 
@@ -84,6 +84,7 @@ def root():
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])         # đăng nhập đăng ký
 app.include_router(recommendation.router, prefix="/api/v1", tags=["Recommendation"])    # gợi ý địa điểm
 app.include_router(rating.router, prefix="/api/v1/user", tags=["User Actions"])         # đánh giá địa điểm
+app.include_router(comment.router, prefix="/api/v1", tags=["Comments"])                 # comments/reviews
 
 app.include_router(chatbot.router, prefix="/chat", tags=["Chatbot"])         # chatbot
 

@@ -68,12 +68,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     
-    // Hiển thị loading
-    const container = document.querySelector('.detail-container');
-    if (container) {
-        container.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
-    }
-    
     try {
         // Gọi API lấy thông tin địa điểm
         const response = await fetch(`${CONFIG.apiBase}/api/v1/place/${id}`);
@@ -101,14 +95,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderPage(data);
         renderRecs(id);
         
+        // Load và setup comments
+        loadComments(id);
+        setupCommentForm(id);
+        
     } catch (error) {
         console.error('Error loading place details:', error);
-        if (container) {
-            container.innerHTML = `
-                <div style="text-align: center; margin-top: 50px;">
-                    <p style="color: #e74c3c; font-size: 1.2rem;">Place not found</p>
-                    <button onclick="window.location.href='results.html'" style="margin-top: 20px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                        Back to Results
+        const titleEl = document.getElementById('detailTitle');
+        if (titleEl) {
+            titleEl.innerHTML = `
+                <div style="text-align: center; color: #e74c3c;">
+                    <h2>Place not found</h2>
+                    <button onclick="window.location.href='home.html'" style="margin-top: 20px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        Back to Home
                     </button>
                 </div>
             `;
@@ -154,16 +153,7 @@ function renderPage(data) {
     // Khởi tạo gallery ở ảnh đầu tiên
     updateGallery(0);
 
-    const reviewsContainer = document.getElementById('reviewsList');
-    if(data.reviews.length > 0) {
-        reviewsContainer.innerHTML = data.reviews.map(rev => `
-            <div class="review-card">
-                <img src="${rev.avatar}" class="reviewer-avatar">
-                <div class="review-content">
-                    <h4>${rev.user}</h4><p>${rev.comment}</p>
-                </div>
-            </div>`).join('');
-    }
+    // Không render reviews ở đây nữa, sẽ load riêng qua loadComments()
 }
 
 // (Giữ nguyên các hàm renderRecs, checkAuth, initHeaderDropdown như cũ)
@@ -189,9 +179,12 @@ async function renderRecs(currentId) {
             const recommendations = data.results.filter(item => item.id.toString() !== currentId).slice(0, 3);
             
             list.innerHTML = recommendations.map(item => {
-                const imgSrc = item.themes && item.themes.length > 0 
-                    ? 'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070'
-                    : 'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070';
+                // Lấy ảnh thực từ item.image
+                let imgSrc = "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070";
+                
+                if (item.image && Array.isArray(item.image) && item.image.length > 0) {
+                    imgSrc = item.image[0]; // Lấy ảnh đầu tiên
+                }
                     
                 return `<div class="rec-card" onclick="window.location.href='detail.html?id=${item.id}'">
                     <img src="${imgSrc}">
@@ -244,4 +237,170 @@ window.handleDetailSearch = function() {
         input.style.borderBottomColor = "red";
         setTimeout(() => input.style.borderBottomColor = "#ccc", 500);
     }
+}
+
+// === CHỨC NĂNG COMMENTS/REVIEWS ===
+async function loadComments(placeId) {
+    const reviewsContainer = document.getElementById('reviewsList');
+    
+    try {
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/comments/place/${placeId}`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to load comments');
+        }
+        
+        const comments = await response.json();
+        
+        if (comments.length > 0) {
+            reviewsContainer.innerHTML = comments.map(comment => {
+                const date = new Date(comment.created_at).toLocaleDateString('vi-VN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                return `
+                    <div class="review-card">
+                        <div class="reviewer-avatar">
+                            <i class="fas fa-user-circle" style="font-size: 3rem; color: #14838B;"></i>
+                        </div>
+                        <div class="review-content">
+                            <h4>${comment.username}</h4>
+                            <p style="font-size: 0.85rem; color: #999; margin: 5px 0;">${date}</p>
+                            <p>${comment.content}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            reviewsContainer.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No reviews yet. Be the first to review!</p>';
+        }
+    } catch (error) {
+        console.error('Error loading comments:', error);
+        reviewsContainer.innerHTML = '<p style="text-align: center; color: #999;">Failed to load reviews.</p>';
+    }
+}
+
+// Toast notification helper
+let toastTimeout;
+let keyListener;
+
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    const icon = toast.querySelector('i');
+    
+    // Clear previous timeout and listener
+    if (toastTimeout) clearTimeout(toastTimeout);
+    if (keyListener) document.removeEventListener('keydown', keyListener);
+    
+    // Set message and icon
+    toastMessage.textContent = message;
+    
+    if (type === 'success') {
+        icon.className = 'fas fa-check-circle';
+        toast.style.background = 'linear-gradient(135deg, #14838B 0%, #0d5f66 100%)';
+    } else if (type === 'error') {
+        icon.className = 'fas fa-exclamation-circle';
+        toast.style.background = 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)';
+    } else if (type === 'warning') {
+        icon.className = 'fas fa-info-circle';
+        toast.style.background = 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)';
+    }
+    
+    // Show toast
+    toast.classList.remove('hide');
+    toast.classList.add('show');
+    
+    // Hide after 10s
+    toastTimeout = setTimeout(() => {
+        hideToast();
+    }, 10000);
+    
+    // Close on any key press
+    keyListener = (e) => {
+        hideToast();
+    };
+    document.addEventListener('keydown', keyListener, { once: true });
+}
+
+function hideToast() {
+    const toast = document.getElementById('toast');
+    toast.classList.add('hide');
+    
+    setTimeout(() => {
+        toast.classList.remove('show', 'hide');
+    }, 400);
+    
+    if (toastTimeout) clearTimeout(toastTimeout);
+    if (keyListener) document.removeEventListener('keydown', keyListener);
+}
+
+function setupCommentForm(placeId) {
+    const submitBtn = document.querySelector('.submit-btn');
+    const textarea = document.querySelector('.review-textarea');
+    
+    if (!submitBtn || !textarea) return;
+    
+    submitBtn.addEventListener('click', async () => {
+        const content = textarea.value.trim();
+        
+        if (!content) {
+            showToast('Please write something before posting!', 'warning');
+            return;
+        }
+        
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+            showToast('You need to login to post a review!', 'warning');
+            setTimeout(() => {
+                localStorage.setItem('returnUrl', window.location.href);
+                window.location.href = 'login.html';
+            }, 2000);
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${CONFIG.apiBase}/api/v1/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    place_id: parseInt(placeId),
+                    content: content
+                })
+            });
+            
+            if (response.status === 401) {
+                showToast('Your session has expired. Please login again.', 'error');
+                setTimeout(() => {
+                    localStorage.clear();
+                    localStorage.setItem('returnUrl', window.location.href);
+                    window.location.href = 'login.html';
+                }, 2000);
+                return;
+            }
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Failed to post comment');
+            }
+            
+            // Clear textarea
+            textarea.value = '';
+            
+            // Reload comments
+            await loadComments(placeId);
+            
+            // Show success message
+            showToast('✓ Review posted successfully!');
+            
+        } catch (error) {
+            console.error('Error posting comment:', error);
+            showToast(`Failed to post review: ${error.message}`, 'error');
+        }
+    });
 }
