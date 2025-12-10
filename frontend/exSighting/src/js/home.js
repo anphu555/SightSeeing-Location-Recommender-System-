@@ -179,10 +179,13 @@ async function loadPlaces() {
         
         // Map dữ liệu từ API sang format cần thiết
         const formattedData = places.map(item => {
-            // Chọn ảnh dựa trên themes
+            // Lấy ảnh đầu tiên từ mảng image của địa điểm
             let imgSrc = "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070";
             
-            if (item.themes && item.themes.length > 0) {
+            if (item.image && Array.isArray(item.image) && item.image.length > 0) {
+                imgSrc = item.image[0]; // Lấy ảnh đầu tiên từ database
+            } else if (item.themes && item.themes.length > 0) {
+                // Fallback: chọn ảnh dựa trên themes nếu không có ảnh
                 const theme = item.themes[0].toLowerCase();
                 if (theme.includes('mountain') || theme.includes('núi')) {
                     imgSrc = "https://images.unsplash.com/photo-1599229062397-6c8418047918?q=80&w=2070";
@@ -196,7 +199,7 @@ async function loadPlaces() {
             return {
                 id: item.id,
                 name: item.name,
-                cost: "Medium", // Có thể thêm logic từ tags
+                cost: "Medium",
                 weather: item.province || "Cool",
                 crowd: "Medium",
                 img: imgSrc

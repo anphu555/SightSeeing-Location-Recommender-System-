@@ -124,6 +124,7 @@ class PlaceOut(SQLModel):
     province: str
     themes: List[str]
     score: float
+    image: List[str] = []
 
 
 # class PreferenceEnum(str, Enum):
