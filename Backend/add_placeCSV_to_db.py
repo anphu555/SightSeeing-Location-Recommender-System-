@@ -17,7 +17,7 @@ sqlite_url = f"sqlite:///{sqlite_file_name}"
 engine = create_engine(sqlite_url)
 
 # 2. Đường dẫn file CSV
-CSV_FILE_PATH = 'app/services/vietnam_tourism_data_with_tags.csv'
+CSV_FILE_PATH = 'app/services/vietnam_tourism_data_200tags_with_province.csv'
 
 # Tăng giới hạn bộ nhớ cho việc đọc file CSV (vì description_json rất dài)
 csv.field_size_limit(sys.maxsize)
@@ -85,19 +85,27 @@ def import_csv_to_db():
                 count_missing_tags = 0 # Đếm số lượng mất tags
                 
                 for row in reader:
-                    # 1. Lấy tên
+                    # 1. Lấy ID từ CSV (quan trọng để đồng bộ)
+                    place_id = row.get('id') or row.get('Id') or row.get('ID')
+                    if place_id:
+                        try:
+                            place_id = int(place_id)
+                        except (ValueError, TypeError):
+                            place_id = None
+                    
+                    # 2. Lấy tên
                     name = row.get('name') or row.get('Name') or row.get('Title')
                     if not name: continue
 
-                    # 2. Xử lý Description
+                    # 3. Xử lý Description
                     raw_desc = row.get('description_json') or row.get('Description', '')
                     description_list = parse_list_field(raw_desc)
 
-                    # 3. Xử lý Image
+                    # 4. Xử lý Image
                     raw_img = row.get('image_json') or row.get('Image', '')
                     image_list = parse_list_field(raw_img)
 
-                    # 4. Xử lý Tags (Quan trọng)
+                    # 5. Xử lý Tags (Quan trọng)
                     # Thử lấy từ nhiều tên cột khác nhau để chắc chắn
                     raw_tags = row.get('tags') or row.get('Tags') or row.get('tag', '')
                     tags_list = parse_list_field(raw_tags)
@@ -109,11 +117,17 @@ def import_csv_to_db():
                             print(f"⚠️  Cảnh báo: Không tìm thấy tags cho '{name}'. Dữ liệu gốc: '{raw_tags}'")
                         count_missing_tags += 1
 
-                    # 5. Lưu vào DB
-                    existing_place = session.exec(select(Place).where(Place.name == name)).first()
+                    # 6. Lưu vào DB với ID từ CSV
+                    if place_id:
+                        # Kiểm tra theo ID
+                        existing_place = session.exec(select(Place).where(Place.id == place_id)).first()
+                    else:
+                        # Fallback: kiểm tra theo tên
+                        existing_place = session.exec(select(Place).where(Place.name == name)).first()
                     
                     if not existing_place:
                         new_place = Place(
+                            id=place_id,  # Sử dụng ID từ CSV
                             name=name,
                             description=description_list,
                             image=image_list,
@@ -122,6 +136,7 @@ def import_csv_to_db():
                         session.add(new_place)
                         count_new += 1
                     else:
+                        existing_place.name = name
                         existing_place.description = description_list
                         existing_place.image = image_list
                         existing_place.tags = tags_list

@@ -1,83 +1,121 @@
+import { CONFIG } from './config.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     
     // Khởi tạo chức năng tìm kiếm ngay khi trang load
     handleResultPageSearch(); 
     
-    // --- 1. DỮ LIỆU GIẢ LẬP ĐẦY ĐỦ (10 ĐỊA ĐIỂM) ---
-    // Khớp ID với file detail.html để khi bấm vào không bị lỗi
-    const mockResults = [
-        { id: "101", name: "Ha Long Bay", province: "Quang Ninh", score: 4.8, themes: ['beach', 'island'] },
-        { id: "102", name: "Tuan Chau Park", province: "Quang Ninh", score: 4.2, themes: ['beach'] },
-        { id: "103", name: "Hoi An", province: "Quang Nam", score: 4.9, themes: ['city'] },
-        { id: "104", name: "Da Lat", province: "Lam Dong", score: 4.6, themes: ['mountain', 'flower'] },
-        { id: "105", name: "Nha Trang", province: "Khanh Hoa", score: 4.5, themes: ['beach'] },
-        { id: "106", name: "Sapa", province: "Lao Cai", score: 4.7, themes: ['mountain'] },
-        { id: "107", name: "Hue", province: "Thua Thien Hue", score: 4.6, themes: ['city'] },
-        { id: "108", name: "Phu Quoc", province: "Kien Giang", score: 4.9, themes: ['island', 'beach'] },
-        { id: "109", name: "Vung Tau", province: "Ba Ria - Vung Tau", score: 4.3, themes: ['beach'] },
-        { id: "110", name: "Ninh Binh", province: "Ninh Binh", score: 4.7, themes: ['mountain'] }
-    ];
-
-    // --- 2. XỬ LÝ LỌC KẾT QUẢ ---
-    const grid = document.getElementById('resultsGrid');
-    const count = document.getElementById('totalCount');
-
-    // Lấy từ khóa từ URL (ví dụ: results.html?q=Hoi An)
-    const params = new URLSearchParams(window.location.search);
-    const query = params.get('q') || "";
-    
-    // Logic lọc: Tìm theo tên HOẶC theo tỉnh thành (không phân biệt hoa thường)
-    const filteredResults = query 
-        ? mockResults.filter(p => 
-            p.name.toLowerCase().includes(query.toLowerCase()) || 
-            p.province.toLowerCase().includes(query.toLowerCase())
-          )
-        : mockResults;
-
-    // --- 3. RENDER GIAO DIỆN ---
-    if (grid) {
-        // Cập nhật số lượng
-        if(count) count.innerText = filteredResults.length;
-        
-        if (filteredResults.length === 0) {
-            grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; font-size: 1.2rem; color: #666; margin-top: 50px;">
-                No results found for "<b>${query}</b>". 
-            </p>`;
-        } else {
-            // Tạo HTML danh sách
-            grid.innerHTML = filteredResults.map(item => {
-                // Chọn ảnh ngẫu nhiên theo chủ đề
-                let imgSrc = "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070"; // Mặc định: Biển
-                
-                if(item.themes.includes('mountain')) {
-                    imgSrc = "https://images.unsplash.com/photo-1599229062397-6c8418047918?q=80&w=2070";
-                } else if(item.themes.includes('city')) {
-                    imgSrc = "https://images.unsplash.com/photo-1557750255-c76072a7aad1?q=80&w=2070";
-                }
-
-                return `
-                <div class="result-card" onclick="goToDetail('${item.id}')" style="cursor: pointer;">
-                    <div class="card-img-top">
-                        <img src="${imgSrc}" alt="${item.name}">
-                        <div class="view-badge"><i class="fas fa-star"></i> ${item.score}</div>
-                    </div>
-                    <div class="card-body">
-                        <h4 class="card-title">${item.name}</h4>
-                        <p class="card-subtitle">${item.province}</p>
-                    </div>
-                    <div class="card-footer">
-                        <button class="icon-action like-btn" onclick="event.stopPropagation()"><i class="fas fa-thumbs-up"></i></button>
-                        <button class="icon-action dislike-btn" onclick="event.stopPropagation()"><i class="fas fa-thumbs-down"></i></button>
-                    </div>
-                </div>
-                `;
-            }).join('');
-        }
-    }
+    // --- GỌI API ĐỂ LẤY KẾT QUẢ ---
+    fetchAndDisplayResults();
 
     initSortDropdown();
 });
+
+// === HÀM GỌI API VÀ HIỂN THỊ KẾT QUẢ ===
+async function fetchAndDisplayResults() {
+    const grid = document.getElementById('resultsGrid');
+    const count = document.getElementById('totalCount');
+    const params = new URLSearchParams(window.location.search);
+    const query = params.get('q') || "";
+    
+    // Hiển thị loading
+    if (grid) {
+        grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; margin-top: 50px;">Loading...</p>';
+    }
+    
+    try {
+        // Gọi API recommendation với user_text
+        const token = localStorage.getItem('token');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        // Thêm token nếu user đã đăng nhập
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/recommend`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+                user_text: query || "Vietnam travel",
+                top_k: 20
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch recommendations');
+        }
+        
+        const data = await response.json();
+        const allResults = data.results || [];
+        
+        // API đã xử lý recommend dựa trên query, không cần lọc lại
+        // Render tất cả kết quả từ API
+        renderResults(allResults, query, grid, count);
+        
+    } catch (error) {
+        console.error('Error fetching results:', error);
+        if (grid) {
+            grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #e74c3c; margin-top: 50px;">
+                Failed to load recommendations. Please try again later.
+            </p>`;
+        }
+    }
+}
+
+// === HÀM RENDER KẾT QUẢ ===
+function renderResults(results, query, grid, count) {
+    if (!grid) return;
+    
+    // Cập nhật số lượng
+    if (count) count.innerText = results.length;
+    
+    if (results.length === 0) {
+        grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; font-size: 1.2rem; color: #666; margin-top: 50px;">
+            No results found${query ? ` for "<b>${query}</b>"` : ''}. 
+        </p>`;
+    } else {
+        // Tạo HTML danh sách
+        grid.innerHTML = results.map(item => {
+            // Chọn ảnh từ chủ đề hoặc dùng ảnh mặc định
+            let imgSrc = "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070"; // Mặc định: Biển
+            
+            if (item.themes && item.themes.length > 0) {
+                const theme = item.themes[0].toLowerCase();
+                if (theme.includes('mountain') || theme.includes('núi')) {
+                    imgSrc = "https://images.unsplash.com/photo-1599229062397-6c8418047918?q=80&w=2070";
+                } else if (theme.includes('city') || theme.includes('thành phố') || theme.includes('historical')) {
+                    imgSrc = "https://images.unsplash.com/photo-1557750255-c76072a7aad1?q=80&w=2070";
+                } else if (theme.includes('temple') || theme.includes('chùa')) {
+                    imgSrc = "https://images.unsplash.com/photo-1548013146-72479768bada?q=80&w=2070";
+                }
+            }
+
+            // Format score to 1 decimal place
+            const scoreDisplay = item.score ? item.score.toFixed(1) : '0.0';
+            
+            return `
+            <div class="result-card" onclick="goToDetail(${item.id})" style="cursor: pointer;">
+                <div class="card-img-top">
+                    <img src="${imgSrc}" alt="${item.name}" onerror="this.src='https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070';">
+                    <div class="view-badge"><i class="fas fa-star"></i> ${scoreDisplay}</div>
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title">${item.name}</h4>
+                    <p class="card-subtitle">${item.province || 'Vietnam'}</p>
+                </div>
+                <div class="card-footer">
+                    <button class="icon-action like-btn" onclick="handleLike(event, ${item.id})"><i class="fas fa-thumbs-up"></i></button>
+                    <button class="icon-action dislike-btn" onclick="handleDislike(event, ${item.id})"><i class="fas fa-thumbs-down"></i></button>
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
+}
 
 // === HÀM XỬ LÝ TÌM KIẾM (SEARCH LOGIC) ===
 function handleResultPageSearch() {
@@ -119,6 +157,54 @@ function handleResultPageSearch() {
 window.goToDetail = function(id) {
     window.location.href = `detail.html?id=${id}`;
 };
+
+// === HÀM XỬ LÝ LIKE/DISLIKE ===
+window.handleLike = async function(event, placeId) {
+    event.stopPropagation();
+    await submitRating(placeId, 'like');
+};
+
+window.handleDislike = async function(event, placeId) {
+    event.stopPropagation();
+    await submitRating(placeId, 'dislike');
+};
+
+async function submitRating(placeId, interactionType) {
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        alert('Please login to rate places!');
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/rating`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                place_id: placeId,
+                interaction_type: interactionType
+            })
+        });
+        
+        if (response.ok) {
+            // Show success feedback
+            const btn = event.target.closest('button');
+            if (btn) {
+                btn.style.color = interactionType === 'like' ? '#2ecc71' : '#e74c3c';
+                setTimeout(() => { btn.style.color = ''; }, 1000);
+            }
+        } else {
+            console.error('Failed to submit rating');
+        }
+    } catch (error) {
+        console.error('Error submitting rating:', error);
+    }
+}
 
 function checkAuth() {
     const token = localStorage.getItem('token');

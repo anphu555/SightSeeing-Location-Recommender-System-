@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
 from collections import Counter
 from typing import List
+import ast
 
 from app.schemas import RecommendRequest, RecommendResponse, User, PlaceOut, Rating, Place
 from app.database import get_session
@@ -84,9 +85,13 @@ async def get_recommendations(
     final_tags = []
     
     if current_intent_tags:
-        final_tags = current_intent_tags
-        # Có thể thêm 1 chút lịch sử để cá nhân hóa (optional)
-        # final_tags.extend(history_tags[:2]) 
+        # Lấy intent làm trọng tâm
+        final_tags = current_intent_tags 
+        # Bổ sung thêm 2-3 tags sở thích mạnh nhất của user để lọc kết quả phù hợp gu
+        if history_tags:
+            # Chỉ lấy những tag lịch sử không trùng với intent hiện tại
+            additional_tags = [t for t in history_tags if t not in current_intent_tags][:3]
+            final_tags.extend(additional_tags)
     else:
         # Nếu không gõ gì (Trang chủ), dùng hoàn toàn lịch sử
         final_tags = history_tags
@@ -106,7 +111,22 @@ async def get_recommendations(
     
     results_list = []
     for _, row in results_df.iterrows():
-        tags = row.get('tags', [])
+        # Parse tags từ string sang list nếu cần
+        tags_raw = row.get('tags', [])
+        
+        # Nếu tags là string (JSON representation), parse nó
+        if isinstance(tags_raw, str):
+            try:
+                tags = ast.literal_eval(tags_raw)
+            except:
+                tags = []
+        else:
+            tags = tags_raw if tags_raw else []
+        
+        # Đảm bảo tags là list
+        if not isinstance(tags, list):
+            tags = []
+        
         results_list.append(PlaceOut(
             id=int(row.get('id')),
             name=str(row.get('name')),
@@ -116,6 +136,21 @@ async def get_recommendations(
         ))
 
     return RecommendResponse(extraction=extraction, results=results_list)
+
+@router.get("/debug/vocabulary")
+async def get_vocabulary():
+    """Debug endpoint để xem vocabulary của model"""
+    from app.routers.recsysmodel import loaded_mlb
+    
+    if loaded_mlb is None:
+        return {"error": "Model not loaded yet"}
+    
+    vocab = list(loaded_mlb.classes_)
+    return {
+        "total_tags": len(vocab),
+        "sample_tags": vocab[:50],  # Hiển thị 50 tags đầu
+        "all_tags": vocab  # Toàn bộ vocabulary
+    }
 
 # @router.get("/place/{place_id}", response_model=PlaceDetailResponse)
 # def get_place_detail(place_id: int):
