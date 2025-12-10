@@ -167,8 +167,24 @@ def recommend_two_tower(user_prefs_tags, top_k=10):
     # Sort và lấy top K
     top_results = results.sort_values(by='score', ascending=False).head(top_k)
     
+    # Parse tags từ string sang list trước khi trả về
+    def safe_parse_tags(x):
+        if isinstance(x, str):
+            try:
+                return ast.literal_eval(x)
+            except:
+                return []
+        elif isinstance(x, list):
+            return x
+        else:
+            return []
+    
+    # Tạo bản copy và parse tags
+    final_results = top_results.copy()
+    final_results['tags'] = final_results['tags'].apply(safe_parse_tags)
+    
     # Trả về DataFrame (không phải dict)
-    return top_results[['id', 'name', 'tags', 'province', 'score']]
+    return final_results[['id', 'name', 'tags', 'province', 'score']]
 
 # --- TEST CODE (Chạy thử khi execute file này) ---
 if __name__ == "__main__":

@@ -1,51 +1,7 @@
-// === 1. DỮ LIỆU ĐỊA ĐIỂM (Đã cập nhật nội dung Highlights đầy đủ) ===
-    const placesData = {
-        "101": {
-            name: "HA LONG BAY",
-            location: "Quang Ninh", distance: "123",
-            // Nội dung Description chứa HTML chuẩn cho Highlights
-            desc: `
-                Ha Long Bay features thousands of limestone karsts and isles in various shapes and sizes.
-                <br><br>
-                <b>Highlights:</b>
-                <ul style="margin-top:5px; padding-left:20px; list-style-type: disc;">
-                    <li>Boat cruises</li>
-                    <li>Cave exploration (Sung Sot, Thien Cung)</li>
-                    <li>Kayaking & Swimming</li>
-                    <li>Visiting pearl farms</li>
-                </ul>
-            `,
-            // Danh sách ảnh (Đã nhân bản để test chuyển trang)
-            images: [
-                    // Trang 1
-                "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070",
-                "https://images.unsplash.com/photo-1504457047772-27faf1c00561?q=80&w=2070",
-                "https://images.unsplash.com/photo-1464983308960-49ad68803cc2?q=80&w=2070",
-                "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?q=80&w=2070",
-                // Trang 2
-                "https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?q=80&w=2070",
-                "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=2070",
-                "https://images.unsplash.com/photo-1533285860268-c9c004c27a20?q=80&w=2070",
-                "https://images.unsplash.com/photo-1616383637651-72251a700320?q=80&w=2070",
-                // Trang 3
-                "https://images.unsplash.com/photo-1596328372690-e9b46571b402?q=80&w=2070",
-                "https://images.unsplash.com/photo-1583486337220-333e882200be?q=80&w=2070"
-            ],
-            reviews: [{ user: "Sarah Nguyen", avatar: "https://randomuser.me/api/portraits/women/44.jpg", comment: "The scenery is absolutely breathtaking!", photos: [] }]
-        },
-        // (Các ID khác tự động fallback nếu thiếu dữ liệu, code vẫn chạy ổn)
-        "102": { name: "TUAN CHAU PARK", location: "Quang Ninh", distance: "130", desc: "An entertainment complex.", images: ["https://images.unsplash.com/photo-1565691668615-5e60d5c08611?q=80&w=2070"], reviews: [] },
-        "103": { name: "HOI AN", location: "Quang Nam", distance: "800", desc: "Ancient Town.", images: ["https://images.unsplash.com/photo-1557750255-c76072a7aad1?q=80&w=2070"], reviews: [] },
-        "104": { name: "DA LAT", location: "Lam Dong", distance: "300", desc: "City of Flowers.", images: ["https://images.unsplash.com/photo-1596328372690-e9b46571b402?q=80&w=2070"], reviews: [] },
-        "105": { name: "NHA TRANG", location: "Khanh Hoa", distance: "450", desc: "Beach City.", images: ["https://images.unsplash.com/photo-1570535926348-18302f741544?q=80&w=2070"], reviews: [] },
-        "106": { name: "SAPA", location: "Lao Cai", distance: "320", desc: "Mountain Town.", images: ["https://images.unsplash.com/photo-1565257913380-010534c0e660?q=80&w=2070"], reviews: [] },
-        "107": { name: "HUE", location: "Thua Thien Hue", distance: "660", desc: "Imperial City.", images: ["https://images.unsplash.com/photo-1583486337220-333e882200be?q=80&w=2070"], reviews: [] },
-        "108": { name: "PHU QUOC", location: "Kien Giang", distance: "1200", desc: "Island Paradise.", images: ["https://images.unsplash.com/photo-1592350849318-7b9c9f2b879a?q=80&w=2070"], reviews: [] },
-        "109": { name: "VUNG TAU", location: "Ba Ria - Vung Tau", distance: "100", desc: "Seaside Town.", images: ["https://images.unsplash.com/photo-1558611689-d64e83058814?q=80&w=2070"], reviews: [] },
-        "110": { name: "NINH BINH", location: "Ninh Binh", distance: "90", desc: "Ha Long on Land.", images: ["https://images.unsplash.com/photo-1616639535315-998813a45c36?q=80&w=2070"], reviews: [] }
-    };
+// === 1. IMPORT CONFIG ===
+import { CONFIG } from './config.js';
 
-    // === 2. QUẢN LÝ TRẠNG THÁI ===
+// === 2. QUẢN LÝ TRẠNG THÁI ===
 let currentImgIndex = 0;
 let currentImagesList = [];
 const ITEMS_PER_PAGE = 4; // Số lượng ảnh hiển thị 1 lần
@@ -98,18 +54,66 @@ function updateGallery(index) {
     }
 }
 
-// === 5. KHỞI TẠO ===
-document.addEventListener('DOMContentLoaded', () => {
+// === 5. KHỞI TẠO & GỌI API ===
+document.addEventListener('DOMContentLoaded', async () => {
     checkAuth();
     initHeaderDropdown();
 
     const params = new URLSearchParams(window.location.search);
-    const id = params.get('id') || "101"; 
-    const data = placesData[id] || placesData["101"];
-    currentImagesList = data.images;
-
-    renderPage(data);
-    renderRecs(id);
+    const id = params.get('id'); 
+    
+    if (!id) {
+        // Nếu không có ID, chuyển về trang results
+        window.location.href = 'results.html';
+        return;
+    }
+    
+    // Hiển thị loading
+    const container = document.querySelector('.detail-container');
+    if (container) {
+        container.innerHTML = '<p style="text-align: center; margin-top: 50px;">Loading...</p>';
+    }
+    
+    try {
+        // Gọi API lấy thông tin địa điểm
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/place/${id}`);
+        
+        if (!response.ok) {
+            throw new Error('Place not found');
+        }
+        
+        const placeData = await response.json();
+        
+        // Xử lý dữ liệu từ backend
+        const data = {
+            name: placeData.name || 'Unknown',
+            location: placeData.tags && placeData.tags.length > 0 ? placeData.tags[0] : 'Vietnam',
+            distance: Math.floor(Math.random() * 500 + 50), // Random distance (có thể tính thật từ GPS)
+            desc: formatDescription(placeData.description),
+            images: placeData.image && placeData.image.length > 0 
+                ? placeData.image 
+                : ['https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070'],
+            tags: placeData.tags || [],
+            reviews: [] // Reviews có thể lấy từ comment table sau
+        };
+        
+        currentImagesList = data.images;
+        renderPage(data);
+        renderRecs(id);
+        
+    } catch (error) {
+        console.error('Error loading place details:', error);
+        if (container) {
+            container.innerHTML = `
+                <div style="text-align: center; margin-top: 50px;">
+                    <p style="color: #e74c3c; font-size: 1.2rem;">Place not found</p>
+                    <button onclick="window.location.href='results.html'" style="margin-top: 20px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        Back to Results
+                    </button>
+                </div>
+            `;
+        }
+    }
 
     // Bàn phím
     document.addEventListener('keydown', (e) => {
@@ -117,6 +121,20 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (e.key === 'ArrowLeft') { e.preventDefault(); window.slideThumbs(-1); }
     });
 });
+
+// Hàm format description từ array thành HTML
+function formatDescription(descArray) {
+    if (!descArray || descArray.length === 0) {
+        return 'No description available.';
+    }
+    
+    // Nếu là array, join thành paragraphs
+    if (Array.isArray(descArray)) {
+        return descArray.map(para => `<p>${para}</p>`).join('<br>');
+    }
+    
+    return descArray;
+}
 
 function renderPage(data) {
     document.getElementById('detailTitle').innerText = data.name;
@@ -149,14 +167,44 @@ function renderPage(data) {
 }
 
 // (Giữ nguyên các hàm renderRecs, checkAuth, initHeaderDropdown như cũ)
-function renderRecs(currentId) {
+async function renderRecs(currentId) {
     const list = document.getElementById('recommendationList');
-    if(list) {
-        const otherIds = Object.keys(placesData).filter(k => k !== currentId).slice(0, 3);
-        list.innerHTML = otherIds.map(k => {
-            const item = placesData[k];
-            return `<div class="rec-card" onclick="window.location.href='detail.html?id=${k}'"><img src="${item.images[0]}"><div class="rec-info"><h4>${item.name}</h4><p>${item.location}</p></div></div>`;
-        }).join('');
+    if (!list) return;
+    
+    try {
+        // Gọi API để lấy gợi ý
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/recommend`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_text: "similar places",
+                top_k: 4
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const recommendations = data.results.filter(item => item.id.toString() !== currentId).slice(0, 3);
+            
+            list.innerHTML = recommendations.map(item => {
+                const imgSrc = item.themes && item.themes.length > 0 
+                    ? 'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070'
+                    : 'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070';
+                    
+                return `<div class="rec-card" onclick="window.location.href='detail.html?id=${item.id}'">
+                    <img src="${imgSrc}">
+                    <div class="rec-info">
+                        <h4>${item.name}</h4>
+                        <p>${item.province || 'Vietnam'}</p>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+    } catch (error) {
+        console.error('Error loading recommendations:', error);
+        list.innerHTML = '<p style="text-align: center;">Unable to load recommendations</p>';
     }
 }
 function initHeaderDropdown() {

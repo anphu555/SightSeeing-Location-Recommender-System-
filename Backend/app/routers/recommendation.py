@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
 from collections import Counter
 from typing import List
+import ast
 
 from app.schemas import RecommendRequest, RecommendResponse, User, PlaceOut, Rating, Place
 from app.database import get_session
@@ -106,7 +107,22 @@ async def get_recommendations(
     
     results_list = []
     for _, row in results_df.iterrows():
-        tags = row.get('tags', [])
+        # Parse tags từ string sang list nếu cần
+        tags_raw = row.get('tags', [])
+        
+        # Nếu tags là string (JSON representation), parse nó
+        if isinstance(tags_raw, str):
+            try:
+                tags = ast.literal_eval(tags_raw)
+            except:
+                tags = []
+        else:
+            tags = tags_raw if tags_raw else []
+        
+        # Đảm bảo tags là list
+        if not isinstance(tags, list):
+            tags = []
+        
         results_list.append(PlaceOut(
             id=int(row.get('id')),
             name=str(row.get('name')),
