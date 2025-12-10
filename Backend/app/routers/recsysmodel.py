@@ -140,9 +140,50 @@ def recommend_two_tower(user_prefs_tags, top_k=10):
     
     if loaded_model is None:
         load_resources()
+    
+    # MAPPING: Từ user input thông thường sang tags trong vocabulary
+    # Vì MLB vocabulary chứa các tags cụ thể từ dataset
+    tag_mapping = {
+        'beach': ['Beach', 'Coastal', 'Sea', 'Island', 'Ocean'],
+        'mountain': ['Mountain', 'Highland', 'Hill', 'Trekking', 'Hiking'],
+        'nature': ['Nature', 'Natural', 'Ecotourism', 'Wildlife'],
+        'historical': ['Historical', 'History', 'Heritage', 'Cultural Heritage'],
+        'temple': ['Temple', 'Pagoda', 'Religious', 'Spiritual'],
+        'city': ['City', 'Urban', 'Modern'],
+        'food': ['Cuisine', 'Food', 'Restaurant'],
+        'adventure': ['Adventure', 'Outdoor', 'Sports'],
+        'relaxing': ['Relaxing', 'Peaceful', 'Quiet'],
+        'festival': ['Festival', 'Event', 'Celebration']
+    }
+    
+    # Expand user tags với mapping
+    expanded_tags = []
+    vocab_set = set(loaded_mlb.classes_)
+    
+    for tag in user_prefs_tags:
+        tag_lower = tag.lower()
+        
+        # 1. Thử tag gốc (capitalize)
+        if tag in vocab_set:
+            expanded_tags.append(tag)
+        elif tag.capitalize() in vocab_set:
+            expanded_tags.append(tag.capitalize())
+        
+        # 2. Thử mapping
+        if tag_lower in tag_mapping:
+            for mapped_tag in tag_mapping[tag_lower]:
+                if mapped_tag in vocab_set:
+                    expanded_tags.append(mapped_tag)
+    
+    # Nếu không match được gì, dùng tags phổ biến
+    if not expanded_tags:
+        print(f"⚠️ Warning: Tags {user_prefs_tags} not found in vocabulary. Using default.")
+        expanded_tags = ['Vietnam', 'Sightseeing', 'Cultural']
+    
+    print(f"🔍 User input: {user_prefs_tags} → Expanded: {expanded_tags}")
         
     # 1. Chuẩn bị Input cho User Tower
-    user_vec = loaded_mlb.transform([user_prefs_tags])
+    user_vec = loaded_mlb.transform([expanded_tags])
     
     # 2. Lặp lại vector user cho bằng số lượng items
     num_items = len(places_df)

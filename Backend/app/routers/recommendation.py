@@ -133,6 +133,21 @@ async def get_recommendations(
 
     return RecommendResponse(extraction=extraction, results=results_list)
 
+@router.get("/debug/vocabulary")
+async def get_vocabulary():
+    """Debug endpoint để xem vocabulary của model"""
+    from app.routers.recsysmodel import loaded_mlb
+    
+    if loaded_mlb is None:
+        return {"error": "Model not loaded yet"}
+    
+    vocab = list(loaded_mlb.classes_)
+    return {
+        "total_tags": len(vocab),
+        "sample_tags": vocab[:50],  # Hiển thị 50 tags đầu
+        "all_tags": vocab  # Toàn bộ vocabulary
+    }
+
 # @router.get("/place/{place_id}", response_model=PlaceDetailResponse)
 # def get_place_detail(place_id: int):
 #     with Session(engine) as session:
