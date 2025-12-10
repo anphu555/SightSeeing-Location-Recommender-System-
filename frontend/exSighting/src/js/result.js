@@ -52,17 +52,9 @@ async function fetchAndDisplayResults() {
         const data = await response.json();
         const allResults = data.results || [];
         
-        // Lọc kết quả nếu có query
-        const filteredResults = query 
-            ? allResults.filter(p => 
-                p.name.toLowerCase().includes(query.toLowerCase()) || 
-                p.province.toLowerCase().includes(query.toLowerCase()) ||
-                (p.themes && p.themes.some(t => t.toLowerCase().includes(query.toLowerCase())))
-              )
-            : allResults;
-        
-        // Render kết quả
-        renderResults(filteredResults, query, grid, count);
+        // API đã xử lý recommend dựa trên query, không cần lọc lại
+        // Render tất cả kết quả từ API
+        renderResults(allResults, query, grid, count);
         
     } catch (error) {
         console.error('Error fetching results:', error);
