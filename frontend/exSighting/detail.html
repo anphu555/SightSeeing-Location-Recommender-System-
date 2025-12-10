@@ -100,7 +100,12 @@
                 </div>
 
                 <div class="place-desc-group">
-                    <div id="detailDesc">Loading description...</div>
+                    <div class="desc-container">
+                        <div class="desc-scrollable" id="detailDesc">Loading description...</div>
+                    </div>
+                    <button class="extend-btn" onclick="openDescriptionModal()">
+                        <i class="fas fa-expand-alt"></i> Extend
+                    </button>
                 </div>
             </div>
         </div>
@@ -122,9 +127,53 @@
 
     </main>
 
+    <!-- Modal Popup cho Description đầy đủ -->
+    <div id="descriptionModal" class="desc-modal">
+        <div class="desc-modal-content">
+            <div class="desc-modal-header">
+                <h2 id="modalPlaceTitle">Place Details</h2>
+                <button class="desc-modal-close" onclick="closeDescriptionModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="desc-modal-body">
+                <div id="modalDetailDesc">Loading...</div>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="src/js/detail.js"></script>
 
     <div id="footer-placeholder"></div>
     <script src="src/js/footer.js"></script>
+    
+    <script>
+        // Hàm mở modal
+        function openDescriptionModal() {
+            const modal = document.getElementById('descriptionModal');
+            const detailDesc = document.getElementById('detailDesc').innerHTML;
+            const placeTitle = document.getElementById('detailTitle').textContent;
+            
+            document.getElementById('modalDetailDesc').innerHTML = detailDesc;
+            document.getElementById('modalPlaceTitle').textContent = placeTitle;
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Ngăn scroll trang chính
+        }
+        
+        // Hàm đóng modal
+        function closeDescriptionModal() {
+            const modal = document.getElementById('descriptionModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto'; // Cho phép scroll lại
+        }
+        
+        // Đóng modal khi click bên ngoài
+        window.onclick = function(event) {
+            const modal = document.getElementById('descriptionModal');
+            if (event.target === modal) {
+                closeDescriptionModal();
+            }
+        }
+    </script>
 </body>
 </html>
