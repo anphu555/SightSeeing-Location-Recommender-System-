@@ -85,9 +85,13 @@ async def get_recommendations(
     final_tags = []
     
     if current_intent_tags:
-        final_tags = current_intent_tags
-        # Có thể thêm 1 chút lịch sử để cá nhân hóa (optional)
-        # final_tags.extend(history_tags[:2]) 
+        # Lấy intent làm trọng tâm
+        final_tags = current_intent_tags 
+        # Bổ sung thêm 2-3 tags sở thích mạnh nhất của user để lọc kết quả phù hợp gu
+        if history_tags:
+            # Chỉ lấy những tag lịch sử không trùng với intent hiện tại
+            additional_tags = [t for t in history_tags if t not in current_intent_tags][:3]
+            final_tags.extend(additional_tags)
     else:
         # Nếu không gõ gì (Trang chủ), dùng hoàn toàn lịch sử
         final_tags = history_tags
