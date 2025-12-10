@@ -17,7 +17,7 @@ sqlite_url = f"sqlite:///{sqlite_file_name}"
 engine = create_engine(sqlite_url)
 
 # 2. Đường dẫn file CSV
-CSV_FILE_PATH = 'app/services/vietnam_tourism_data_with_tags.csv'
+CSV_FILE_PATH = 'app/services/vietnam_tourism_data_200tags_with_province.csv'
 
 # Tăng giới hạn bộ nhớ cho việc đọc file CSV (vì description_json rất dài)
 csv.field_size_limit(sys.maxsize)

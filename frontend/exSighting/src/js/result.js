@@ -98,7 +98,7 @@ function renderResults(results, query, grid, count) {
             const scoreDisplay = item.score ? item.score.toFixed(1) : '0.0';
             
             return `
-            <div class="result-card" onclick="goToDetail('${item.id}')" style="cursor: pointer;">
+            <div class="result-card" onclick="goToDetail(${item.id})" style="cursor: pointer;">
                 <div class="card-img-top">
                     <img src="${imgSrc}" alt="${item.name}" onerror="this.src='https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070';">
                     <div class="view-badge"><i class="fas fa-star"></i> ${scoreDisplay}</div>
