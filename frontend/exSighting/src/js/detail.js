@@ -231,16 +231,15 @@ function checkAuth() {
 }
 
 // === CHỨC NĂNG TÌM KIẾM (LINK VỀ RESULT PAGE) ===
-function handleDetailSearch() {
+window.handleDetailSearch = function() {
     const input = document.getElementById('detailSearchInput');
     const query = input.value.trim();
     
     if (query) {
-        // Chuyển hướng sang trang results.html kèm từ khóa
-        // encodeURIComponent để xử lý các ký tự đặc biệt hoặc tiếng Việt
+        // Chuyển hướng sang trang results.html kèm từ khóa - giống như search từ home
         window.location.href = `results.html?q=${encodeURIComponent(query)}`;
     } else {
-        // Hiệu ứng rung nhẹ hoặc focus nếu người dùng chưa nhập gì (Tùy chọn)
+        // Hiệu ứng rung nhẹ hoặc focus nếu người dùng chưa nhập gì
         input.focus();
         input.style.borderBottomColor = "red";
         setTimeout(() => input.style.borderBottomColor = "#ccc", 500);

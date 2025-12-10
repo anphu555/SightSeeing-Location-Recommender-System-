@@ -14,13 +14,13 @@ document.addEventListener("DOMContentLoaded", function() {
         
         <div id="authSection">
             <button class="user-actions-unsigned-in" id="unsignedBlock" onclick="handleLoginRedirect()">
-                <div class="user-icon-bg"><i class="fas fa-user"></i></div>
+                <div class="user-icon-bg"><i class="fas fa-user-circle"></i></div>
                 <span class="sign-in-text">Sign In</span>
             </button>
 
             <div class="user-actions-signed-in" id="signedBlock" style="display: none;">
                 <button class="user-profile-toggle">
-                    <div class="user-icon-bg"><i class="fas fa-user"></i></div>
+                    <div class="user-icon-bg"><i class="fas fa-user-circle"></i></div>
                     <span class="username-text" id="displayUsername">User</span>
                     <i class="fas fa-caret-down" style="font-size: 0.8rem; margin-left: 5px;"></i>
                 </button>
