@@ -1,5 +1,13 @@
 import { CONFIG } from './config.js';
 
+// Biến theo dõi phân trang và trạng thái
+let currentPage = 0;
+let isLoading = false;
+let hasMore = true;
+let currentQuery = "";
+const ITEMS_PER_PAGE = 20;
+let allLoadedResults = []; // Lưu tất cả kết quả đã load
+
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     
@@ -10,18 +18,41 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchAndDisplayResults();
 
     initSortDropdown();
+    
+    // Thêm infinite scroll listener
+    initInfiniteScroll();
 });
 
 // === HÀM GỌI API VÀ HIỂN THỊ KẾT QUẢ ===
-async function fetchAndDisplayResults() {
+async function fetchAndDisplayResults(isLoadMore = false) {
     const grid = document.getElementById('resultsGrid');
     const count = document.getElementById('totalCount');
     const params = new URLSearchParams(window.location.search);
     const query = params.get('q') || "";
     
+    // Nếu query thay đổi, reset tất cả
+    if (query !== currentQuery) {
+        currentQuery = query;
+        currentPage = 0;
+        allLoadedResults = [];
+        hasMore = true;
+        if (grid) grid.innerHTML = '';
+    }
+    
+    // Ngăn multiple requests cùng lúc
+    if (isLoading || !hasMore) return;
+    isLoading = true;
+    
     // Hiển thị loading
-    if (grid) {
+    if (grid && !isLoadMore) {
         grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; margin-top: 50px;">Loading...</p>';
+    } else if (grid && isLoadMore) {
+        // Thêm loading indicator khi load more
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = 'loadingMore';
+        loadingDiv.style.cssText = 'grid-column: 1/-1; text-align: center; padding: 20px;';
+        loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading more...';
+        grid.appendChild(loadingDiv);
     }
     
     try {
@@ -36,12 +67,13 @@ async function fetchAndDisplayResults() {
             headers['Authorization'] = `Bearer ${token}`;
         }
         
+        // Tăng top_k để lấy nhiều kết quả hơn
         const response = await fetch(`${CONFIG.apiBase}/api/v1/recommend`, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({
                 user_text: query || "Vietnam travel",
-                top_k: 20
+                top_k: 100 // Lấy 100 kết quả từ backend
             })
         });
         
@@ -52,34 +84,57 @@ async function fetchAndDisplayResults() {
         const data = await response.json();
         const allResults = data.results || [];
         
-        // API đã xử lý recommend dựa trên query, không cần lọc lại
-        // Render tất cả kết quả từ API
-        renderResults(allResults, query, grid, count);
+        // Lưu tất cả kết quả và render theo trang
+        if (!isLoadMore) {
+            allLoadedResults = allResults;
+            currentPage = 0;
+        }
+        
+        // Tính toán kết quả cho trang hiện tại
+        const startIdx = currentPage * ITEMS_PER_PAGE;
+        const endIdx = startIdx + ITEMS_PER_PAGE;
+        const pageResults = allLoadedResults.slice(startIdx, endIdx);
+        
+        // Kiểm tra còn kết quả không
+        hasMore = endIdx < allLoadedResults.length;
+        
+        // Remove loading indicator if exists
+        const loadingMore = document.getElementById('loadingMore');
+        if (loadingMore) loadingMore.remove();
+        
+        // Render kết quả
+        renderResults(pageResults, query, grid, count, isLoadMore);
+        
+        // Tăng page counter
+        currentPage++;
         
     } catch (error) {
         console.error('Error fetching results:', error);
-        if (grid) {
+        if (grid && !isLoadMore) {
             grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #e74c3c; margin-top: 50px;">
                 Failed to load recommendations. Please try again later.
             </p>`;
         }
+        hasMore = false;
+    } finally {
+        isLoading = false;
     }
 }
 
 // === HÀM RENDER KẾT QUẢ ===
-function renderResults(results, query, grid, count) {
+function renderResults(results, query, grid, count, isLoadMore = false) {
     if (!grid) return;
     
-    // Cập nhật số lượng
-    if (count) count.innerText = results.length;
+    // Cập nhật số lượng tổng
+    if (count) count.innerText = allLoadedResults.length;
     
-    if (results.length === 0) {
+    if (results.length === 0 && !isLoadMore) {
         grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; font-size: 1.2rem; color: #666; margin-top: 50px;">
             No results found${query ? ` for "<b>${query}</b>"` : ''}. 
         </p>`;
     } else {
         // Tạo HTML danh sách
-        grid.innerHTML = results.map(item => {
+        const htmlContent = results.map(item => {
             // Lấy ảnh thực từ item.image
             let imgSrc = "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070"; // Mặc định
             
@@ -117,6 +172,14 @@ function renderResults(results, query, grid, count) {
             </div>
             `;
         }).join('');
+        
+        if (isLoadMore) {
+            // Append thêm vào grid hiện tại
+            grid.insertAdjacentHTML('beforeend', htmlContent);
+        } else {
+            // Thay thế toàn bộ
+            grid.innerHTML = htmlContent;
+        }
     }
 }
 
@@ -270,4 +333,27 @@ function initSortDropdown() {
     document.onclick = (e) => {
         if(!dropdown.contains(e.target)) dropdown.classList.remove('open');
     };
+}
+
+// === HÀM INFINITE SCROLL ===
+function initInfiniteScroll() {
+    let scrollTimeout;
+    
+    window.addEventListener('scroll', () => {
+        // Debounce scroll event
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            // Kiểm tra nếu đã scroll gần cuối trang
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const windowHeight = window.innerHeight;
+            const documentHeight = document.documentElement.scrollHeight;
+            
+            // Khi còn 300px nữa là đến cuối trang
+            if (scrollTop + windowHeight >= documentHeight - 300) {
+                if (!isLoading && hasMore) {
+                    fetchAndDisplayResults(true); // Load more
+                }
+            }
+        }, 100); // Debounce 100ms
+    });
 }
