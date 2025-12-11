@@ -18,6 +18,8 @@ class CommentResponse(BaseModel):
     id: int
     user_id: int
     username: str
+    user_display_name: str | None = None  # Tên hiển thị của user
+    user_avatar_url: str | None = None  # Avatar URL của user
     place_id: int
     place_name: str | None = None
     place_image: str | None = None
@@ -52,6 +54,8 @@ async def create_comment(
         id=new_comment.id,
         user_id=new_comment.user_id,
         username=current_user.username,
+        user_display_name=current_user.display_name,
+        user_avatar_url=current_user.avatar_url,
         place_id=new_comment.place_id,
         content=new_comment.content,
         created_at=new_comment.created_at
@@ -79,6 +83,8 @@ async def get_comments_by_place(
             id=comment.id,
             user_id=comment.user_id,
             username=user.username,
+            user_display_name=user.display_name,
+            user_avatar_url=user.avatar_url,
             place_id=comment.place_id,
             content=comment.content,
             created_at=comment.created_at
@@ -133,6 +139,8 @@ async def get_comments_by_user(
             id=comment.id,
             user_id=comment.user_id,
             username=current_user.username,
+            user_display_name=current_user.display_name,
+            user_avatar_url=current_user.avatar_url,
             place_id=comment.place_id,
             place_name=place_name,
             place_image=place_image,

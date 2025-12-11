@@ -27,6 +27,10 @@ class LikedCommentResponse(BaseModel):
     id: int
     comment_id: int
     comment_content: str
+    comment_user_id: int  # ID của user đã tạo comment
+    comment_username: str  # Username của user đã tạo comment
+    comment_user_display_name: str | None  # Display name của user đã tạo comment
+    comment_user_avatar_url: str | None  # Avatar URL của user đã tạo comment
     place_id: int
     place_name: str
     place_image: str | None
@@ -201,6 +205,9 @@ async def get_liked_comments(
     for like in likes:
         comment = session.get(Comment, like.comment_id)
         if comment:
+            # Lấy thông tin user đã tạo comment
+            comment_user = session.get(User, comment.user_id)
+            
             place = session.get(Place, comment.place_id)
             place_name = place.name if place else "Unknown Place"
             place_image = place.image[0] if place and place.image and len(place.image) > 0 else None
@@ -209,6 +216,10 @@ async def get_liked_comments(
                 id=like.id,
                 comment_id=comment.id,
                 comment_content=comment.content,
+                comment_user_id=comment.user_id,
+                comment_username=comment_user.username if comment_user else "Unknown",
+                comment_user_display_name=comment_user.display_name if comment_user else None,
+                comment_user_avatar_url=comment_user.avatar_url if comment_user else None,
                 place_id=comment.place_id,
                 place_name=place_name,
                 place_image=place_image,

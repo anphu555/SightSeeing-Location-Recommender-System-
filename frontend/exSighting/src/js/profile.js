@@ -41,16 +41,40 @@ function checkAuth() {
     }
 }
 
-function loadProfileData() {
+async function loadProfileData() {
     try {
-        // Load từ localStorage
-        const displayName = localStorage.getItem('displayName') || localStorage.getItem('username') || 'User';
-        const username = localStorage.getItem('username') || 'user';
-        const email = localStorage.getItem('email') || 'user@example.com';
-        const avatarUrl = localStorage.getItem('avatarUrl');
-        const bio = localStorage.getItem('bio') || '';
-        const location = localStorage.getItem('location') || '';
-        const website = localStorage.getItem('website') || '';
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // Fetch user profile từ backend
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/auth/profile`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load profile');
+        }
+
+        const userData = await response.json();
+        console.log('Loaded user data:', userData);
+
+        // Lưu vào localStorage để dùng cho các trang khác
+        localStorage.setItem('username', userData.username);
+        if (userData.display_name) {
+            localStorage.setItem('displayName', userData.display_name);
+        }
+        if (userData.avatar_url) {
+            localStorage.setItem('avatarUrl', userData.avatar_url);
+        }
+
+        const displayName = userData.display_name || userData.username || 'User';
+        const username = userData.username || 'user';
+        const avatarUrl = userData.avatar_url;
         
         // Update profile display
         document.getElementById('profileName').textContent = displayName;
@@ -62,50 +86,15 @@ function loadProfileData() {
         if (avatarUrl) {
             profileAvatar.innerHTML = `<img src="${avatarUrl}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
             headerAvatar.innerHTML = `<img src="${avatarUrl}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+        } else {
+            // Default avatar icon
+            profileAvatar.innerHTML = `<i class="fas fa-user-circle"></i>`;
+            headerAvatar.innerHTML = `<i class="fas fa-user-circle"></i>`;
         }
         
         // Update info section
         document.getElementById('infoName').textContent = displayName;
-        document.getElementById('infoEmail').textContent = email;
-        
-        // Update additional info if available
-        const infoGrid = document.querySelector('.info-grid');
-        if (bio) {
-            const bioItem = document.createElement('div');
-            bioItem.className = 'info-item';
-            bioItem.innerHTML = `
-                <i class="fas fa-info-circle"></i>
-                <div>
-                    <span class="label">Bio</span>
-                    <span class="value">${bio}</span>
-                </div>
-            `;
-            infoGrid.appendChild(bioItem);
-        }
-        if (location) {
-            const locationItem = document.createElement('div');
-            locationItem.className = 'info-item';
-            locationItem.innerHTML = `
-                <i class="fas fa-map-marker-alt"></i>
-                <div>
-                    <span class="label">Location</span>
-                    <span class="value">${location}</span>
-                </div>
-            `;
-            infoGrid.appendChild(locationItem);
-        }
-        if (website) {
-            const websiteItem = document.createElement('div');
-            websiteItem.className = 'info-item';
-            websiteItem.innerHTML = `
-                <i class="fas fa-link"></i>
-                <div>
-                    <span class="label">Website</span>
-                    <span class="value"><a href="${website}" target="_blank">${website}</a></span>
-                </div>
-            `;
-            infoGrid.appendChild(websiteItem);
-        }
+        document.getElementById('infoEmail').textContent = `${username}@example.com`; // Email placeholder
         
         // Simulated join date
         const joinDate = new Date(2024, 0, 1);
@@ -116,6 +105,7 @@ function loadProfileData() {
         });
     } catch (error) {
         console.error('Error loading profile data:', error);
+        alert('Failed to load profile data');
     }
 }
 
@@ -198,25 +188,57 @@ function initEditProfile() {
     });
     
     // Submit form
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
         const displayName = document.getElementById('editDisplayName').value.trim();
         const avatarUrl = document.getElementById('editAvatar').value.trim();
-        const bio = document.getElementById('editBio').value.trim();
-        const location = document.getElementById('editLocation').value.trim();
-        const website = document.getElementById('editWebsite').value.trim();
         
-        // Save to localStorage
-        localStorage.setItem('displayName', displayName);
-        if (avatarUrl) localStorage.setItem('avatarUrl', avatarUrl);
-        if (bio) localStorage.setItem('bio', bio);
-        if (location) localStorage.setItem('location', location);
-        if (website) localStorage.setItem('website', website);
-        
-        // Reload profile data
-        closeModal();
-        window.location.reload();
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Please login first');
+            window.location.href = 'login.html';
+            return;
+        }
+
+        try {
+            // Call API to update profile
+            const response = await fetch(`${CONFIG.apiBase}/api/v1/auth/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    display_name: displayName || null,
+                    avatar_url: avatarUrl || null
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update profile');
+            }
+
+            const updatedUser = await response.json();
+            console.log('Profile updated:', updatedUser);
+
+            // Update localStorage
+            if (updatedUser.display_name) {
+                localStorage.setItem('displayName', updatedUser.display_name);
+            }
+            if (updatedUser.avatar_url) {
+                localStorage.setItem('avatarUrl', updatedUser.avatar_url);
+            }
+
+            // Close modal and reload profile
+            closeModal();
+            await loadProfileData();
+            
+            alert('Profile updated successfully!');
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            alert('Failed to update profile. Please try again.');
+        }
     });
 }
 
@@ -404,28 +426,41 @@ async function loadLikedComments() {
             return;
         }
         
-        likedCommentsList.innerHTML = likedComments.map(item => `
-            <div class="review-card" data-comment-id="${item.comment_id}">
-                <div class="review-header">
-                    <div class="review-place-info">
-                        ${item.place_image ? `<img src="${item.place_image}" alt="${item.place_name || 'Place'}" class="review-place-image">` : ''}
-                        <div>
-                            <div class="review-place-name">${item.place_name || 'Unknown Place'}</div>
-                            <p class="review-date">${new Date(item.created_at).toLocaleDateString()}</p>
+        likedCommentsList.innerHTML = likedComments.map(item => {
+            const date = new Date(item.created_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+            
+            const placeImage = item.place_image || 'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070';
+            const placeName = item.place_name || 'Unknown Place';
+            
+            return `
+                <div class="review-card" data-comment-id="${item.comment_id}">
+                    <div class="review-header">
+                        <div class="review-place">
+                            <img src="${placeImage}" alt="${placeName}" class="review-place-img">
+                            <div class="review-place-info">
+                                <h4>${placeName}</h4>
+                                <p>${date}</p>
+                            </div>
                         </div>
                     </div>
+                    <div class="review-content">
+                        ${item.comment_content || 'No content'}
+                    </div>
+                    <div class="review-actions">
+                        <button class="btn-view-place" onclick="window.location.href='detail.html?id=${item.place_id}'">
+                            View Place
+                        </button>
+                        <button class="btn-delete-review" onclick="unlikeComment(${item.comment_id})">
+                            Unlike
+                        </button>
+                    </div>
                 </div>
-                <div class="review-content">${item.comment_content || 'No content'}</div>
-                <div class="review-actions">
-                    <button class="btn-view-place" onclick="window.location.href='detail.html?id=${item.place_id}'">
-                        <i class="fas fa-map-marker-alt"></i> View Place
-                    </button>
-                    <button class="btn-delete-review" onclick="unlikeComment(${item.comment_id})">
-                        <i class="fas fa-heart-broken"></i> Unlike
-                    </button>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     } catch (error) {
         console.error('Error loading liked comments:', error);
         likedCommentsList.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">Error loading liked reviews</p>';

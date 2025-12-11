@@ -260,13 +260,22 @@ async function loadComments(placeId) {
                     month: 'long',
                     day: 'numeric'
                 });
+                
+                // Sử dụng display_name nếu có, không thì dùng username
+                const displayName = comment.user_display_name || comment.username;
+                
+                // Sử dụng avatar_url nếu có, không thì dùng icon mặc định
+                const avatarHtml = comment.user_avatar_url 
+                    ? `<img src="${comment.user_avatar_url}" alt="${displayName}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">`
+                    : `<i class="fas fa-user-circle" style="font-size: 3rem; color: #14838B;"></i>`;
+                
                 return `
                     <div class="review-card" data-comment-id="${comment.id}">
                         <div class="reviewer-avatar">
-                            <i class="fas fa-user-circle" style="font-size: 3rem; color: #14838B;"></i>
+                            ${avatarHtml}
                         </div>
                         <div class="review-content">
-                            <h4>${comment.username}</h4>
+                            <h4>${displayName}</h4>
                             <p style="font-size: 0.85rem; color: #999; margin: 5px 0;">${date}</p>
                             <p>${comment.content}</p>
                             <div style="margin-top: 10px;">

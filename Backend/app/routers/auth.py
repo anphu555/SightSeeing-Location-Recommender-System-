@@ -11,7 +11,7 @@ from app.config import settings
 from app.security import verify_password, get_password_hash, create_access_token
 
 # Import your SQLModel classes
-from app.schemas import User, UserCreate, UserResponse, Token
+from app.schemas import User, UserCreate, UserResponse, Token, UserProfileUpdate
 
 # --- DATABASE DEPENDENCY ---
 # You likely have this in a separate file (e.g., database.py).
@@ -149,6 +149,44 @@ async def get_current_user_optional(
         return user  # Return User object hoặc None
     except:
         return None
+
+
+# ==========================================
+# 4. GET USER PROFILE
+# ==========================================
+@router.get("/profile", response_model=UserResponse)
+async def get_profile(
+    current_user: User = Depends(get_current_user)
+):
+    """Lấy thông tin profile của user hiện tại"""
+    return current_user
+
+
+# ==========================================
+# 5. UPDATE USER PROFILE
+# ==========================================
+@router.put("/profile", response_model=UserResponse)
+async def update_profile(
+    profile_data: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Cập nhật profile của user (display_name, avatar_url)"""
+    
+    # Update fields nếu được cung cấp
+    if profile_data.display_name is not None:
+        current_user.display_name = profile_data.display_name
+    
+    if profile_data.avatar_url is not None:
+        current_user.avatar_url = profile_data.avatar_url
+    
+    # Save to database
+    session.add(current_user)
+    session.commit()
+    session.refresh(current_user)
+    
+    return current_user
+
     
 
     

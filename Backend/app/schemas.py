@@ -22,6 +22,10 @@ class User(SQLModel, table=True):
     username: str = Field(index=True, unique=True)
     hashed_password: str  # We store the hash, not the raw password
 
+    # Profile fields
+    display_name: Optional[str] = None  # Tên hiển thị, default là username nếu không set
+    avatar_url: Optional[str] = None  # URL avatar, None sẽ dùng default avatar
+
     # Ví dụ: ["Nature", "Beach", "Food"]
     preferences: List[str] = Field(default=[], sa_column=Column(JSON))
 
@@ -172,10 +176,17 @@ class UserResponse(SQLModel):
     """Output model - hides password"""
     username: str
     id: int
+    display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
     preferences: List[str] # Trả về preferences để frontend hiển thị
 class Token(SQLModel):
     access_token: str
     token_type: str
+
+class UserProfileUpdate(SQLModel):
+    """Model for updating user profile"""
+    display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 
 # Define request body structure for Chatbot
