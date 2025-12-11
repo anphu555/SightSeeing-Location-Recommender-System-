@@ -29,6 +29,7 @@ async function fetchAndDisplayResults(isLoadMore = false) {
     const count = document.getElementById('totalCount');
     const params = new URLSearchParams(window.location.search);
     const query = params.get('q') || "";
+    const mode = params.get('mode') || ""; // Lấy mode từ URL
     
     // Nếu query thay đổi, reset tất cả
     if (query !== currentQuery) {
@@ -67,12 +68,20 @@ async function fetchAndDisplayResults(isLoadMore = false) {
             headers['Authorization'] = `Bearer ${token}`;
         }
         
+        // Xác định user_text dựa trên mode và query
+        let userText = query || "Vietnam travel";
+        
+        // Nếu mode là 'recommended' và user đã login, để backend tự recommend dựa trên user preferences
+        if (mode === 'recommended' && token && !query) {
+            userText = ""; // Backend sẽ sử dụng user preferences từ token
+        }
+        
         // Tăng top_k để lấy nhiều kết quả hơn
         const response = await fetch(`${CONFIG.apiBase}/api/v1/recommend`, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({
-                user_text: query || "Vietnam travel",
+                user_text: userText,
                 top_k: 100 // Lấy 100 kết quả từ backend
             })
         });
