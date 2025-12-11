@@ -252,10 +252,19 @@ function showToast(message, type = 'success') {
     let toast = document.getElementById('toast');
     let toastMessage = document.getElementById('toastMessage');
     let icon = toast && toast.querySelector('i');
+    
     if (!toast || !toastMessage || !icon) return;
+    
+    // --- FIX: Xóa display none nếu có ---
+    toast.style.display = 'flex'; 
+    // ------------------------------------
+
     if (toastTimeout) clearTimeout(toastTimeout);
     if (keyListener) document.removeEventListener('keydown', keyListener);
+    
     toastMessage.textContent = message;
+    
+    // Cập nhật icon và màu sắc
     if (type === 'success') {
         icon.className = 'fas fa-check-circle';
         toast.style.background = 'linear-gradient(135deg, #14838B 0%, #0d5f66 100%)';
@@ -266,17 +275,28 @@ function showToast(message, type = 'success') {
         icon.className = 'fas fa-info-circle';
         toast.style.background = 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)';
     }
+    
     toast.classList.remove('hide');
     toast.classList.add('show');
+    
     toastTimeout = setTimeout(() => { hideToast(); }, 4000);
+    
     keyListener = (e) => { hideToast(); };
     document.addEventListener('keydown', keyListener, { once: true });
 }
+
 function hideToast() {
     let toast = document.getElementById('toast');
     if (!toast) return;
+    
     toast.classList.add('hide');
-    setTimeout(() => { toast.classList.remove('show', 'hide'); }, 400);
+    
+    setTimeout(() => { 
+        toast.classList.remove('show', 'hide'); 
+        // Ẩn hẳn đi sau khi animation kết thúc để tránh che các nút khác
+        toast.style.display = 'none'; 
+    }, 400);
+    
     if (toastTimeout) clearTimeout(toastTimeout);
     if (keyListener) document.removeEventListener('keydown', keyListener);
 }

@@ -471,3 +471,66 @@ button.user-actions-unsigned-in:hover { background-color: #0c6a6f; }
 .sort-option.active i { color: #14838B; }
 .divider { height: 1px; background-color: #eee; margin: 5px 20px; }
 
+/* =========================================
+   7. TOAST NOTIFICATION (GLOBAL)
+   ========================================= */
+.toast {
+    position: fixed;
+    top: 100px;
+    right: 30px;
+    background: linear-gradient(135deg, #14838B 0%, #0d5f66 100%);
+    color: white;
+    padding: 18px 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(20, 131, 139, 0.4);
+    
+    /* Mặc định ẩn bằng display: none để JS xử lý, 
+       hoặc dùng opacity/visibility tùy logic JS của bạn.
+       Ở code JS sửa trước đó, ta đã thống nhất dùng display: flex khi hiện.
+    */
+    display: none; 
+    
+    align-items: center;
+    gap: 12px;
+    font-size: 1rem;
+    font-weight: 500;
+    z-index: 10000;
+    min-width: 300px;
+}
+
+/* Class này được JS thêm vào */
+.toast.show {
+    display: flex; /* Hiện lên */
+    animation: slideInRight 0.4s ease;
+}
+
+/* Class này để ẩn (nếu JS logic dùng class này) */
+.toast.hide {
+    animation: slideOutRight 0.4s ease;
+}
+
+.toast i {
+    font-size: 1.5rem;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
