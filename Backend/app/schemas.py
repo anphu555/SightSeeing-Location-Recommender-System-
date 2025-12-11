@@ -88,7 +88,6 @@ class Comment(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id")
     place_id: int = Field(foreign_key="place.id")
 
-
     content: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
@@ -96,6 +95,19 @@ class Comment(SQLModel, table=True):
     user: Optional[User] = Relationship(back_populates="comments")
     place: Optional[Place] = Relationship(back_populates="comments")
 
+
+class Like(SQLModel, table=True):
+    """Table để lưu likes của user cho comments và places"""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Foreign Keys
+    user_id: int = Field(foreign_key="user.id")
+    
+    # Optional foreign keys - hoặc like comment hoặc like place
+    comment_id: Optional[int] = Field(default=None, foreign_key="comment.id")
+    place_id: Optional[int] = Field(default=None, foreign_key="place.id")
+    
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 # ==========================================

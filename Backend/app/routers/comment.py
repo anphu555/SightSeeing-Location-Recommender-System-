@@ -19,6 +19,8 @@ class CommentResponse(BaseModel):
     user_id: int
     username: str
     place_id: int
+    place_name: str | None = None
+    place_image: str | None = None
     content: str
     created_at: datetime
 
@@ -104,3 +106,38 @@ async def delete_comment(
     session.commit()
     
     return {"message": "Comment deleted successfully"}
+
+@router.get("/comments/user", response_model=List[CommentResponse])
+async def get_comments_by_user(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Lấy tất cả comments của user hiện tại"""
+    
+    statement = (
+        select(Comment)
+        .where(Comment.user_id == current_user.id)
+        .order_by(Comment.created_at.desc())
+    )
+    
+    results = session.exec(statement).all()
+    
+    comments = []
+    for comment in results:
+        # Fetch place info
+        place = session.get(Place, comment.place_id)
+        place_name = place.name if place else "Unknown Place"
+        place_image = place.image[0] if place and place.image and len(place.image) > 0 else None
+        
+        comments.append(CommentResponse(
+            id=comment.id,
+            user_id=comment.user_id,
+            username=current_user.username,
+            place_id=comment.place_id,
+            place_name=place_name,
+            place_image=place_image,
+            content=comment.content,
+            created_at=comment.created_at
+        ))
+    
+    return comments

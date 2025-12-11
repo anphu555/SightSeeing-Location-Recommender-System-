@@ -102,6 +102,10 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
+    # Check if token exists
+    if not token:
+        raise credentials_exception
+    
     try:
         # 1. Decode Token
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])

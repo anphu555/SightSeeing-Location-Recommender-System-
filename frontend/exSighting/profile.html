@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - exSighting</title>
+    <link rel="icon" type="image/png" href="src/images/TUYU_umbrella.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="src/css/style.css">
+    <link rel="stylesheet" href="src/css/profile.css">
+</head>
+<body>
+
+    <header class="navbar-v3">
+        <div class="logo" onclick="window.location.href='home.html'" style="cursor: pointer;">
+            <i class="fas fa-umbrella"></i>
+            <span>exSighting</span>
+        </div>
+        <nav class="nav-links">
+            <a href="about.html" class="nav-item">About us</a>
+        </nav>
+        
+        <div id="authSection">
+            <button class="user-actions-unsigned-in" id="unsignedBlock" onclick="window.location.href='login.html'">
+                <div class="user-icon-bg"><i class="fas fa-user-circle"></i></div>
+                <span class="sign-in-text">Sign In</span>
+            </button>
+            <div class="user-actions-signed-in" id="signedBlock" style="display: none;">
+                <button class="user-profile-toggle">
+                    <div class="user-icon-bg"><i class="fas fa-user-circle"></i></div>
+                    <span class="username-text" id="displayUsername">User</span>
+                    <i class="fas fa-caret-down" style="margin-left: 5px;"></i>
+                </button>
+                <div class="user-dropdown-menu">
+                    <a href="profile.html"><i class="fas fa-user-circle"></i> Profile</a>
+                    <a href="#"><i class="fas fa-cog"></i> Settings</a>
+                    <div class="menu-divider"></div>
+                    <a href="#" id="btnLogout"><i class="fas fa-sign-out-alt"></i> Log Out</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="profile-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-umbrella"></i>
+                <span>exSighting</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="home.html" class="sidebar-item">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="profile.html" class="sidebar-item active">
+                    <i class="fas fa-user"></i>
+                    <span>Profile</span>
+                </a>
+                <a href="#" class="sidebar-item" data-tab="posts">
+                    <i class="fas fa-th-large"></i>
+                    <span>Posts</span>
+                </a>
+                <a href="#" class="sidebar-item" data-tab="reviews">
+                    <i class="fas fa-star"></i>
+                    <span>Reviews</span>
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="profile-main">
+            <!-- Header with Search -->
+            <div class="profile-header">
+                <div class="search-wrapper">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search">
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn">
+                        <i class="fas fa-bell"></i>
+                    </button>
+                    <div class="user-avatar" id="headerAvatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Content -->
+            <div class="profile-content">
+                <!-- Cover Photo -->
+                <div class="cover-photo">
+                    <img src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=2070" alt="Cover">
+                </div>
+
+                <!-- Profile Info -->
+                <div class="profile-info-section">
+                    <div class="profile-avatar-wrapper">
+                        <div class="profile-avatar" id="profileAvatar">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <div class="profile-details">
+                            <h1 id="profileName">Loading...</h1>
+                            <p id="profileUsername">@username</p>
+                        </div>
+                    </div>
+                    <div class="profile-actions">
+                        <button class="btn-secondary" onclick="window.location.href='home.html'">
+                            <i class="fas fa-home"></i> Back to Home
+                        </button>
+                        <button class="btn-primary" id="btnEditProfile">Edit Profile</button>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="profile-tabs">
+                    <button class="tab-btn active" data-tab="about">
+                        <i class="fas fa-user"></i> About
+                    </button>
+                    <button class="tab-btn" data-tab="posts">
+                        <i class="fas fa-images"></i> Posts
+                    </button>
+                    <button class="tab-btn" data-tab="reviews">
+                        <i class="fas fa-star"></i> Reviews
+                    </button>
+                    <button class="tab-btn" data-tab="liked">
+                        <i class="fas fa-heart"></i> Liked
+                    </button>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="tab-content-wrapper">
+                    <!-- About Tab -->
+                    <div class="tab-content active" id="about-tab">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <i class="fas fa-user"></i>
+                                <div>
+                                    <span class="label">Name</span>
+                                    <span class="value" id="infoName">-</span>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-calendar"></i>
+                                <div>
+                                    <span class="label">Member since</span>
+                                    <span class="value" id="infoJoined">-</span>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-envelope"></i>
+                                <div>
+                                    <span class="label">Email</span>
+                                    <span class="value" id="infoEmail">-</span>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <div>
+                                    <span class="label">Location</span>
+                                    <span class="value" id="infoLocation">Vietnam</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="you-might-know">
+                            <h3>You might know</h3>
+                            <div class="suggestions-list" id="suggestionsList">
+                                <p style="text-align: center; color: #999; padding: 1rem;">No suggestions available</p>
+                            </div>
+                        </div>
+
+                        <div class="active-section">
+                            <h3>Active</h3>
+                            <div class="active-list" id="activeList">
+                                <p style="text-align: center; color: #999; padding: 1rem;">No active users</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Posts Tab -->
+                    <div class="tab-content" id="posts-tab">
+                        <div class="posts-grid" id="postsGrid">
+                            <p style="text-align: center; padding: 40px; color: #999;">Feature coming soon...</p>
+                        </div>
+                    </div>
+
+                    <!-- Reviews Tab -->
+                    <div class="tab-content" id="reviews-tab">
+                        <div class="reviews-list" id="reviewsList">
+                            <!-- Reviews will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Liked Tab -->
+                    <div class="tab-content" id="liked-tab">
+                        <div class="liked-subtabs">
+                            <button class="liked-subtab-btn active" data-subtab="liked-comments">
+                                <i class="fas fa-comment"></i>
+                                Liked Reviews
+                            </button>
+                            <button class="liked-subtab-btn" data-subtab="liked-places">
+                                <i class="fas fa-map-marker-alt"></i>
+                                Liked Places
+                            </button>
+                        </div>
+                        
+                        <div class="liked-subtab-content active" id="liked-comments-subtab">
+                            <div class="reviews-list" id="likedCommentsList">
+                                <!-- Liked comments will be loaded here -->
+                            </div>
+                        </div>
+                        
+                        <div class="liked-subtab-content" id="liked-places-subtab">
+                            <div class="places-grid" id="likedPlacesGrid">
+                                <!-- Liked places will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="editProfileModal" class="edit-modal" style="display: none;">
+        <div class="edit-modal-content">
+            <div class="edit-modal-header">
+                <h2>Edit Profile</h2>
+                <button class="modal-close" id="closeEditModal">&times;</button>
+            </div>
+            <div class="edit-modal-body">
+                <form id="editProfileForm">
+                    <div class="form-group">
+                        <label for="editDisplayName">Display Name</label>
+                        <input type="text" id="editDisplayName" placeholder="Enter your display name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editAvatar">Avatar URL</label>
+                        <input type="url" id="editAvatar" placeholder="https://example.com/avatar.jpg">
+                        <small>Leave empty to use default avatar</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editBio">Bio</label>
+                        <textarea id="editBio" rows="3" placeholder="Tell us about yourself..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editLocation">Location</label>
+                        <input type="text" id="editLocation" placeholder="City, Country">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editWebsite">Website</label>
+                        <input type="url" id="editWebsite" placeholder="https://yourwebsite.com">
+                    </div>
+                    
+                    <div class="edit-modal-actions">
+                        <button type="button" class="btn-cancel" id="btnCancelEdit">Cancel</button>
+                        <button type="submit" class="btn-save">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="src/js/profile.js"></script>
+</body>
+</html>

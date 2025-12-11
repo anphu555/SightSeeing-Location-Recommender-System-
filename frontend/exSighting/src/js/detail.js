@@ -98,6 +98,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Load và setup comments
         loadComments(id);
         setupCommentForm(id);
+        setupPlaceLikeButtons(id);
         
     } catch (error) {
         console.error('Error loading place details:', error);
@@ -260,7 +261,7 @@ async function loadComments(placeId) {
                     day: 'numeric'
                 });
                 return `
-                    <div class="review-card">
+                    <div class="review-card" data-comment-id="${comment.id}">
                         <div class="reviewer-avatar">
                             <i class="fas fa-user-circle" style="font-size: 3rem; color: #14838B;"></i>
                         </div>
@@ -268,6 +269,11 @@ async function loadComments(placeId) {
                             <h4>${comment.username}</h4>
                             <p style="font-size: 0.85rem; color: #999; margin: 5px 0;">${date}</p>
                             <p>${comment.content}</p>
+                            <div style="margin-top: 10px;">
+                                <button class="btn-like-comment" data-comment-id="${comment.id}" style="background: none; border: none; cursor: pointer; color: #999; font-size: 0.9rem; transition: all 0.3s;">
+                                    <i class="far fa-heart"></i> <span class="like-text">Like</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -275,6 +281,9 @@ async function loadComments(placeId) {
         } else {
             reviewsContainer.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No reviews yet. Be the first to review!</p>';
         }
+        
+        // Setup like buttons for comments after loading
+        await setupCommentLikeButtons();
     } catch (error) {
         console.error('Error loading comments:', error);
         reviewsContainer.innerHTML = '<p style="text-align: center; color: #999;">Failed to load reviews.</p>';
@@ -403,4 +412,238 @@ function setupCommentForm(placeId) {
             showToast(`Failed to post review: ${error.message}`, 'error');
         }
     });
+}
+
+// === LIKE/UNLIKE FUNCTIONALITY ===
+
+// Setup place like/unlike buttons
+function setupPlaceLikeButtons(placeId) {
+    const btnLike = document.getElementById('btnLikePlace');
+    const btnUnlike = document.getElementById('btnUnlikePlace');
+    
+    if (!btnLike || !btnUnlike) return;
+    
+    // Check if place is already liked
+    checkPlaceLikeStatus(placeId);
+    
+    btnLike.addEventListener('click', async () => {
+        await togglePlaceLike(placeId, true);
+    });
+    
+    btnUnlike.addEventListener('click', async () => {
+        await togglePlaceLike(placeId, false);
+    });
+}
+
+// Check if current user has liked this place
+async function checkPlaceLikeStatus(placeId) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/check/place/${placeId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            updatePlaceLikeUI(data.is_liked);
+        }
+    } catch (error) {
+        console.error('Error checking place like status:', error);
+    }
+}
+
+// Toggle place like/unlike
+async function togglePlaceLike(placeId, isLike) {
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        showToast('Please login to like places!', 'warning');
+        setTimeout(() => {
+            localStorage.setItem('returnUrl', window.location.href);
+            window.location.href = 'login.html';
+        }, 2000);
+        return;
+    }
+    
+    try {
+        if (isLike) {
+            // Like the place
+            const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/place`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ place_id: parseInt(placeId) })
+            });
+            
+            if (response.ok) {
+                updatePlaceLikeUI(true);
+                showToast('✓ Place added to your favorites!');
+            } else if (response.status === 400) {
+                showToast('You already liked this place!', 'warning');
+            }
+        } else {
+            // Unlike the place
+            const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/place/${placeId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                updatePlaceLikeUI(false);
+                showToast('Place removed from favorites', 'warning');
+            }
+        }
+    } catch (error) {
+        console.error('Error toggling place like:', error);
+        showToast('Failed to update like status', 'error');
+    }
+}
+
+// Update place like button UI
+function updatePlaceLikeUI(isLiked) {
+    const btnLike = document.getElementById('btnLikePlace');
+    const btnUnlike = document.getElementById('btnUnlikePlace');
+    
+    if (isLiked) {
+        btnLike.innerHTML = '<i class="fas fa-thumbs-up"></i>';
+        btnLike.style.color = '#14838B';
+        btnUnlike.innerHTML = '<i class="far fa-thumbs-down"></i>';
+        btnUnlike.style.color = '';
+    } else {
+        btnLike.innerHTML = '<i class="far fa-thumbs-up"></i>';
+        btnLike.style.color = '';
+    }
+}
+
+// Setup comment like buttons
+async function setupCommentLikeButtons() {
+    const token = localStorage.getItem('token');
+    const likeButtons = document.querySelectorAll('.btn-like-comment');
+    
+    // Check like status for each comment if user is logged in
+    if (token) {
+        for (const btn of likeButtons) {
+            const commentId = btn.dataset.commentId;
+            await checkCommentLikeStatus(commentId, btn);
+        }
+    }
+    
+    // Add click handlers
+    likeButtons.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const commentId = btn.dataset.commentId;
+            await toggleCommentLike(commentId, btn);
+        });
+        
+        // Hover effect
+        btn.addEventListener('mouseenter', () => {
+            btn.style.color = '#14838B';
+        });
+        btn.addEventListener('mouseleave', () => {
+            if (!btn.classList.contains('liked')) {
+                btn.style.color = '#999';
+            }
+        });
+    });
+}
+
+// Check if comment is liked
+async function checkCommentLikeStatus(commentId, btn) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    try {
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/check/comment/${commentId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            updateCommentLikeUI(btn, data.is_liked);
+        }
+    } catch (error) {
+        console.error('Error checking comment like status:', error);
+    }
+}
+
+// Toggle comment like
+async function toggleCommentLike(commentId, btn) {
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        showToast('Please login to like reviews!', 'warning');
+        setTimeout(() => {
+            localStorage.setItem('returnUrl', window.location.href);
+            window.location.href = 'login.html';
+        }, 2000);
+        return;
+    }
+    
+    const isLiked = btn.classList.contains('liked');
+    
+    try {
+        if (isLiked) {
+            // Unlike
+            const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/comment/${commentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                updateCommentLikeUI(btn, false);
+                showToast('Review unliked');
+            }
+        } else {
+            // Like
+            const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/comment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ comment_id: parseInt(commentId) })
+            });
+            
+            if (response.ok) {
+                updateCommentLikeUI(btn, true);
+                showToast('✓ Review liked!');
+            } else if (response.status === 400) {
+                showToast('You already liked this review!', 'warning');
+            }
+        }
+    } catch (error) {
+        console.error('Error toggling comment like:', error);
+        showToast('Failed to update like status', 'error');
+    }
+}
+
+// Update comment like button UI
+function updateCommentLikeUI(btn, isLiked) {
+    const icon = btn.querySelector('i');
+    const text = btn.querySelector('.like-text');
+    
+    if (isLiked) {
+        icon.className = 'fas fa-heart';
+        text.textContent = 'Liked';
+        btn.style.color = '#e74c3c';
+        btn.classList.add('liked');
+    } else {
+        icon.className = 'far fa-heart';
+        text.textContent = 'Like';
+        btn.style.color = '#999';
+        btn.classList.remove('liked');
+    }
 }

@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 </button>
                 
                 <div class="user-dropdown-menu">
-                    <a href="#"><i class="fas fa-user-circle"></i> Profile</a>
+                    <a href="profile.html"><i class="fas fa-user-circle"></i> Profile</a>
                     <a href="#"><i class="fas fa-cog"></i> Settings</a>
                     <div class="menu-divider"></div>
                     <a href="#" id="btnLogout"><i class="fas fa-sign-out-alt"></i> Log Out</a>
