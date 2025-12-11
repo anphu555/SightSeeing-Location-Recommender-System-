@@ -122,7 +122,20 @@
 
         <div class="section-container">
             <h3 class="section-title">Recommended Places</h3>
-            <div id="recommendationList" style="display: flex; gap: 25px; flex-wrap: wrap;"></div>
+            <div class="recommendation-carousel-wrapper">
+                <button class="rec-nav-btn rec-prev-btn" id="recPrevBtn">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="recommendation-viewport" id="recommendationViewport">
+                    <div id="recommendationList" class="recommendation-scroll-container"></div>
+                </div>
+                <button class="rec-nav-btn rec-next-btn" id="recNextBtn">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <div id="recLoadingIndicator" class="rec-loading" style="display: none;">
+                <i class="fas fa-spinner fa-spin"></i> Loading more...
+            </div>
         </div>
 
     </main>

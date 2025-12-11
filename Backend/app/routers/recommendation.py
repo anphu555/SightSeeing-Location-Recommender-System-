@@ -4,7 +4,7 @@ from collections import Counter
 from typing import List
 import ast
 
-from app.schemas import RecommendRequest, RecommendResponse, User, PlaceOut, Rating, Place
+from app.schemas import RecommendRequest, RecommendResponse, User, PlaceOut, Rating, Place, Like
 from app.database import get_session
 from app.routers.auth import get_current_user_optional
 from app.services.llm_service import extract_with_groq
@@ -16,15 +16,31 @@ from app.routers.recsysmodel import recommend_two_tower
 router = APIRouter()
 
 def get_history_tags(user_id: int, session: Session, limit=5) -> List[str]:
-    """Lấy tags từ những nơi user đã tương tác tốt (score >= 3.0)"""
+    """Lấy tags từ những nơi user đã tương tác tốt (Rating >= 3.0 hoặc Like)"""
+    tags_pool = []
+    
+    # 1. Lấy từ Ratings (score >= 3.0)
     statement = select(Rating).where(Rating.user_id == user_id, Rating.score >= 3.0)
     ratings = session.exec(statement).all()
     
-    tags_pool = []
     for r in ratings:
         place = session.get(Place, r.place_id)
         if place and place.tags:
             tags_pool.extend(place.tags)
+    
+    # 2. Lấy từ Likes (tín hiệu mạnh hơn - ưu tiên cao)
+    like_statement = select(Like).where(
+        Like.user_id == user_id,
+        Like.place_id.isnot(None)  # Chỉ lấy likes cho place
+    )
+    likes = session.exec(like_statement).all()
+    
+    for like in likes:
+        place = session.get(Place, like.place_id)
+        if place and place.tags:
+            # Like có trọng số cao hơn, thêm 2 lần để tăng tần suất
+            tags_pool.extend(place.tags)
+            tags_pool.extend(place.tags)  # Thêm lần 2 để tăng weight
             
     if not tags_pool: return []
     # Lấy top tags xuất hiện nhiều nhất
@@ -96,18 +112,17 @@ async def get_recommendations(
         # Nếu không gõ gì (Trang chủ), dùng hoàn toàn lịch sử
         final_tags = history_tags
     
-    # Fallback cho user mới tinh
-    if not final_tags:
-        final_tags = ["Vietnam", "Nature", "Beach"] # Default trending tags
-
     # Clean duplicates
-    final_tags = list(set(final_tags))
+    if final_tags:
+        final_tags = list(set(final_tags))
+    # Nếu không có tags nào, để empty list - model sẽ trả về popular/diverse places
 
     # ==========================
     # 4. PREDICT & RETURN
     # ==========================
-    # Truyền tags vào Two-Tower model
-    results_df = recommend_two_tower(final_tags, top_k=req.top_k)
+    # Truyền tags và user_id vào Two-Tower model để kết hợp user history
+    user_id = current_user.id if current_user else None
+    results_df = recommend_two_tower(final_tags, user_id=user_id, top_k=req.top_k)
     
     results_list = []
     for _, row in results_df.iterrows():

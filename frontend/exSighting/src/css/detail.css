@@ -641,17 +641,97 @@ body {
 .review-content h4 { margin: 0 0 5px 0; color: #14838B; }
 .review-content p { margin: 0; color: #555; line-height: 1.5; }
 
+/* -- Recommendation Carousel Container -- */
+.recommendation-carousel-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.recommendation-viewport {
+    flex: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #14838B #f0f0f0;
+}
+
+.recommendation-viewport::-webkit-scrollbar {
+    height: 8px;
+}
+
+.recommendation-viewport::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border-radius: 10px;
+}
+
+.recommendation-viewport::-webkit-scrollbar-thumb {
+    background: #14838B;
+    border-radius: 10px;
+}
+
+.recommendation-viewport::-webkit-scrollbar-thumb:hover {
+    background: #0d5f66;
+}
+
+.recommendation-scroll-container {
+    display: flex;
+    gap: 25px;
+    padding: 10px 0;
+    width: max-content;
+}
+
+/* -- Navigation Buttons -- */
+.rec-nav-btn {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid #14838B;
+    color: #14838B;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+}
+
+.rec-nav-btn:hover {
+    background: #14838B;
+    color: white;
+    transform: scale(1.1);
+    box-shadow: 0 6px 15px rgba(20,131,139,0.3);
+}
+
+.rec-nav-btn:active {
+    transform: scale(0.95);
+}
+
+.rec-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 /* -- Card Recommended (Ảnh trên, Chữ dưới) -- */
 .rec-card {
     width: 260px;
+    min-width: 260px;
     background: white;
     border-radius: 15px;
     overflow: hidden;
     cursor: pointer;
-    /* Hiệu ứng 3D */
     box-shadow: 0 8px 15px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
     border: 1px solid #f0f0f0;
+    flex-shrink: 0;
 }
 
 .rec-card:hover {
@@ -661,13 +741,21 @@ body {
 
 .rec-card img {
     width: 100%;
-    height: 160px; /* Chiều cao ảnh cố định */
+    height: 160px;
     object-fit: cover;
 }
 
 .rec-info { padding: 15px; }
 .rec-info h4 { margin: 0; color: #333; font-size: 1.1rem; }
 .rec-info p { margin: 5px 0 0 0; color: #777; font-size: 0.9rem; }
+
+/* -- Loading Indicator -- */
+.rec-loading {
+    text-align: center;
+    padding: 20px;
+    color: #14838B;
+    font-size: 1rem;
+}
 
 /* --- THANH TÌM KIẾM PHỤ (SUB-HEADER SEARCH) --- */
 .sub-search-bar {

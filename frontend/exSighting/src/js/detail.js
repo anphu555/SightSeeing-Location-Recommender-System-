@@ -157,49 +157,169 @@ function renderPage(data) {
     // Không render reviews ở đây nữa, sẽ load riêng qua loadComments()
 }
 
-// (Giữ nguyên các hàm renderRecs, checkAuth, initHeaderDropdown như cũ)
+// === RECOMMENDATION CAROUSEL WITH INFINITE SCROLL ===
+let recPage = 0;
+let recIsLoading = false;
+let recHasMore = true;
+let recCurrentPlaceId = null;
+const REC_ITEMS_PER_PAGE = 6;
+
 async function renderRecs(currentId) {
+    recCurrentPlaceId = currentId;
+    recPage = 0;
+    recHasMore = true;
+    
     const list = document.getElementById('recommendationList');
     if (!list) return;
     
+    list.innerHTML = ''; // Clear existing
+    
+    // Load first batch
+    await loadMoreRecommendations();
+    
+    // Setup scroll listener
+    initRecommendationScroll();
+    
+    // Setup navigation buttons
+    setupRecNavigationButtons();
+}
+
+async function loadMoreRecommendations() {
+    if (recIsLoading || !recHasMore) return;
+    
+    const list = document.getElementById('recommendationList');
+    const loadingIndicator = document.getElementById('recLoadingIndicator');
+    
+    if (!list) return;
+    
+    recIsLoading = true;
+    if (loadingIndicator) loadingIndicator.style.display = 'block';
+    
     try {
-        // Gọi API để lấy gợi ý
+        const token = localStorage.getItem('token');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        // Thêm token nếu user đã login để backend recommend dựa trên preferences
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        // Gọi API với user_text rỗng để backend sử dụng user preferences
         const response = await fetch(`${CONFIG.apiBase}/api/v1/recommend`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: headers,
             body: JSON.stringify({
-                user_text: "similar places",
-                top_k: 4
+                user_text: token ? "" : "Vietnam tourism", // Rỗng nếu có token để dùng preferences
+                top_k: 50 // Lấy nhiều để có đủ recommendations
             })
         });
         
         if (response.ok) {
             const data = await response.json();
-            const recommendations = data.results.filter(item => item.id.toString() !== currentId).slice(0, 3);
+            // Filter out current place và những place đã hiển thị
+            const existingIds = Array.from(list.querySelectorAll('.rec-card')).map(
+                card => card.dataset.placeId
+            );
             
-            list.innerHTML = recommendations.map(item => {
-                // Lấy ảnh thực từ item.image
-                let imgSrc = "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070";
-                
-                if (item.image && Array.isArray(item.image) && item.image.length > 0) {
-                    imgSrc = item.image[0]; // Lấy ảnh đầu tiên
-                }
-                    
-                return `<div class="rec-card" onclick="window.location.href='detail.html?id=${item.id}'">
-                    <img src="${imgSrc}">
-                    <div class="rec-info">
-                        <h4>${item.name}</h4>
-                        <p>${item.province || 'Vietnam'}</p>
-                    </div>
-                </div>`;
-            }).join('');
+            const newRecommendations = data.results
+                .filter(item => 
+                    item.id.toString() !== recCurrentPlaceId && 
+                    !existingIds.includes(item.id.toString())
+                )
+                .slice(recPage * REC_ITEMS_PER_PAGE, (recPage + 1) * REC_ITEMS_PER_PAGE);
+            
+            if (newRecommendations.length === 0) {
+                recHasMore = false;
+            } else {
+                appendRecommendations(newRecommendations);
+                recPage++;
+            }
         }
     } catch (error) {
         console.error('Error loading recommendations:', error);
-        list.innerHTML = '<p style="text-align: center;">Unable to load recommendations</p>';
+        recHasMore = false;
+    } finally {
+        recIsLoading = false;
+        if (loadingIndicator) loadingIndicator.style.display = 'none';
     }
+}
+
+function appendRecommendations(recommendations) {
+    const list = document.getElementById('recommendationList');
+    if (!list) return;
+    
+    const html = recommendations.map(item => {
+        let imgSrc = "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070";
+        
+        if (item.image && Array.isArray(item.image) && item.image.length > 0) {
+            imgSrc = item.image[0];
+        }
+        
+        return `<div class="rec-card" data-place-id="${item.id}" onclick="window.location.href='detail.html?id=${item.id}'">
+            <img src="${imgSrc}" alt="${item.name}">
+            <div class="rec-info">
+                <h4>${item.name}</h4>
+                <p>${item.province || 'Vietnam'}</p>
+            </div>
+        </div>`;
+    }).join('');
+    
+    list.insertAdjacentHTML('beforeend', html);
+}
+
+function initRecommendationScroll() {
+    const viewport = document.getElementById('recommendationViewport');
+    if (!viewport) return;
+    
+    let scrollTimeout;
+    
+    viewport.addEventListener('scroll', () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            const scrollLeft = viewport.scrollLeft;
+            const scrollWidth = viewport.scrollWidth;
+            const clientWidth = viewport.clientWidth;
+            
+            // Load more khi còn 300px nữa là scroll hết
+            if (scrollLeft + clientWidth >= scrollWidth - 300) {
+                loadMoreRecommendations();
+            }
+        }, 100);
+    });
+}
+
+function setupRecNavigationButtons() {
+    const prevBtn = document.getElementById('recPrevBtn');
+    const nextBtn = document.getElementById('recNextBtn');
+    const viewport = document.getElementById('recommendationViewport');
+    
+    if (!prevBtn || !nextBtn || !viewport) return;
+    
+    // Scroll by viewport width
+    prevBtn.addEventListener('click', () => {
+        viewport.scrollBy({
+            left: -viewport.clientWidth * 0.8,
+            behavior: 'smooth'
+        });
+    });
+    
+    nextBtn.addEventListener('click', () => {
+        viewport.scrollBy({
+            left: viewport.clientWidth * 0.8,
+            behavior: 'smooth'
+        });
+    });
+    
+    // Update button states on scroll
+    viewport.addEventListener('scroll', () => {
+        prevBtn.disabled = viewport.scrollLeft <= 0;
+        nextBtn.disabled = viewport.scrollLeft + viewport.clientWidth >= viewport.scrollWidth - 1;
+    });
+    
+    // Initial state
+    prevBtn.disabled = true;
 }
 function initHeaderDropdown() {
     const toggle = document.querySelector('.user-profile-toggle');
