@@ -245,19 +245,20 @@ def recommend_content_based(user_prefs_tags, user_id: Optional[int] = None, top_
     return results
 
 # Wrapper function để tương thích với recommendation.py (thay thế two-tower)
-def recommend_two_tower(user_prefs_tags, top_k=10):
+def recommend_two_tower(user_prefs_tags, user_id=None, top_k=10):
     """
     Wrapper function tương thích với interface của two-tower model.
     Sử dụng Content-Based Filtering thay vì Two-Tower.
     
     Args:
         user_prefs_tags (list): List các tags user thích
+        user_id (int, optional): ID người dùng để lấy lịch sử tương tác
         top_k (int): Số lượng gợi ý trả về
     
     Returns:
         pd.DataFrame: DataFrame chứa các địa điểm được gợi ý
     """
-    return recommend_content_based(user_prefs_tags, user_id=None, top_k=top_k)
+    return recommend_content_based(user_prefs_tags, user_id=user_id, top_k=top_k)
 
 # Hàm recommend cũ (giữ lại để backward compatibility)
 def recommend(user_prompt_extraction, user_id: Optional[int] = None):
