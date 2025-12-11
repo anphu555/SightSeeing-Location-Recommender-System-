@@ -1,5 +1,6 @@
 // === 1. IMPORT CONFIG ===
 import { CONFIG } from './config.js';
+import { ratingService } from './rating-service.js';
 
 // === 2. QUẢN LÝ TRẠNG THÁI ===
 let currentImgIndex = 0;
@@ -98,8 +99,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
         
         currentImagesList = data.images;
-        renderPage(data);
+        renderPage(data, id);
         renderRecs(id);
+        
+        // Start tracking watch time for this place
+        ratingService.startWatchTimeTracking(parseInt(id));
+        
+        // Load and apply user's rating for this place
+        if (ratingService.isLoggedIn()) {
+            const rating = await ratingService.getPlaceRating(parseInt(id));
+            if (rating && rating.score !== null) {
+                updateRatingButtons(rating.score);
+            }
+        }
         
     } catch (error) {
         console.error('Error loading place details:', error);
@@ -136,11 +148,14 @@ function formatDescription(descArray) {
     return descArray;
 }
 
-function renderPage(data) {
+function renderPage(data, placeId) {
     document.getElementById('detailTitle').innerText = data.name;
     document.getElementById('detailLocation').innerText = data.location;
     document.getElementById('detailDistance').innerText = data.distance + " km from you";
     document.getElementById('detailDesc').innerHTML = data.desc;
+    
+    // Add rating buttons if user is logged in
+    addRatingButtons(placeId);
     
     const thumbsContainer = document.getElementById('detailThumbs');
     if (thumbsContainer) {
@@ -228,6 +243,93 @@ function checkAuth() {
     }
     const logout = document.getElementById('btnLogout');
     if(logout) logout.addEventListener('click', (e) => { e.preventDefault(); localStorage.clear(); window.location.reload(); });
+}
+
+// === RATING FUNCTIONS ===
+function addRatingButtons(placeId) {
+    const detailActions = document.querySelector('.detail-actions');
+    if (!detailActions) return;
+    
+    // Only show buttons if user is logged in
+    if (!ratingService.isLoggedIn()) {
+        detailActions.innerHTML = '<p style="color: #666; font-size: 0.9rem;">Login to rate this place</p>';
+        return;
+    }
+    
+    detailActions.innerHTML = `
+        <button class="detail-rating-btn like-btn" onclick="handleDetailLike(${placeId})">
+            <i class="fas fa-thumbs-up"></i> Like
+        </button>
+        <button class="detail-rating-btn dislike-btn" onclick="handleDetailDislike(${placeId})">
+            <i class="fas fa-thumbs-down"></i> Dislike
+        </button>
+    `;
+}
+
+function updateRatingButtons(score) {
+    const likeBtn = document.querySelector('.detail-rating-btn.like-btn');
+    const dislikeBtn = document.querySelector('.detail-rating-btn.dislike-btn');
+    
+    if (!likeBtn || !dislikeBtn) return;
+    
+    // Reset both buttons
+    likeBtn.classList.remove('active');
+    dislikeBtn.classList.remove('active');
+    likeBtn.style.backgroundColor = '';
+    dislikeBtn.style.backgroundColor = '';
+    
+    // Highlight based on score
+    if (score >= 7.0) {
+        likeBtn.classList.add('active');
+        likeBtn.style.backgroundColor = '#2ecc71';
+        likeBtn.style.color = 'white';
+    } else if (score <= 2.0) {
+        dislikeBtn.classList.add('active');
+        dislikeBtn.style.backgroundColor = '#e74c3c';
+        dislikeBtn.style.color = 'white';
+    }
+}
+
+window.handleDetailLike = async function(placeId) {
+    const result = await ratingService.trackLike(placeId);
+    if (result) {
+        updateRatingButtons(result.score);
+        showRatingFeedback('Liked! Score: ' + result.score.toFixed(1), 'success');
+    }
+};
+
+window.handleDetailDislike = async function(placeId) {
+    const result = await ratingService.trackDislike(placeId);
+    if (result) {
+        updateRatingButtons(result.score);
+        showRatingFeedback('Disliked. Score: ' + result.score.toFixed(1), 'info');
+    }
+};
+
+function showRatingFeedback(message, type) {
+    // Simple toast notification
+    const toast = document.createElement('div');
+    toast.className = 'rating-toast ' + type;
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        background: ${type === 'success' ? '#2ecc71' : '#3498db'};
+        color: white;
+        border-radius: 5px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        z-index: 10000;
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
 // === CHỨC NĂNG TÌM KIẾM (LINK VỀ RESULT PAGE) ===

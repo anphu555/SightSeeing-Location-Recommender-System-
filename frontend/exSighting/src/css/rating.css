@@ -1,0 +1,321 @@
+/* ===================================
+   RATING SYSTEM STYLES
+   Frontend implementation for user-place rating
+   =================================== */
+
+/* Detail Page Rating Buttons */
+.detail-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.detail-rating-btn {
+    padding: 10px 20px;
+    border: 2px solid #ddd;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 100px;
+    justify-content: center;
+}
+
+.detail-rating-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.detail-rating-btn i {
+    font-size: 1.1rem;
+}
+
+.detail-rating-btn.like-btn:hover {
+    border-color: #2ecc71;
+    color: #2ecc71;
+}
+
+.detail-rating-btn.dislike-btn:hover {
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+
+.detail-rating-btn.active.like-btn {
+    background: #2ecc71;
+    color: white;
+    border-color: #2ecc71;
+    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+}
+
+.detail-rating-btn.active.dislike-btn {
+    background: #e74c3c;
+    color: white;
+    border-color: #e74c3c;
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+/* Result Card Rating Buttons */
+.card-footer {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    padding: 15px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.icon-action {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.3rem;
+    color: #999;
+    transition: all 0.3s ease;
+    padding: 8px;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-action:hover {
+    transform: scale(1.15);
+    background: rgba(0,0,0,0.05);
+}
+
+.icon-action.like-btn:hover {
+    color: #2ecc71;
+}
+
+.icon-action.dislike-btn:hover {
+    color: #e74c3c;
+}
+
+.icon-action.active {
+    transform: scale(1.2);
+}
+
+.icon-action.like-btn.active {
+    color: #2ecc71;
+    background: rgba(46, 204, 113, 0.1);
+}
+
+.icon-action.dislike-btn.active {
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+}
+
+/* Toast Notifications */
+.rating-toast,
+.quick-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    font-size: 0.95rem;
+    font-weight: 500;
+    animation: slideIn 0.3s ease-out;
+    max-width: 300px;
+}
+
+.rating-toast.success,
+.quick-toast.success {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+}
+
+.rating-toast.info,
+.quick-toast.info {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.rating-toast.warning,
+.quick-toast.warning {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+}
+
+.rating-toast.error,
+.quick-toast.error {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+/* Toast Animations */
+@keyframes slideIn {
+    from {
+        transform: translateX(120%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(120%);
+        opacity: 0;
+    }
+}
+
+/* Loading State */
+.detail-rating-btn.loading {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.detail-rating-btn.loading::after {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-left: 8px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Score Badge (Optional) */
+.score-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-left: 10px;
+}
+
+/* Watch Time Indicator (Optional) */
+.watch-time-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.watch-time-indicator i {
+    color: #3498db;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .detail-rating-btn {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+        min-width: 80px;
+    }
+
+    .detail-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .detail-rating-btn {
+        width: 100%;
+    }
+
+    .rating-toast,
+    .quick-toast {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+
+    .card-footer {
+        gap: 10px;
+    }
+
+    .icon-action {
+        font-size: 1.1rem;
+        width: 36px;
+        height: 36px;
+    }
+}
+
+/* Dark Mode Support (Optional) */
+@media (prefers-color-scheme: dark) {
+    .detail-rating-btn {
+        background: #2c3e50;
+        border-color: #34495e;
+        color: #ecf0f1;
+    }
+
+    .detail-rating-btn:hover {
+        background: #34495e;
+    }
+
+    .icon-action {
+        color: #bdc3c7;
+    }
+
+    .icon-action:hover {
+        background: rgba(255,255,255,0.1);
+    }
+}
+
+/* Accessibility */
+.detail-rating-btn:focus,
+.icon-action:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+.detail-rating-btn:focus:not(:focus-visible),
+.icon-action:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Disabled State */
+.detail-rating-btn:disabled,
+.icon-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Animation for button clicks */
+.detail-rating-btn:active,
+.icon-action:active {
+    transform: scale(0.95);
+}
+
+/* Pulse animation for new ratings */
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.detail-rating-btn.pulse,
+.icon-action.pulse {
+    animation: pulse 0.3s ease-in-out;
+}

@@ -1,4 +1,5 @@
 import { CONFIG } from './config.js';
+import { ratingService } from './rating-service.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
@@ -56,6 +57,11 @@ async function fetchAndDisplayResults() {
         // Render tất cả kết quả từ API
         renderResults(allResults, query, grid, count);
         
+        // Apply user's existing ratings to the results
+        if (ratingService.isLoggedIn()) {
+            await ratingService.applyUserRatings();
+        }
+        
     } catch (error) {
         console.error('Error fetching results:', error);
         if (grid) {
@@ -98,7 +104,7 @@ function renderResults(results, query, grid, count) {
             const scoreDisplay = item.score ? item.score.toFixed(1) : '0.0';
             
             return `
-            <div class="result-card" onclick="goToDetail(${item.id})" style="cursor: pointer;">
+            <div class="result-card" onclick="goToDetail(${item.id})" style="cursor: pointer;" data-place-id="${item.id}">
                 <div class="card-img-top">
                     <img src="${imgSrc}" alt="${item.name}" onerror="this.src='https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070';">
                     <div class="view-badge"><i class="fas fa-star"></i> ${scoreDisplay}</div>
@@ -161,15 +167,93 @@ window.goToDetail = function(id) {
 // === HÀM XỬ LÝ LIKE/DISLIKE ===
 window.handleLike = async function(event, placeId) {
     event.stopPropagation();
-    await submitRating(placeId, 'like');
+    
+    if (!ratingService.isLoggedIn()) {
+        alert('Please login to rate places!');
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    const result = await ratingService.trackLike(placeId);
+    if (result) {
+        // Update button UI
+        const btn = event.target.closest('button');
+        if (btn) {
+            btn.style.color = '#2ecc71';
+            btn.classList.add('active');
+            
+            // Remove dislike active state
+            const card = btn.closest('.result-card');
+            const dislikeBtn = card.querySelector('.dislike-btn');
+            if (dislikeBtn) {
+                dislikeBtn.style.color = '';
+                dislikeBtn.classList.remove('active');
+            }
+        }
+        
+        showQuickToast(`Liked! Score: ${result.score.toFixed(1)}`, 'success');
+    }
 };
 
 window.handleDislike = async function(event, placeId) {
     event.stopPropagation();
-    await submitRating(placeId, 'dislike');
+    
+    if (!ratingService.isLoggedIn()) {
+        alert('Please login to rate places!');
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    const result = await ratingService.trackDislike(placeId);
+    if (result) {
+        // Update button UI
+        const btn = event.target.closest('button');
+        if (btn) {
+            btn.style.color = '#e74c3c';
+            btn.classList.add('active');
+            
+            // Remove like active state
+            const card = btn.closest('.result-card');
+            const likeBtn = card.querySelector('.like-btn');
+            if (likeBtn) {
+                likeBtn.style.color = '';
+                likeBtn.classList.remove('active');
+            }
+        }
+        
+        showQuickToast(`Disliked. Score: ${result.score.toFixed(1)}`, 'info');
+    }
 };
 
+function showQuickToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = 'quick-toast ' + type;
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        background: ${type === 'success' ? '#2ecc71' : '#3498db'};
+        color: white;
+        border-radius: 5px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        z-index: 10000;
+        font-size: 0.9rem;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
+}
+
 async function submitRating(placeId, interactionType) {
+    // Legacy function - kept for compatibility
+    // New code should use ratingService directly
     const token = localStorage.getItem('token');
     
     if (!token) {
@@ -179,7 +263,7 @@ async function submitRating(placeId, interactionType) {
     }
     
     try {
-        const response = await fetch(`${CONFIG.apiBase}/api/v1/rating`, {
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/rating/interact`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
