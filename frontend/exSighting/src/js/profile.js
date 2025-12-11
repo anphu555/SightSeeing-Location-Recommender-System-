@@ -71,6 +71,12 @@ async function loadProfileData() {
         if (userData.avatar_url) {
             localStorage.setItem('avatarUrl', userData.avatar_url);
         }
+        if (userData.bio) {
+            localStorage.setItem('bio', userData.bio);
+        }
+        if (userData.location) {
+            localStorage.setItem('location', userData.location);
+        }
 
         const displayName = userData.display_name || userData.username || 'User';
         const username = userData.username || 'user';
@@ -84,8 +90,10 @@ async function loadProfileData() {
         const profileAvatar = document.getElementById('profileAvatar');
         const headerAvatar = document.getElementById('headerAvatar');
         if (avatarUrl) {
-            profileAvatar.innerHTML = `<img src="${avatarUrl}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
-            headerAvatar.innerHTML = `<img src="${avatarUrl}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            // Nếu là relative URL, thêm backend URL
+            const fullAvatarUrl = avatarUrl.startsWith('http') ? avatarUrl : `${CONFIG.apiBase}${avatarUrl}`;
+            profileAvatar.innerHTML = `<img src="${fullAvatarUrl}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            headerAvatar.innerHTML = `<img src="${fullAvatarUrl}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
         } else {
             // Default avatar icon
             profileAvatar.innerHTML = `<i class="fas fa-user-circle"></i>`;
@@ -95,6 +103,15 @@ async function loadProfileData() {
         // Update info section
         document.getElementById('infoName').textContent = displayName;
         document.getElementById('infoEmail').textContent = `${username}@example.com`; // Email placeholder
+        
+        // Update location nếu có
+        const infoLocation = document.getElementById('infoLocation');
+        if (userData.location) {
+            infoLocation.textContent = userData.location;
+            infoLocation.parentElement.style.display = 'flex';
+        } else {
+            infoLocation.parentElement.style.display = 'none';
+        }
         
         // Simulated join date
         const joinDate = new Date(2024, 0, 1);
@@ -161,15 +178,58 @@ function initEditProfile() {
     const btnClose = document.getElementById('closeEditModal');
     const btnCancel = document.getElementById('btnCancelEdit');
     const form = document.getElementById('editProfileForm');
+    const avatarInput = document.getElementById('editAvatar');
+    const avatarPreview = document.getElementById('avatarPreview');
+    const previewImg = document.getElementById('previewImg');
+    
+    // Preview avatar khi chọn file
+    avatarInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Kiểm tra file size
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size too large. Maximum 5MB');
+                avatarInput.value = '';
+                avatarPreview.style.display = 'none';
+                return;
+            }
+            
+            // Hiển thị preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                avatarPreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            avatarPreview.style.display = 'none';
+        }
+    });
     
     // Open modal
-    btnEdit.addEventListener('click', () => {
-        // Pre-fill form với dữ liệu hiện tại
-        document.getElementById('editDisplayName').value = localStorage.getItem('displayName') || localStorage.getItem('username') || '';
-        document.getElementById('editAvatar').value = localStorage.getItem('avatarUrl') || '';
-        document.getElementById('editBio').value = localStorage.getItem('bio') || '';
-        document.getElementById('editLocation').value = localStorage.getItem('location') || '';
-        document.getElementById('editWebsite').value = localStorage.getItem('website') || '';
+    btnEdit.addEventListener('click', async () => {
+        // Load current data từ backend
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        try {
+            const response = await fetch(`${CONFIG.apiBase}/api/v1/auth/profile`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (response.ok) {
+                const userData = await response.json();
+                document.getElementById('editDisplayName').value = userData.display_name || userData.username || '';
+                document.getElementById('editBio').value = userData.bio || '';
+                document.getElementById('editLocation').value = userData.location || '';
+                
+                // Clear file input và preview
+                avatarInput.value = '';
+                avatarPreview.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error loading profile:', error);
+        }
         
         modal.style.display = 'flex';
     });
@@ -192,7 +252,9 @@ function initEditProfile() {
         e.preventDefault();
         
         const displayName = document.getElementById('editDisplayName').value.trim();
-        const avatarUrl = document.getElementById('editAvatar').value.trim();
+        const bio = document.getElementById('editBio').value.trim();
+        const location = document.getElementById('editLocation').value.trim();
+        const avatarFile = avatarInput.files[0];
         
         const token = localStorage.getItem('token');
         if (!token) {
@@ -202,17 +264,49 @@ function initEditProfile() {
         }
 
         try {
-            // Call API to update profile
+            let avatarUrl = null;
+            
+            // Nếu có upload avatar, upload trước
+            if (avatarFile) {
+                const formData = new FormData();
+                formData.append('file', avatarFile);
+                
+                const uploadResponse = await fetch(`${CONFIG.apiBase}/api/v1/auth/upload-avatar`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                if (!uploadResponse.ok) {
+                    throw new Error('Failed to upload avatar');
+                }
+                
+                const uploadResult = await uploadResponse.json();
+                avatarUrl = uploadResult.avatar_url;
+                console.log('Avatar uploaded:', avatarUrl);
+            }
+            
+            // Update profile với các fields khác
+            const updateData = {
+                display_name: displayName || null,
+                bio: bio || null,
+                location: location || null
+            };
+            
+            // Nếu đã upload avatar, thêm vào update data
+            if (avatarUrl) {
+                updateData.avatar_url = avatarUrl;
+            }
+            
             const response = await fetch(`${CONFIG.apiBase}/api/v1/auth/profile`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    display_name: displayName || null,
-                    avatar_url: avatarUrl || null
-                })
+                body: JSON.stringify(updateData)
             });
 
             if (!response.ok) {
@@ -228,6 +322,12 @@ function initEditProfile() {
             }
             if (updatedUser.avatar_url) {
                 localStorage.setItem('avatarUrl', updatedUser.avatar_url);
+            }
+            if (updatedUser.bio) {
+                localStorage.setItem('bio', updatedUser.bio);
+            }
+            if (updatedUser.location) {
+                localStorage.setItem('location', updatedUser.location);
             }
 
             // Close modal and reload profile

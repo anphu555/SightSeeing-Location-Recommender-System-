@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 
 from app.config import settings
 
@@ -64,6 +66,11 @@ app.add_middleware(
     # ["*"] means they can send custom headers (like "X-Custom-Header").
     allow_headers=["*"],
 )
+
+# Mount static files để serve uploaded avatars
+uploads_dir = os.path.join(settings.BACKEND_DIR, "uploads")
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 
 @app.get("/")

@@ -265,9 +265,16 @@ async function loadComments(placeId) {
                 const displayName = comment.user_display_name || comment.username;
                 
                 // Sử dụng avatar_url nếu có, không thì dùng icon mặc định
-                const avatarHtml = comment.user_avatar_url 
-                    ? `<img src="${comment.user_avatar_url}" alt="${displayName}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">`
-                    : `<i class="fas fa-user-circle" style="font-size: 3rem; color: #14838B;"></i>`;
+                let avatarHtml;
+                if (comment.user_avatar_url) {
+                    // Nếu là relative URL, thêm backend URL
+                    const fullAvatarUrl = comment.user_avatar_url.startsWith('http') 
+                        ? comment.user_avatar_url 
+                        : `${CONFIG.apiBase}${comment.user_avatar_url}`;
+                    avatarHtml = `<img src="${fullAvatarUrl}" alt="${displayName}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">`;
+                } else {
+                    avatarHtml = `<i class="fas fa-user-circle" style="font-size: 3rem; color: #14838B;"></i>`;
+                }
                 
                 return `
                     <div class="review-card" data-comment-id="${comment.id}">

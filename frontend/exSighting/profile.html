@@ -229,16 +229,19 @@
                 <button class="modal-close" id="closeEditModal">&times;</button>
             </div>
             <div class="edit-modal-body">
-                <form id="editProfileForm">
+                <form id="editProfileForm" enctype="multipart/form-data">
                     <div class="form-group">
                         <label for="editDisplayName">Display Name</label>
                         <input type="text" id="editDisplayName" placeholder="Enter your display name" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="editAvatar">Avatar URL</label>
-                        <input type="url" id="editAvatar" placeholder="https://example.com/avatar.jpg">
-                        <small>Leave empty to use default avatar</small>
+                        <label for="editAvatar">Avatar Image</label>
+                        <input type="file" id="editAvatar" accept="image/jpeg,image/png,image/jpg,image/gif,image/webp">
+                        <small>Upload an image (max 5MB). Leave empty to keep current avatar</small>
+                        <div id="avatarPreview" style="margin-top: 10px; display: none;">
+                            <img id="previewImg" style="max-width: 100px; max-height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid #14838B;">
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -249,11 +252,6 @@
                     <div class="form-group">
                         <label for="editLocation">Location</label>
                         <input type="text" id="editLocation" placeholder="City, Country">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="editWebsite">Website</label>
-                        <input type="url" id="editWebsite" placeholder="https://yourwebsite.com">
                     </div>
                     
                     <div class="edit-modal-actions">
