@@ -23,10 +23,10 @@ async def lifespan(app: FastAPI):
     create_db_and_tables()
     print("Startup: Database tables created!")
     
-    # Khởi tạo Two-Tower RecSys model
-    from app.routers.recsysmodel import load_resources
-    load_resources()
-    print("Startup: Two-Tower RecSys model initialized!")
+    # Khởi tạo Content-Based RecSys model
+    from app.routers.recsysmodel import initialize_recsys
+    initialize_recsys()
+    print("Startup: Content-Based RecSys model initialized!")
     
     yield
     # This runs when the app stops (optional)
