@@ -112,12 +112,10 @@ async def get_recommendations(
         # Nếu không gõ gì (Trang chủ), dùng hoàn toàn lịch sử
         final_tags = history_tags
     
-    # Fallback cho user mới tinh
-    if not final_tags:
-        final_tags = ["Vietnam", "Nature", "Beach"] # Default trending tags
-
     # Clean duplicates
-    final_tags = list(set(final_tags))
+    if final_tags:
+        final_tags = list(set(final_tags))
+    # Nếu không có tags nào, để empty list - model sẽ trả về popular/diverse places
 
     # ==========================
     # 4. PREDICT & RETURN

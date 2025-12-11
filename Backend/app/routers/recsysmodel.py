@@ -11,7 +11,6 @@ from sqlmodel import Session, select
 from typing import Optional
 
 from app.schemas import Place, Rating, Like
-from app.database import engine
 
 # ==========================================
 # 1. LOAD DỮ LIỆU TỪ DATABASE.DB
@@ -19,7 +18,14 @@ from app.database import engine
 
 def load_places_from_db():
     """Load tất cả places từ database.db vào DataFrame"""
-    with Session(engine) as session:
+    # Import get_session thay vì dùng engine trực tiếp
+    from app.database import get_session
+    
+    # Sử dụng context manager đúng cách với generator
+    session_gen = get_session()
+    session = next(session_gen)
+    
+    try:
         statement = select(Place)
         places = session.exec(statement).all()
         
@@ -42,6 +48,12 @@ def load_places_from_db():
             })
         
         return pd.DataFrame(places_data)
+    finally:
+        # Đảm bảo đóng session
+        try:
+            next(session_gen)
+        except StopIteration:
+            pass
 
 # LAZY LOADING: Chỉ load khi cần, không load ngay khi import module
 items_df = None
@@ -89,13 +101,23 @@ def get_user_likes(user_id: int):
     Lấy danh sách place_id mà user đã like
     Returns: List[int] - Danh sách place_id
     """
-    with Session(engine) as session:
+    from app.database import get_session
+    
+    session_gen = get_session()
+    session = next(session_gen)
+    
+    try:
         statement = select(Like).where(
             Like.user_id == user_id,
             Like.place_id.isnot(None)  # Chỉ lấy likes cho place, không lấy likes cho comment
         )
         likes = session.exec(statement).all()
         return [like.place_id for like in likes]
+    finally:
+        try:
+            next(session_gen)
+        except StopIteration:
+            pass
 
 def build_user_profile(user_id: int):
     """
@@ -108,13 +130,23 @@ def build_user_profile(user_id: int):
     - Like được tính như một positive signal mạnh (weight = 0.75)
     - Kết hợp cả hai để tạo user profile toàn diện
     """
+    from app.database import get_session
+    
     # Lấy ratings từ database
-    with Session(engine) as session:
+    session_gen = get_session()
+    session = next(session_gen)
+    
+    try:
         statement = select(Rating).where(Rating.user_id == user_id)
         ratings = session.exec(statement).all()
-
-    # Lấy likes từ database
-    liked_place_ids = get_user_likes(user_id)
+        
+        # Lấy likes từ database
+        liked_place_ids = get_user_likes(user_id)
+    finally:
+        try:
+            next(session_gen)
+        except StopIteration:
+            pass
     
     # Nếu không có tương tác nào → Cold start
     if not ratings and not liked_place_ids:
@@ -194,9 +226,14 @@ def recommend_content_based(user_prefs_tags, user_id: Optional[int] = None, top_
 
     # --- BƯỚC 3: TÍNH TOÁN ---
     if np.all(final_vec == 0):
-        # Không có prompt, không có history → Trả về top items theo popularity
+        # Không có prompt, không có history → Trả về DIVERSE/POPULAR items
         results = items_df.copy()
-        results['score'] = 0.5  # Default score
+        
+        # Tạo diversity score: kết hợp random và position để tạo sự đa dạng
+        # Thay vì trả về theo thứ tự ID, shuffle để mỗi lần khác nhau
+        results = results.sample(frac=1, random_state=None).reset_index(drop=True)
+        results['score'] = 0.5  # Neutral score cho tất cả
+        
         # Thêm province từ tags (tag đầu tiên)
         results['province'] = results['tags'].apply(lambda x: x[0] if x and len(x) > 0 else 'Vietnam')
         return results.head(top_k)
