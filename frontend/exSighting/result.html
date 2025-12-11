@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="src/css/style.css">
   <link rel="stylesheet" href="src/css/result.css" />
+  <link rel="stylesheet" href="src/css/chatbot-widget.css">
 </head>
 
 <body>
@@ -35,8 +36,8 @@
           <i class="fas fa-caret-down" style="margin-left: 5px;"></i>
         </button>
         <div class="user-dropdown-menu">
-          <a href="#"><i class="fas fa-user-circle"></i> Profile</a>
-          <a href="#"><i class="fas fa-cog"></i> Settings</a>
+          <a href="profile.html"><i class="fas fa-user-circle"></i> Profile</a>
+          <a href="settings.html"><i class="fas fa-cog"></i> Settings</a>
           <div class="menu-divider"></div>
           <a href="#" id="btnLogout"><i class="fas fa-sign-out-alt"></i> Log Out</a>
         </div>
@@ -142,6 +143,7 @@ if (btnLogout) {
   });
 }
 </script>
+<script type="module" src="src/js/chatbot-widget.js"></script>
 
 </body>
 </html>

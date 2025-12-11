@@ -904,3 +904,238 @@ body {
 .toast.hide {
     animation: slideOutRight 0.4s ease;
 }
+
+/* ==================== DARK MODE ==================== */
+body.dark-mode {
+    background: #1a1a1a;
+    color: #e0e0e0;
+}
+
+body.dark-mode .profile-main {
+    background: #2d2d2d;
+}
+
+body.dark-mode .profile-header {
+    background: #2d2d2d;
+    border-bottom-color: #404040;
+}
+
+body.dark-mode .search-wrapper {
+    background: #1f1f1f;
+}
+
+body.dark-mode .search-wrapper input {
+    background: transparent;
+    color: #e0e0e0;
+}
+
+body.dark-mode .search-wrapper input::placeholder {
+    color: #666;
+}
+
+body.dark-mode .icon-btn {
+    background: #1f1f1f;
+    color: #e0e0e0;
+}
+
+body.dark-mode .icon-btn:hover {
+    background: #14838B;
+}
+
+body.dark-mode .cover-photo::after {
+    background: linear-gradient(to bottom, rgba(26,26,26,0) 0%, rgba(26,26,26,0.9) 100%);
+}
+
+body.dark-mode .profile-info-section {
+    background: #2d2d2d;
+}
+
+body.dark-mode .profile-details h1,
+body.dark-mode .profile-details p {
+    color: #e0e0e0;
+}
+
+body.dark-mode .btn-secondary {
+    background: #1f1f1f;
+    color: #e0e0e0;
+}
+
+body.dark-mode .btn-secondary:hover {
+    background: #404040;
+}
+
+body.dark-mode .profile-tabs {
+    background: #2d2d2d;
+    border-bottom-color: #404040;
+}
+
+body.dark-mode .tab-btn {
+    color: #999;
+}
+
+body.dark-mode .tab-btn.active {
+    color: #14838B;
+    border-bottom-color: #14838B;
+}
+
+body.dark-mode .tab-content-wrapper {
+    background: #2d2d2d;
+}
+
+body.dark-mode .info-grid {
+    background: #1f1f1f;
+}
+
+body.dark-mode .info-item {
+    border-left-color: #404040;
+}
+
+body.dark-mode .label {
+    color: #999;
+}
+
+body.dark-mode .value {
+    color: #e0e0e0;
+}
+
+body.dark-mode .you-might-know h3,
+body.dark-mode .active-section h3 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .review-card {
+    background: #1f1f1f;
+}
+
+body.dark-mode .review-place h4 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .review-place p {
+    color: #999;
+}
+
+body.dark-mode .review-content {
+    color: #e0e0e0;
+}
+
+body.dark-mode .review-actions button {
+    background: #404040;
+    color: #e0e0e0;
+}
+
+body.dark-mode .review-actions button:hover {
+    background: #14838B;
+}
+
+body.dark-mode .edit-modal {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+body.dark-mode .edit-modal-content {
+    background: #2d2d2d;
+}
+
+body.dark-mode .edit-modal-header {
+    border-bottom-color: #404040;
+}
+
+body.dark-mode .edit-modal-header h2 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .modal-close {
+    color: #e0e0e0;
+}
+
+body.dark-mode .form-group label {
+    color: #e0e0e0;
+}
+
+body.dark-mode .form-group input,
+body.dark-mode .form-group textarea {
+    background: #1f1f1f;
+    border-color: #404040;
+    color: #e0e0e0;
+}
+
+body.dark-mode .form-group input::placeholder,
+body.dark-mode .form-group textarea::placeholder {
+    color: #666;
+}
+
+body.dark-mode .form-group small {
+    color: #999;
+}
+
+body.dark-mode .btn-cancel {
+    background: #1f1f1f;
+    color: #e0e0e0;
+}
+
+body.dark-mode .btn-cancel:hover {
+    background: #404040;
+}
+
+body.dark-mode .bio-section {
+    background: #1f1f1f !important;
+}
+
+body.dark-mode .bio-section h3 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .bio-section p {
+    color: #999;
+}
+
+body.dark-mode .liked-subtabs {
+    background: #2d2d2d;
+    border-bottom-color: #404040;
+}
+
+body.dark-mode .liked-subtab-btn {
+    color: #999;
+}
+
+body.dark-mode .liked-subtab-btn.active {
+    color: #14838B;
+    background: #1f1f1f;
+}
+
+/* Dark mode for navbar */
+body.dark-mode .navbar-v3 {
+    background: #2d2d2d;
+    border-bottom-color: #404040;
+}
+
+body.dark-mode .navbar-v3 .logo {
+    color: #e0e0e0;
+}
+
+body.dark-mode .navbar-v3 .nav-item {
+    color: #e0e0e0;
+}
+
+body.dark-mode .user-profile-toggle {
+    background: #1f1f1f;
+    color: #e0e0e0;
+}
+
+body.dark-mode .user-dropdown-menu {
+    background: #2d2d2d;
+    border-color: #404040;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .user-dropdown-menu a {
+    color: #e0e0e0;
+}
+
+body.dark-mode .user-dropdown-menu a:hover {
+    background: #1f1f1f;
+}
+
+body.dark-mode .menu-divider {
+    background: #404040;
+}

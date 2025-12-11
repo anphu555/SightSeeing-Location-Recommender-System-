@@ -471,3 +471,116 @@ button.user-actions-unsigned-in:hover { background-color: #0c6a6f; }
 .sort-option.active i { color: #14838B; }
 .divider { height: 1px; background-color: #eee; margin: 5px 20px; }
 
+
+/* ==================== DARK MODE FOR HOME & COMMON ELEMENTS ==================== */
+body.dark-mode {
+    background: #1a1a1a;
+    color: #e0e0e0;
+}
+
+body.dark-mode .navbar-v3 {
+    background: #2d2d2d;
+    border-bottom: 1px solid #404040;
+}
+
+body.dark-mode .navbar-v3 .logo {
+    color: #e0e0e0;
+}
+
+body.dark-mode .navbar-v3 .nav-item {
+    color: #e0e0e0;
+}
+
+body.dark-mode .user-profile-toggle {
+    background: #1f1f1f;
+    color: #e0e0e0;
+}
+
+body.dark-mode .user-dropdown-menu {
+    background: #2d2d2d;
+    border-color: #404040;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .user-dropdown-menu a {
+    color: #e0e0e0;
+}
+
+body.dark-mode .user-dropdown-menu a:hover {
+    background: #1f1f1f;
+}
+
+body.dark-mode .menu-divider {
+    background: #404040;
+}
+
+body.dark-mode .hero {
+    background: linear-gradient(135deg, #0d5f66 0%, #1a1a1a 100%);
+}
+
+body.dark-mode .hero h1 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .hero p {
+    color: #ccc;
+}
+
+body.dark-mode .search-box {
+    background: #2d2d2d;
+    border-color: #404040;
+}
+
+body.dark-mode .search-box input {
+    background: #1f1f1f;
+    color: #e0e0e0;
+    border-color: #404040;
+}
+
+body.dark-mode .search-box input::placeholder {
+    color: #666;
+}
+
+body.dark-mode .search-box button {
+    background: #14838B;
+}
+
+body.dark-mode .filter-container {
+    background: #2d2d2d;
+}
+
+body.dark-mode .filter-item label {
+    color: #e0e0e0;
+}
+
+body.dark-mode .filter-item select {
+    background: #1f1f1f;
+    color: #e0e0e0;
+    border-color: #404040;
+}
+
+body.dark-mode .popular-places {
+    background: #1a1a1a;
+}
+
+body.dark-mode .popular-places h2 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .place-card {
+    background: #2d2d2d;
+    border-color: #404040;
+}
+
+body.dark-mode .place-card h3 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .place-card p {
+    color: #999;
+}
+
+body.dark-mode .place-badge {
+    background: rgba(20, 131, 139, 0.2);
+    color: #14838B;
+}
