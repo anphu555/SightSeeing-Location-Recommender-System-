@@ -34,12 +34,12 @@
             </button>
             <div class="user-actions-signed-in" id="signedBlock" style="display: none;">
                 <button class="user-profile-toggle">
-                    <div class="user-icon-bg"><i class="fas fa-user-circle"></i></div>
+                    <div class="user-icon-bg" id="headerAvatarContainer"><i class="fas fa-user-circle"></i></div>
                     <span class="username-text" id="displayUsername">User</span>
                     <i class="fas fa-caret-down" style="margin-left: 5px;"></i>
                 </button>
                 <div class="user-dropdown-menu">
-                    <a href="#"><i class="fas fa-user-circle"></i> Profile</a>
+                    <a href="profile.html"><i class="fas fa-user-circle"></i> Profile</a>
                     <a href="#"><i class="fas fa-cog"></i> Settings</a>
                     <div class="menu-divider"></div>
                     <a href="#" id="btnLogout"><i class="fas fa-sign-out-alt"></i> Log Out</a>
@@ -93,14 +93,19 @@
                             <span class="distance-tag" id="detailDistance" style="display: none;">... km from you</span>
                         </div>
                         <div class="action-icons">
-                            <button><i class="far fa-thumbs-up"></i></button>
-                            <button><i class="far fa-thumbs-down"></i></button>
+                            <button id="btnLikePlace" title="Like this place"><i class="far fa-thumbs-up"></i></button>
+                            <button id="btnUnlikePlace" title="Unlike this place"><i class="far fa-thumbs-down"></i></button>
                         </div>
                     </div>
                 </div>
 
                 <div class="place-desc-group">
-                    <div id="detailDesc">Loading description...</div>
+                    <div class="desc-container">
+                        <div class="desc-scrollable" id="detailDesc">Loading description...</div>
+                    </div>
+                    <button class="extend-btn" onclick="openDescriptionModal()">
+                        <i class="fas fa-expand-alt"></i> Extend
+                    </button>
                 </div>
             </div>
         </div>
@@ -122,9 +127,59 @@
 
     </main>
 
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Success!</span>
+    </div>
+
+    <!-- Modal Popup cho Description đầy đủ -->
+    <div id="descriptionModal" class="desc-modal">
+        <div class="desc-modal-content">
+            <div class="desc-modal-header">
+                <h2 id="modalPlaceTitle">Place Details</h2>
+                <button class="desc-modal-close" onclick="closeDescriptionModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="desc-modal-body">
+                <div id="modalDetailDesc">Loading...</div>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="src/js/detail.js"></script>
 
     <div id="footer-placeholder"></div>
     <script src="src/js/footer.js"></script>
+    
+    <script>
+        // Hàm mở modal
+        function openDescriptionModal() {
+            const modal = document.getElementById('descriptionModal');
+            const detailDesc = document.getElementById('detailDesc').innerHTML;
+            const placeTitle = document.getElementById('detailTitle').textContent;
+            
+            document.getElementById('modalDetailDesc').innerHTML = detailDesc;
+            document.getElementById('modalPlaceTitle').textContent = placeTitle;
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Ngăn scroll trang chính
+        }
+        
+        // Hàm đóng modal
+        function closeDescriptionModal() {
+            const modal = document.getElementById('descriptionModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto'; // Cho phép scroll lại
+        }
+        
+        // Đóng modal khi click bên ngoài
+        window.onclick = function(event) {
+            const modal = document.getElementById('descriptionModal');
+            if (event.target === modal) {
+                closeDescriptionModal();
+            }
+        }
+    </script>
 </body>
 </html>

@@ -22,6 +22,13 @@ class User(SQLModel, table=True):
     username: str = Field(index=True, unique=True)
     hashed_password: str  # We store the hash, not the raw password
 
+    # Profile fields
+    display_name: Optional[str] = None  # Tên hiển thị, default là username nếu không set
+    avatar_url: Optional[str] = None  # URL avatar, None sẽ dùng default avatar
+    cover_image_url: Optional[str] = None  # URL ảnh bìa
+    bio: Optional[str] = None  # Bio/giới thiệu bản thân
+    location: Optional[str] = None  # Vị trí/địa điểm
+
     # Ví dụ: ["Nature", "Beach", "Food"]
     preferences: List[str] = Field(default=[], sa_column=Column(JSON))
 
@@ -88,7 +95,6 @@ class Comment(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id")
     place_id: int = Field(foreign_key="place.id")
 
-
     content: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
@@ -96,6 +102,19 @@ class Comment(SQLModel, table=True):
     user: Optional[User] = Relationship(back_populates="comments")
     place: Optional[Place] = Relationship(back_populates="comments")
 
+
+class Like(SQLModel, table=True):
+    """Table để lưu likes của user cho comments và places"""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Foreign Keys
+    user_id: int = Field(foreign_key="user.id")
+    
+    # Optional foreign keys - hoặc like comment hoặc like place
+    comment_id: Optional[int] = Field(default=None, foreign_key="comment.id")
+    place_id: Optional[int] = Field(default=None, foreign_key="place.id")
+    
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 # ==========================================
@@ -124,6 +143,7 @@ class PlaceOut(SQLModel):
     province: str
     themes: List[str]
     score: float
+    image: Optional[List[str]] = None
 
 
 # class PreferenceEnum(str, Enum):
@@ -159,10 +179,23 @@ class UserResponse(SQLModel):
     """Output model - hides password"""
     username: str
     id: int
+    display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[str] = None
     preferences: List[str] # Trả về preferences để frontend hiển thị
 class Token(SQLModel):
     access_token: str
     token_type: str
+
+class UserProfileUpdate(SQLModel):
+    """Model for updating user profile"""
+    display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[str] = None
 
 
 # Define request body structure for Chatbot

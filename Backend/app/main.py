@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 
 from app.config import settings
 
@@ -7,7 +9,7 @@ from app.routers import auth
 
 from app.database import create_db_and_tables
 
-from app.routers import recommendation, rating, chatbot
+from app.routers import recommendation, rating, chatbot, comment, like
 
 from app.routers import place
 
@@ -65,6 +67,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount static files để serve uploaded avatars
+uploads_dir = os.path.join(settings.BACKEND_DIR, "uploads")
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+
 
 @app.get("/")
 def root():
@@ -84,6 +91,8 @@ def root():
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])         # đăng nhập đăng ký
 app.include_router(recommendation.router, prefix="/api/v1", tags=["Recommendation"])    # gợi ý địa điểm
 app.include_router(rating.router, prefix="/api/v1/user", tags=["User Actions"])         # đánh giá địa điểm
+app.include_router(comment.router, prefix="/api/v1", tags=["Comments"])                 # comments/reviews
+app.include_router(like.router, prefix="/api/v1", tags=["Likes"])                       # likes
 
 app.include_router(chatbot.router, prefix="/chat", tags=["Chatbot"])         # chatbot
 

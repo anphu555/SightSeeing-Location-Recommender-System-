@@ -122,6 +122,8 @@ async def get_recommendations(
                 tags = []
         else:
             tags = tags_raw if tags_raw else []
+        # Lấy place từ database để có ảnh
+        place = session.get(Place, int(row.get('id')))
         
         # Đảm bảo tags là list
         if not isinstance(tags, list):
@@ -132,7 +134,8 @@ async def get_recommendations(
             name=str(row.get('name')),
             province=tags[0] if tags else "Vietnam",
             themes=tags,
-            score=float(row.get('score', 0.0))
+            score=float(row.get('score', 0.0)),
+            image=place.image if place and place.image else None
         ))
 
     return RecommendResponse(extraction=extraction, results=results_list)

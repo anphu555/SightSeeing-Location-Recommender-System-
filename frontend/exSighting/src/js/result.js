@@ -80,10 +80,13 @@ function renderResults(results, query, grid, count) {
     } else {
         // Tạo HTML danh sách
         grid.innerHTML = results.map(item => {
-            // Chọn ảnh từ chủ đề hoặc dùng ảnh mặc định
-            let imgSrc = "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070"; // Mặc định: Biển
+            // Lấy ảnh thực từ item.image
+            let imgSrc = "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070"; // Mặc định
             
-            if (item.themes && item.themes.length > 0) {
+            if (item.image && Array.isArray(item.image) && item.image.length > 0) {
+                imgSrc = item.image[0]; // Lấy ảnh đầu tiên
+            } else if (item.themes && item.themes.length > 0) {
+                // Fallback: chọn ảnh dựa trên themes nếu không có ảnh
                 const theme = item.themes[0].toLowerCase();
                 if (theme.includes('mountain') || theme.includes('núi')) {
                     imgSrc = "https://images.unsplash.com/photo-1599229062397-6c8418047918?q=80&w=2070";
@@ -211,12 +214,23 @@ function checkAuth() {
     const user = localStorage.getItem('username');
     const unsigned = document.getElementById('unsignedBlock');
     const signed = document.getElementById('signedBlock');
+    const headerAvatarContainer = document.getElementById('headerAvatarContainer');
     
     if (token && user) {
+        const displayName = localStorage.getItem('displayName') || user;
         const nameDisplay = document.getElementById('displayUsername');
-        if(nameDisplay) nameDisplay.textContent = user;
+        if(nameDisplay) nameDisplay.textContent = displayName;
         if(unsigned) unsigned.style.display = 'none';
         if(signed) signed.style.display = 'flex';
+        
+        // Load avatar
+        if (headerAvatarContainer) {
+            const avatarUrl = localStorage.getItem('avatarUrl');
+            if (avatarUrl) {
+                const fullAvatarUrl = avatarUrl.startsWith('http') ? avatarUrl : `${CONFIG.apiBase}${avatarUrl}`;
+                headerAvatarContainer.innerHTML = `<img src="${fullAvatarUrl}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            }
+        }
     } else {
         if(unsigned) unsigned.style.display = 'flex';
         if(signed) signed.style.display = 'none';

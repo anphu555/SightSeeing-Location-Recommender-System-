@@ -24,6 +24,11 @@ body {
 
 .user-dropdown-menu.active { display: block; }
 
+/* Hiển thị dropdown khi hover vào user-actions-signed-in */
+.user-actions-signed-in:hover .user-dropdown-menu {
+    display: block;
+}
+
 .user-dropdown-menu a {
     display: block;
     padding: 10px 20px;
@@ -73,7 +78,7 @@ body {
     gap: 2.5px; 
     margin-top: -180px; 
     padding-bottom: 5px; /* Chừa chỗ cho bóng đổ của hàng dưới */
-    overflow: hidden
+    overflow: visible; /* Cho phép nút mũi tên hiển thị */
 }
 
 /* 1. ẢNH CHÍNH (MAIN IMAGE) - Hiệu ứng 3D lớn */
@@ -216,26 +221,44 @@ body {
 .place-header-group {
     /* Kéo ngược lên để nằm trên nền trắng */
     margin-top: -160px; 
-    margin-bottom: 60px; /* Khoảng cách với phần mô tả bên dưới */
+    margin-bottom: 80px; /* Đảm bảo đủ khoảng cách với khung xanh */
     color: #333; /* Chữ màu đen */
+    padding-bottom: 15px; /* Thêm padding dưới */
+    min-height: 140px; /* Đảm bảo có đủ chiều cao cho title + subtitle */
 }
 
 .place-title {
-    font-size: 2.8rem;
+    font-size: clamp(1.5rem, 4vw, 2.5rem); /* Giảm size tối đa để fit tốt hơn */
     font-weight: 800; /* Chữ đậm */
     margin: 0;
-    line-height: 1;
+    line-height: 1.15;
     text-transform: uppercase;
     color: #000;
+    max-height: 5.8rem; /* Giới hạn ~2 dòng */
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .place-subtitle {
-    margin-top: 10px;
-    font-size: 1.2rem;
+    margin-top: 12px;
+    margin-bottom: 0;
+    font-size: 1.1rem;
     color: #555;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    overflow: hidden;
+}
+
+.place-subtitle span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: calc(100% - 90px); /* Tránh tràn vào nút like/dislike */
 }
 
 .action-icons {
@@ -272,11 +295,251 @@ body {
     border: 1px dashed rgba(255,255,255,0.4);
     padding: 20px;
     border-radius: 10px;
+    position: relative;
+}
+
+/* Container cho phần description với thanh trượt */
+.desc-container {
+    max-height: 130px; /* Giới hạn chiều cao - đáy vừa bằng đáy ảnh thumbnails */
+    overflow-y: auto; /* Thanh trượt dọc khi nội dung dài */
+    overflow-x: hidden;
+    padding-right: 10px; /* Khoảng cách cho thanh trượt */
+    margin-bottom: 15px;
+}
+
+/* Style cho thanh trượt */
+.desc-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.desc-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.desc-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 10px;
+    transition: background 0.3s;
+}
+
+.desc-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.desc-scrollable {
+    /* Nội dung bên trong */
 }
 
 .place-desc-group b { color: #fff; text-decoration: underline; }
 .place-desc-group ul { padding-left: 20px; margin-top: 10px; }
 .place-desc-group li { margin-bottom: 5px; }
+
+/* Nút Extend */
+.extend-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 10px 25px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 auto;
+}
+
+.extend-btn:hover {
+    background: white;
+    color: #14838B;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.3);
+}
+
+.extend-btn i {
+    font-size: 0.95rem;
+}
+
+/* Modal Popup Styles */
+.desc-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.desc-modal-content {
+    background: white;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 900px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.4s ease;
+    overflow: hidden;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.desc-modal-header {
+    background: linear-gradient(135deg, #14838B 0%, #0d5f66 100%);
+    color: white;
+    padding: 25px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.desc-modal-header h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.desc-modal-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.desc-modal-close:hover {
+    background: white;
+    color: #14838B;
+    transform: rotate(90deg);
+}
+
+.desc-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+    color: #333;
+    font-size: 1rem;
+    line-height: 1.8;
+    text-align: justify;
+}
+
+.desc-modal-body::-webkit-scrollbar {
+    width: 10px;
+}
+
+.desc-modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.desc-modal-body::-webkit-scrollbar-thumb {
+    background: #14838B;
+    border-radius: 10px;
+}
+
+.desc-modal-body::-webkit-scrollbar-thumb:hover {
+    background: #0d5f66;
+}
+
+.desc-modal-body b {
+    color: #14838B;
+    font-weight: 600;
+}
+
+.desc-modal-body ul {
+    padding-left: 25px;
+    margin: 15px 0;
+}
+
+.desc-modal-body li {
+    margin-bottom: 10px;
+}
+
+/* Toast Notification */
+.toast {
+    position: fixed;
+    top: 100px;
+    right: 30px;
+    background: linear-gradient(135deg, #14838B 0%, #0d5f66 100%);
+    color: white;
+    padding: 18px 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(20, 131, 139, 0.4);
+    display: none;
+    align-items: center;
+    gap: 12px;
+    font-size: 1rem;
+    font-weight: 500;
+    z-index: 10000;
+    animation: slideInRight 0.4s ease;
+    min-width: 300px;
+}
+
+.toast.show {
+    display: flex;
+}
+
+.toast i {
+    font-size: 1.5rem;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+.toast.hide {
+    animation: slideOutRight 0.4s ease;
+}
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
