@@ -214,12 +214,23 @@ function checkAuth() {
     const user = localStorage.getItem('username');
     const unsigned = document.getElementById('unsignedBlock');
     const signed = document.getElementById('signedBlock');
+    const headerAvatarContainer = document.getElementById('headerAvatarContainer');
     
     if (token && user) {
+        const displayName = localStorage.getItem('displayName') || user;
         const nameDisplay = document.getElementById('displayUsername');
-        if(nameDisplay) nameDisplay.textContent = user;
+        if(nameDisplay) nameDisplay.textContent = displayName;
         if(unsigned) unsigned.style.display = 'none';
         if(signed) signed.style.display = 'flex';
+        
+        // Load avatar
+        if (headerAvatarContainer) {
+            const avatarUrl = localStorage.getItem('avatarUrl');
+            if (avatarUrl) {
+                const fullAvatarUrl = avatarUrl.startsWith('http') ? avatarUrl : `${CONFIG.apiBase}${avatarUrl}`;
+                headerAvatarContainer.innerHTML = `<img src="${fullAvatarUrl}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            }
+        }
     } else {
         if(unsigned) unsigned.style.display = 'flex';
         if(signed) signed.style.display = 'none';

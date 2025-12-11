@@ -11,75 +11,19 @@ body {
     padding-top: 70px; /* Space for fixed navbar */
 }
 
-/* Sidebar */
+/* Sidebar - HIDDEN */
 .sidebar {
-    width: 280px;
-    background: linear-gradient(180deg, #14838B 0%, #0d5f66 100%);
-    padding: 30px 0;
-    position: fixed;
-    left: 0;
-    top: 70px;
-    bottom: 0;
-    overflow-y: auto;
-    z-index: 100;
+    display: none;
 }
 
-.sidebar-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 0 30px 30px;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: white;
-}
-
-.sidebar-header i {
-    font-size: 1.8rem;
-}
-
-.sidebar-nav {
-    display: flex;
-    flex-direction: column;
-}
-
-.sidebar-nav .nav-item,
-.sidebar-nav .sidebar-item {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 15px 30px;
-    color: rgba(255, 255, 255, 0.8);
-    text-decoration: none;
-    transition: all 0.3s;
-    font-size: 1rem;
-    cursor: pointer;
-}
-
-.sidebar-nav .nav-item:hover,
-.sidebar-nav .sidebar-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-}
-
-.sidebar-nav .nav-item.active,
-.sidebar-nav .sidebar-item.active {
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
-    border-left: 4px solid white;
-}
-
-.sidebar-nav .nav-item i,
-.sidebar-nav .sidebar-item i {
-    width: 20px;
-    text-align: center;
-}
-
-/* Main Content */
+/* Main Content - Full Width */
 .profile-main {
     flex: 1;
-    margin-left: 280px;
+    margin-left: 0;
     background: white;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
 }
 
 .profile-header {
@@ -905,4 +849,58 @@ body {
 
 .btn-unlike-place:hover {
     background: #c82333;
+}
+
+/* Toast Notification */
+.toast {
+    position: fixed;
+    top: 100px;
+    right: 30px;
+    background: linear-gradient(135deg, #14838B 0%, #0d5f66 100%);
+    color: white;
+    padding: 18px 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(20, 131, 139, 0.4);
+    display: none;
+    align-items: center;
+    gap: 12px;
+    font-size: 1rem;
+    font-weight: 500;
+    z-index: 10000;
+    animation: slideInRight 0.4s ease;
+    min-width: 300px;
+}
+
+.toast.show {
+    display: flex;
+}
+
+.toast i {
+    font-size: 1.5rem;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+.toast.hide {
+    animation: slideOutRight 0.4s ease;
 }

@@ -1,3 +1,5 @@
+import { CONFIG } from './config.js';
+
 document.addEventListener("DOMContentLoaded", function() {
     // --- 1. HTML Khớp với CSS mới ---
     const headerHTML = `
@@ -20,7 +22,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             <div class="user-actions-signed-in" id="signedBlock" style="display: none;">
                 <button class="user-profile-toggle">
-                    <div class="user-icon-bg"><i class="fas fa-user-circle"></i></div>
+                    <div class="user-icon-bg" id="headerAvatarContainer"><i class="fas fa-user-circle"></i></div>
                     <span class="username-text" id="displayUsername">User</span>
                     <i class="fas fa-caret-down" style="font-size: 0.8rem; margin-left: 5px;"></i>
                 </button>
@@ -56,12 +58,16 @@ function runHeaderLogic() {
     const unsigned = document.getElementById('unsignedBlock');
     const signed = document.getElementById('signedBlock');
     const displayUser = document.getElementById('displayUsername');
+    const headerAvatarContainer = document.getElementById('headerAvatarContainer');
 
     // Hiển thị theo trạng thái đăng nhập
     if (token && username) {
         if(unsigned) unsigned.style.display = 'none';
         if(signed) signed.style.display = 'inline-block'; // CSS dùng inline-block
-        if(displayUser) displayUser.textContent = username; 
+        if(displayUser) displayUser.textContent = username;
+        
+        // Load và hiển thị avatar
+        loadUserAvatar(token, headerAvatarContainer);
     } else {
         if(unsigned) unsigned.style.display = 'flex';
         if(signed) signed.style.display = 'none';
@@ -79,4 +85,49 @@ function runHeaderLogic() {
     
     // Lưu ý: Dropdown menu giờ hoạt động bằng CSS Hover (.user-actions-signed-in:hover)
     // Nên không cần JS xử lý click để mở menu nữa.
+}
+
+// Function để load avatar từ backend
+async function loadUserAvatar(token, avatarContainer) {
+    if (!avatarContainer) return;
+    
+    try {
+        // Check localStorage first
+        const cachedAvatarUrl = localStorage.getItem('avatarUrl');
+        if (cachedAvatarUrl) {
+            updateAvatarDisplay(cachedAvatarUrl, avatarContainer);
+        }
+        
+        // Fetch from backend để get latest avatar
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/auth/profile`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const userData = await response.json();
+            if (userData.avatar_url) {
+                localStorage.setItem('avatarUrl', userData.avatar_url);
+                updateAvatarDisplay(userData.avatar_url, avatarContainer);
+            }
+            if (userData.display_name) {
+                localStorage.setItem('displayName', userData.display_name);
+                const displayUser = document.getElementById('displayUsername');
+                if (displayUser) {
+                    displayUser.textContent = userData.display_name;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error loading user avatar:', error);
+    }
+}
+
+function updateAvatarDisplay(avatarUrl, container) {
+    if (!container || !avatarUrl) return;
+    
+    const fullAvatarUrl = avatarUrl.startsWith('http') 
+        ? avatarUrl 
+        : `${CONFIG.apiBase}${avatarUrl}`;
+    
+    container.innerHTML = `<img src="${fullAvatarUrl}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
 }

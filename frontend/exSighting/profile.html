@@ -28,7 +28,7 @@
             </button>
             <div class="user-actions-signed-in" id="signedBlock" style="display: none;">
                 <button class="user-profile-toggle">
-                    <div class="user-icon-bg"><i class="fas fa-user-circle"></i></div>
+                    <div class="user-icon-bg" id="headerAvatarContainer"><i class="fas fa-user-circle"></i></div>
                     <span class="username-text" id="displayUsername">User</span>
                     <i class="fas fa-caret-down" style="margin-left: 5px;"></i>
                 </button>
@@ -41,31 +41,6 @@
             </div>
         </div>
     </header>
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <nav class="sidebar-nav">
-                <a href="home.html" class="sidebar-item">
-                    <i class="fas fa-home"></i>
-                    <span>Home</span>
-                </a>
-                <a href="profile.html" class="sidebar-item active">
-                    <i class="fas fa-user"></i>
-                    <span>Profile</span>
-                </a>
-                <a href="#" class="sidebar-item" data-tab="posts">
-                    <i class="fas fa-th-large"></i>
-                    <span>Posts</span>
-                </a>
-                <a href="#" class="sidebar-item" data-tab="reviews">
-                    <i class="fas fa-star"></i>
-                    <span>Reviews</span>
-                </a>
-                <a href="#" class="sidebar-item">
-                    <i class="fas fa-cog"></i>
-                    <span>Settings</span>
-                </a>
-            </nav>
-        </aside>
 
         <!-- Main Content -->
         <main class="profile-main">
@@ -79,17 +54,14 @@
                     <button class="icon-btn">
                         <i class="fas fa-bell"></i>
                     </button>
-                    <div class="user-avatar" id="headerAvatar">
-                        <i class="fas fa-user-circle"></i>
-                    </div>
                 </div>
             </div>
 
             <!-- Profile Content -->
             <div class="profile-content">
                 <!-- Cover Photo -->
-                <div class="cover-photo">
-                    <img src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=2070" alt="Cover">
+                <div class="cover-photo" id="coverPhotoContainer">
+                    <img src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=2070" alt="Cover" id="coverPhotoImg">
                 </div>
 
                 <!-- Profile Info -->
@@ -146,7 +118,7 @@
                                     <span class="value" id="infoJoined">-</span>
                                 </div>
                             </div>
-                            <div class="info-item">
+                            <div class="info-item" style="display: none;">
                                 <i class="fas fa-envelope"></i>
                                 <div>
                                     <span class="label">Email</span>
@@ -158,6 +130,13 @@
                                 <div>
                                     <span class="label">Location</span>
                                     <span class="value" id="infoLocation">Vietnam</span>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-info-circle"></i>
+                                <div>
+                                    <span class="label">Description</span>
+                                    <span class="value" id="infoBio">No bio yet</span>
                                 </div>
                             </div>
                         </div>
@@ -245,6 +224,15 @@
                     </div>
                     
                     <div class="form-group">
+                        <label for="editCover">Cover Image</label>
+                        <input type="file" id="editCover" accept="image/jpeg,image/png,image/jpg,image/gif,image/webp">
+                        <small>Upload cover image (max 10MB). Leave empty to keep current cover</small>
+                        <div id="coverPreview" style="margin-top: 10px; display: none;">
+                            <img id="previewCoverImg" style="max-width: 200px; max-height: 120px; border-radius: 8px; object-fit: cover; border: 2px solid #14838B;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
                         <label for="editBio">Bio</label>
                         <textarea id="editBio" rows="3" placeholder="Tell us about yourself..."></textarea>
                     </div>
@@ -261,6 +249,12 @@
                 </form>
             </div>
         </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Success!</span>
     </div>
 
     <script type="module" src="src/js/profile.js"></script>

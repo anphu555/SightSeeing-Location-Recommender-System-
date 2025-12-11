@@ -60,11 +60,22 @@ function checkAuth() {
     const user = localStorage.getItem('username');
     const unsigned = document.getElementById('unsignedBlock');
     const signed = document.getElementById('signedBlock');
+    const headerAvatarContainer = document.getElementById('headerAvatarContainer');
     
     if (token && user) {
-        document.getElementById('displayUsername').textContent = user;
+        const displayName = localStorage.getItem('displayName') || user;
+        document.getElementById('displayUsername').textContent = displayName;
         unsigned.style.display = 'none';
         signed.style.display = 'flex';
+        
+        // Load avatar
+        if (headerAvatarContainer) {
+            const avatarUrl = localStorage.getItem('avatarUrl');
+            if (avatarUrl) {
+                const fullAvatarUrl = avatarUrl.startsWith('http') ? avatarUrl : `${CONFIG.apiBase}${avatarUrl}`;
+                headerAvatarContainer.innerHTML = `<img src="${fullAvatarUrl}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            }
+        }
     } else {
         unsigned.style.display = 'flex';
         signed.style.display = 'none';

@@ -1,5 +1,61 @@
 import { CONFIG } from './config.js';
 
+// Toast notification variables
+let toastTimeout;
+let keyListener;
+
+// Toast notification function
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    const icon = toast.querySelector('i');
+    
+    // Clear previous timeout and listener
+    if (toastTimeout) clearTimeout(toastTimeout);
+    if (keyListener) document.removeEventListener('keydown', keyListener);
+    
+    // Set message and icon
+    toastMessage.textContent = message;
+    
+    if (type === 'success') {
+        icon.className = 'fas fa-check-circle';
+        toast.style.background = 'linear-gradient(135deg, #14838B 0%, #0d5f66 100%)';
+    } else if (type === 'error') {
+        icon.className = 'fas fa-exclamation-circle';
+        toast.style.background = 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)';
+    } else if (type === 'warning') {
+        icon.className = 'fas fa-info-circle';
+        toast.style.background = 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)';
+    }
+    
+    // Show toast
+    toast.classList.remove('hide');
+    toast.classList.add('show');
+    
+    // Hide after 10s
+    toastTimeout = setTimeout(() => {
+        hideToast();
+    }, 10000);
+    
+    // Close on any key press
+    keyListener = (e) => {
+        hideToast();
+    };
+    document.addEventListener('keydown', keyListener, { once: true });
+}
+
+function hideToast() {
+    const toast = document.getElementById('toast');
+    toast.classList.add('hide');
+    
+    setTimeout(() => {
+        toast.classList.remove('show', 'hide');
+    }, 400);
+    
+    if (toastTimeout) clearTimeout(toastTimeout);
+    if (keyListener) document.removeEventListener('keydown', keyListener);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         checkAuth();
@@ -19,11 +75,24 @@ function checkAuth() {
     const unsigned = document.getElementById('unsignedBlock');
     const signed = document.getElementById('signedBlock');
     const displayUser = document.getElementById('displayUsername');
+    const headerAvatarContainer = document.getElementById('headerAvatarContainer');
 
     if (token && username) {
         if(unsigned) unsigned.style.display = 'none';
         if(signed) signed.style.display = 'inline-block';
-        if(displayUser) displayUser.textContent = username;
+        
+        // Hiển thị display name thay vì username
+        const displayName = localStorage.getItem('displayName') || username;
+        if(displayUser) displayUser.textContent = displayName;
+        
+        // Load avatar
+        if (headerAvatarContainer) {
+            const avatarUrl = localStorage.getItem('avatarUrl');
+            if (avatarUrl) {
+                const fullAvatarUrl = avatarUrl.startsWith('http') ? avatarUrl : `${CONFIG.apiBase}${avatarUrl}`;
+                headerAvatarContainer.innerHTML = `<img src="${fullAvatarUrl}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            }
+        }
     } else {
         // Nếu chưa login, chuyển về trang login
         window.location.href = 'login.html';
@@ -88,16 +157,16 @@ async function loadProfileData() {
         
         // Update avatar
         const profileAvatar = document.getElementById('profileAvatar');
-        const headerAvatar = document.getElementById('headerAvatar');
+        const headerAvatarContainer = document.getElementById('headerAvatarContainer');
         if (avatarUrl) {
             // Nếu là relative URL, thêm backend URL
             const fullAvatarUrl = avatarUrl.startsWith('http') ? avatarUrl : `${CONFIG.apiBase}${avatarUrl}`;
             profileAvatar.innerHTML = `<img src="${fullAvatarUrl}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
-            headerAvatar.innerHTML = `<img src="${fullAvatarUrl}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            headerAvatarContainer.innerHTML = `<img src="${fullAvatarUrl}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
         } else {
             // Default avatar icon
             profileAvatar.innerHTML = `<i class="fas fa-user-circle"></i>`;
-            headerAvatar.innerHTML = `<i class="fas fa-user-circle"></i>`;
+            headerAvatarContainer.innerHTML = `<i class="fas fa-user-circle"></i>`;
         }
         
         // Update info section
@@ -113,6 +182,24 @@ async function loadProfileData() {
             infoLocation.parentElement.style.display = 'none';
         }
         
+        // Update bio
+        const infoBio = document.getElementById('infoBio');
+        if (userData.bio) {
+            infoBio.textContent = userData.bio;
+        } else {
+            infoBio.textContent = 'No bio yet';
+        }
+        
+        // Update cover image
+        if (userData.cover_image_url) {
+            localStorage.setItem('coverImageUrl', userData.cover_image_url);
+            const fullCoverUrl = userData.cover_image_url.startsWith('http') ? userData.cover_image_url : `${CONFIG.apiBase}${userData.cover_image_url}`;
+            const coverImg = document.getElementById('coverPhotoImg');
+            if (coverImg) {
+                coverImg.src = fullCoverUrl;
+            }
+        }
+        
         // Simulated join date
         const joinDate = new Date(2024, 0, 1);
         document.getElementById('infoJoined').textContent = joinDate.toLocaleDateString('en-US', {
@@ -122,7 +209,7 @@ async function loadProfileData() {
         });
     } catch (error) {
         console.error('Error loading profile data:', error);
-        alert('Failed to load profile data');
+        showToast('Failed to load profile data', 'error');
     }
 }
 
@@ -182,13 +269,17 @@ function initEditProfile() {
     const avatarPreview = document.getElementById('avatarPreview');
     const previewImg = document.getElementById('previewImg');
     
+    const coverInput = document.getElementById('editCover');
+    const coverPreview = document.getElementById('coverPreview');
+    const previewCoverImg = document.getElementById('previewCoverImg');
+    
     // Preview avatar khi chọn file
     avatarInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
             // Kiểm tra file size
             if (file.size > 5 * 1024 * 1024) {
-                alert('File size too large. Maximum 5MB');
+                showToast('File size too large. Maximum 5MB', 'warning');
                 avatarInput.value = '';
                 avatarPreview.style.display = 'none';
                 return;
@@ -203,6 +294,30 @@ function initEditProfile() {
             reader.readAsDataURL(file);
         } else {
             avatarPreview.style.display = 'none';
+        }
+    });
+    
+    // Preview cover khi chọn file
+    coverInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Kiểm tra file size
+            if (file.size > 10 * 1024 * 1024) {
+                showToast('File size too large. Maximum 10MB', 'warning');
+                coverInput.value = '';
+                coverPreview.style.display = 'none';
+                return;
+            }
+            
+            // Hiển thị preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewCoverImg.src = e.target.result;
+                coverPreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            coverPreview.style.display = 'none';
         }
     });
     
@@ -226,6 +341,8 @@ function initEditProfile() {
                 // Clear file input và preview
                 avatarInput.value = '';
                 avatarPreview.style.display = 'none';
+                coverInput.value = '';
+                coverPreview.style.display = 'none';
             }
         } catch (error) {
             console.error('Error loading profile:', error);
@@ -255,16 +372,20 @@ function initEditProfile() {
         const bio = document.getElementById('editBio').value.trim();
         const location = document.getElementById('editLocation').value.trim();
         const avatarFile = avatarInput.files[0];
+        const coverFile = coverInput.files[0];
         
         const token = localStorage.getItem('token');
         if (!token) {
-            alert('Please login first');
-            window.location.href = 'login.html';
+            showToast('Please login first', 'warning');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 1500);
             return;
         }
 
         try {
             let avatarUrl = null;
+            let coverUrl = null;
             
             // Nếu có upload avatar, upload trước
             if (avatarFile) {
@@ -288,6 +409,28 @@ function initEditProfile() {
                 console.log('Avatar uploaded:', avatarUrl);
             }
             
+            // Nếu có upload cover, upload
+            if (coverFile) {
+                const formData = new FormData();
+                formData.append('file', coverFile);
+                
+                const uploadResponse = await fetch(`${CONFIG.apiBase}/api/v1/auth/upload-cover`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                if (!uploadResponse.ok) {
+                    throw new Error('Failed to upload cover image');
+                }
+                
+                const uploadResult = await uploadResponse.json();
+                coverUrl = uploadResult.cover_image_url;
+                console.log('Cover uploaded:', coverUrl);
+            }
+            
             // Update profile với các fields khác
             const updateData = {
                 display_name: displayName || null,
@@ -298,6 +441,11 @@ function initEditProfile() {
             // Nếu đã upload avatar, thêm vào update data
             if (avatarUrl) {
                 updateData.avatar_url = avatarUrl;
+            }
+            
+            // Nếu đã upload cover, thêm vào update data
+            if (coverUrl) {
+                updateData.cover_image_url = coverUrl;
             }
             
             const response = await fetch(`${CONFIG.apiBase}/api/v1/auth/profile`, {
@@ -329,15 +477,18 @@ function initEditProfile() {
             if (updatedUser.location) {
                 localStorage.setItem('location', updatedUser.location);
             }
+            if (updatedUser.cover_image_url) {
+                localStorage.setItem('coverImageUrl', updatedUser.cover_image_url);
+            }
 
             // Close modal and reload profile
             closeModal();
             await loadProfileData();
             
-            alert('Profile updated successfully!');
+            showToast('✓ Profile updated successfully!');
         } catch (error) {
             console.error('Error updating profile:', error);
-            alert('Failed to update profile. Please try again.');
+            showToast('Failed to update profile. Please try again.', 'error');
         }
     });
 }
@@ -453,12 +604,13 @@ window.deleteReview = async function(commentId) {
         if (response.ok) {
             // Reload reviews
             loadReviews();
+            showToast('✓ Review deleted successfully');
         } else {
-            alert('Failed to delete review');
+            showToast('Failed to delete review', 'error');
         }
     } catch (error) {
         console.error('Error deleting review:', error);
-        alert('Error deleting review');
+        showToast('Error deleting review', 'error');
     }
 };
 
@@ -646,11 +798,11 @@ window.unlikeComment = async function(commentId) {
         if (response.ok) {
             loadLikedComments();
         } else {
-            alert('Failed to unlike review');
+            showToast('Failed to unlike review', 'error');
         }
     } catch (error) {
         console.error('Error unliking comment:', error);
-        alert('Error unliking review');
+        showToast('Error unliking review', 'error');
     }
 };
 
@@ -671,10 +823,10 @@ window.unlikePlace = async function(placeId) {
         if (response.ok) {
             loadLikedPlaces();
         } else {
-            alert('Failed to unlike place');
+            showToast('Failed to unlike place', 'error');
         }
     } catch (error) {
         console.error('Error unliking place:', error);
-        alert('Error unliking place');
+        showToast('Error unliking place', 'error');
     }
 };

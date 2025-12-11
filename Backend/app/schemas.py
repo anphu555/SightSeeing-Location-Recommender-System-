@@ -25,6 +25,7 @@ class User(SQLModel, table=True):
     # Profile fields
     display_name: Optional[str] = None  # Tên hiển thị, default là username nếu không set
     avatar_url: Optional[str] = None  # URL avatar, None sẽ dùng default avatar
+    cover_image_url: Optional[str] = None  # URL ảnh bìa
     bio: Optional[str] = None  # Bio/giới thiệu bản thân
     location: Optional[str] = None  # Vị trí/địa điểm
 
@@ -180,6 +181,7 @@ class UserResponse(SQLModel):
     id: int
     display_name: Optional[str] = None
     avatar_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
     bio: Optional[str] = None
     location: Optional[str] = None
     preferences: List[str] # Trả về preferences để frontend hiển thị
@@ -191,6 +193,7 @@ class UserProfileUpdate(SQLModel):
     """Model for updating user profile"""
     display_name: Optional[str] = None
     avatar_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
     bio: Optional[str] = None
     location: Optional[str] = None
 

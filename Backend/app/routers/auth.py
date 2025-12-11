@@ -174,7 +174,7 @@ async def update_profile(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Cập nhật profile của user (display_name, avatar_url, bio, location)"""
+    """Cập nhật profile của user (display_name, avatar_url, cover_image_url, bio, location)"""
     
     # Update fields nếu được cung cấp
     if profile_data.display_name is not None:
@@ -182,6 +182,9 @@ async def update_profile(
     
     if profile_data.avatar_url is not None:
         current_user.avatar_url = profile_data.avatar_url
+    
+    if profile_data.cover_image_url is not None:
+        current_user.cover_image_url = profile_data.cover_image_url
     
     if profile_data.bio is not None:
         current_user.bio = profile_data.bio
@@ -262,6 +265,79 @@ async def upload_avatar(
             username=current_user.username,
             display_name=current_user.display_name,
             avatar_url=current_user.avatar_url,
+            cover_image_url=current_user.cover_image_url,
+            bio=current_user.bio,
+            location=current_user.location,
+            preferences=current_user.preferences
+        )
+    }
+
+
+# ==========================================
+# 7. UPLOAD COVER IMAGE
+# ==========================================
+@router.post("/upload-cover")
+async def upload_cover(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Upload cover image và trả về URL"""
+    
+    # Kiểm tra file type
+    allowed_types = ["image/jpeg", "image/png", "image/jpg", "image/gif", "image/webp"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"File type not allowed. Allowed types: {', '.join(allowed_types)}"
+        )
+    
+    # Kiểm tra file size (max 10MB cho cover image)
+    file_size = 0
+    chunk_size = 1024 * 1024  # 1MB chunks
+    for chunk in iter(lambda: file.file.read(chunk_size), b''):
+        file_size += len(chunk)
+        if file_size > 10 * 1024 * 1024:  # 10MB
+            raise HTTPException(status_code=400, detail="File size too large. Max 10MB")
+    
+    # Reset file pointer
+    file.file.seek(0)
+    
+    # Tạo thư mục uploads nếu chưa có
+    upload_dir = Path(settings.BACKEND_DIR) / "uploads" / "covers"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Tạo tên file unique: cover_user_id_timestamp.extension
+    import time
+    file_extension = file.filename.split('.')[-1]
+    unique_filename = f"cover_{current_user.id}_{int(time.time())}.{file_extension}"
+    file_path = upload_dir / unique_filename
+    
+    # Lưu file
+    try:
+        with file_path.open("wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
+    
+    # Tạo URL để truy cập file
+    cover_url = f"/uploads/covers/{unique_filename}"
+    
+    # Update user's cover_image_url
+    current_user.cover_image_url = cover_url
+    session.add(current_user)
+    session.commit()
+    session.refresh(current_user)
+    
+    return {
+        "message": "Cover image uploaded successfully",
+        "cover_image_url": cover_url,
+        "user": UserResponse(
+            id=current_user.id,
+            username=current_user.username,
+            display_name=current_user.display_name,
+            avatar_url=current_user.avatar_url,
+            cover_image_url=current_user.cover_image_url,
             bio=current_user.bio,
             location=current_user.location,
             preferences=current_user.preferences

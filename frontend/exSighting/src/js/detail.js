@@ -214,14 +214,33 @@ function checkAuth() {
     const user = localStorage.getItem('username');
     const unsigned = document.getElementById('unsignedBlock');
     const signed = document.getElementById('signedBlock');
+    const headerAvatarContainer = document.getElementById('headerAvatarContainer');
+    
     if (token && user) {
-        document.getElementById('displayUsername').textContent = user;
-        unsigned.style.display = 'none'; signed.style.display = 'block';
+        const displayName = localStorage.getItem('displayName') || user;
+        document.getElementById('displayUsername').textContent = displayName;
+        unsigned.style.display = 'none'; 
+        signed.style.display = 'block';
+        
+        // Load avatar
+        if (headerAvatarContainer) {
+            const avatarUrl = localStorage.getItem('avatarUrl');
+            if (avatarUrl) {
+                const fullAvatarUrl = avatarUrl.startsWith('http') ? avatarUrl : `${CONFIG.apiBase}${avatarUrl}`;
+                headerAvatarContainer.innerHTML = `<img src="${fullAvatarUrl}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            }
+        }
     } else {
-        unsigned.style.display = 'flex'; signed.style.display = 'none';
+        unsigned.style.display = 'flex'; 
+        signed.style.display = 'none';
     }
+    
     const logout = document.getElementById('btnLogout');
-    if(logout) logout.addEventListener('click', (e) => { e.preventDefault(); localStorage.clear(); window.location.reload(); });
+    if(logout) logout.addEventListener('click', (e) => { 
+        e.preventDefault(); 
+        localStorage.clear(); 
+        window.location.reload(); 
+    });
 }
 
 // === CHỨC NĂNG TÌM KIẾM (LINK VỀ RESULT PAGE) ===
@@ -465,7 +484,7 @@ async function checkPlaceLikeStatus(placeId) {
         
         if (response.ok) {
             const data = await response.json();
-            updatePlaceLikeUI(data.is_liked);
+            updatePlaceLikeUI(data.liked);
         }
     } catch (error) {
         console.error('Error checking place like status:', error);
@@ -567,6 +586,8 @@ async function setupCommentLikeButtons() {
         btn.addEventListener('mouseleave', () => {
             if (!btn.classList.contains('liked')) {
                 btn.style.color = '#999';
+            } else {
+                btn.style.color = '#14838B';  // Keep teal if liked
             }
         });
     });
@@ -586,7 +607,7 @@ async function checkCommentLikeStatus(commentId, btn) {
         
         if (response.ok) {
             const data = await response.json();
-            updateCommentLikeUI(btn, data.is_liked);
+            updateCommentLikeUI(btn, data.liked);
         }
     } catch (error) {
         console.error('Error checking comment like status:', error);
@@ -654,7 +675,7 @@ function updateCommentLikeUI(btn, isLiked) {
     if (isLiked) {
         icon.className = 'fas fa-heart';
         text.textContent = 'Liked';
-        btn.style.color = '#e74c3c';
+        btn.style.color = '#14838B';  // Teal color
         btn.classList.add('liked');
     } else {
         icon.className = 'far fa-heart';
