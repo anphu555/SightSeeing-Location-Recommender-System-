@@ -11,10 +11,11 @@ from enum import Enum
 
 # --- ENUMS ---
 class InteractionType(str, Enum):
-    like = "like"       # User bấm like/tim (trọng số cao nhất)
-    dislike = "dislike" # User không thích
-    click = "click"     # User bấm vào xem chi tiết (trọng số thấp)
-    view = "view"       # User xem lâu (>30s) (trọng số trung bình)
+    like = "like"           # User bấm like/tim (trọng số cao nhất) - score = 10
+    dislike = "dislike"     # User không thích - score = 1
+    view = "view"           # User xem lâu (>30s) (deprecated - use watch_time instead)
+    watch_time = "watch_time"  # Track time spent viewing - variable score based on duration
+    search_appear = "search_appear"  # Place appeared in similar search results - +0.5 point
 
 # table = true để tạo bảng cho db (trong file sqlite)
 class User(SQLModel, table=True):
@@ -141,10 +142,16 @@ class RecommendResponse(SQLModel):
 class InteractionCreate(SQLModel):
     place_id: int
     interaction_type: InteractionType
+    watch_time_seconds: Optional[int] = Field(default=None, description="Time spent viewing the place in seconds (required for watch_time interaction)")
+    
+class WatchTimeUpdate(SQLModel):
+    place_id: int
+    watch_time_seconds: int = Field(..., ge=0, description="Time spent viewing the place in seconds")
 
 class RatingCreate(SQLModel):
     place_id: int
-    interaction_type: InteractionType = Field(..., description="Type of interaction: like, dislike, click, view, or none")
+    interaction_type: InteractionType = Field(..., description="Type of interaction: like, dislike, watch_time, search_appear, or view")
+    watch_time_seconds: Optional[int] = Field(default=None, description="Required for watch_time interaction")
 
 
 # --- Auth Flow ---

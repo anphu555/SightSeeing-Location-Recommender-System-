@@ -59,18 +59,8 @@ def rank_places(ex: GroqExtraction, top_k: int) -> List[PlaceOut]:
 
 def calculate_interest_score(interactions: Dict[str, Any]) -> int:
     """
-    Calculates a user's interest score for a location on a scale of 1-10.
-
-    Args:
-        interactions (Dict[str, Any]): A dictionary of user interactions.
-            Expected keys:
-            - "clicked" (bool): True if the user clicked on the location.
-            - "time_spent_seconds" (int): Time in seconds spent on the location page.
-            - "liked" (bool): True if the user liked the location.
-            - "disliked" (bool): True if the user disliked the location.
-
-    Returns:
-        int: An interest score from 1 to 10.
+    DEPRECATED: Use calculate_user_place_score() instead.
+    Kept for backward compatibility.
     """
     score = 5  # Start with a neutral score
 
@@ -95,3 +85,129 @@ def calculate_interest_score(interactions: Dict[str, Any]) -> int:
     
     # Ensure score is within 1-10 range
     return max(1, min(10, score))
+
+
+def calculate_user_place_score(
+    search_similarity: int = 0,
+    like: bool = False,
+    dislike: bool = False,
+    watch_time_seconds: int = 0
+) -> float:
+    """
+    Calculate cumulative score for a user-place interaction based on multiple signals.
+    
+    Scoring Rules:
+    - Each search with similar themes: +0.5 points
+    - Dislike: set final score to 1 (negative signal)
+    - Like: set final score to 10 (strong positive signal)
+    - Watch time:
+        * Quick bounce (<10s): -2 points
+        * Moderate time (10-60s): +1 point
+        * Extended time (>60s): +2 points
+    
+    Args:
+        search_similarity (int): Number of times this place appeared in searches with similar themes
+        like (bool): True if user liked this place
+        dislike (bool): True if user disliked this place
+        watch_time_seconds (int): Total time spent viewing this place
+        
+    Returns:
+        float: Calculated score, clamped between 0.0 and 10.0
+    """
+    # Priority 1: Explicit feedback overrides everything
+    if like:
+        return 10.0
+    
+    if dislike:
+        return 1.0
+    
+    # Priority 2: Calculate cumulative score from implicit signals
+    score = 0.0
+    
+    # Search similarity bonus: 0.5 per similar search
+    score += search_similarity * 0.5
+    
+    # Watch time signals
+    if watch_time_seconds > 0:
+        if watch_time_seconds < 10:
+            # Quick bounce - negative signal
+            score += -2.0
+        elif watch_time_seconds <= 60:
+            # Moderate engagement
+            score += 1.0
+        else:
+            # Strong engagement
+            score += 2.0
+    
+    # Clamp score between 0 and 10
+    return max(0.0, min(10.0, score))
+
+
+def update_score_on_search_similarity(current_score: float) -> float:
+    """
+    Update score when a place appears in search results with similar themes.
+    Each appearance adds 0.5 points.
+    
+    Args:
+        current_score (float): Current rating score
+        
+    Returns:
+        float: Updated score, clamped to max 10.0
+    """
+    new_score = current_score + 0.5
+    return min(10.0, new_score)
+
+
+def update_score_on_like(current_score: float) -> float:
+    """
+    Update score when user likes a place.
+    Like sets score to 10 (maximum).
+    
+    Args:
+        current_score (float): Current rating score (ignored)
+        
+    Returns:
+        float: 10.0 (maximum score)
+    """
+    return 10.0
+
+
+def update_score_on_dislike(current_score: float) -> float:
+    """
+    Update score when user dislikes a place.
+    Dislike sets score to 1 (minimum positive).
+    
+    Args:
+        current_score (float): Current rating score (ignored)
+        
+    Returns:
+        float: 1.0 (minimum score)
+    """
+    return 1.0
+
+
+def update_score_on_watch_time(current_score: float, watch_time_seconds: int) -> float:
+    """
+    Update score based on how long user viewed the place.
+    
+    Rules:
+    - Quick bounce (<10s): -2 points
+    - Moderate time (10-60s): +1 point
+    - Extended time (>60s): +2 points
+    
+    Args:
+        current_score (float): Current rating score
+        watch_time_seconds (int): Time spent viewing in seconds
+        
+    Returns:
+        float: Updated score, clamped between 0.0 and 10.0
+    """
+    if watch_time_seconds < 10:
+        delta = -2.0
+    elif watch_time_seconds <= 60:
+        delta = 1.0
+    else:
+        delta = 2.0
+    
+    new_score = current_score + delta
+    return max(0.0, min(10.0, new_score))

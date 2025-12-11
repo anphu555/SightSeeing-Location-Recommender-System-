@@ -9,9 +9,7 @@ from app.database import get_session
 from app.routers.auth import get_current_user_optional
 from app.services.llm_service import extract_with_groq
 from app.routers.recsysmodel import recommend_two_tower 
-# from sqlmodel import Session, select
-# from app.database import engine
-# from app.schemas import Place, PlaceDetailResponse # Import thêm Place và Schema mới
+from app.services.scoring_service import update_score_on_search_similarity
 
 router = APIRouter()
 
@@ -110,6 +108,8 @@ async def get_recommendations(
     results_df = recommend_two_tower(final_tags, top_k=req.top_k)
     
     results_list = []
+    place_ids_in_results = []
+    
     for _, row in results_df.iterrows():
         # Parse tags từ string sang list nếu cần
         tags_raw = row.get('tags', [])
@@ -127,13 +127,46 @@ async def get_recommendations(
         if not isinstance(tags, list):
             tags = []
         
+        place_id = int(row.get('id'))
+        place_ids_in_results.append(place_id)
+        
         results_list.append(PlaceOut(
-            id=int(row.get('id')),
+            id=place_id,
             name=str(row.get('name')),
             province=tags[0] if tags else "Vietnam",
             themes=tags,
             score=float(row.get('score', 0.0))
         ))
+    
+    # ==========================
+    # 5. TRACK SEARCH APPEARANCES (Background Scoring)
+    # ==========================
+    # Award +0.5 points to each place that appeared in search results with similar themes
+    if current_user and place_ids_in_results:
+        for place_id in place_ids_in_results:
+            # Check for existing rating
+            statement = select(Rating).where(
+                Rating.user_id == current_user.id,
+                Rating.place_id == place_id
+            )
+            existing_rating = session.exec(statement).first()
+            
+            current_score = existing_rating.score if existing_rating else 0.0
+            new_score = update_score_on_search_similarity(current_score)
+            
+            if existing_rating:
+                existing_rating.score = new_score
+                session.add(existing_rating)
+            else:
+                new_rating = Rating(
+                    user_id=current_user.id,
+                    place_id=place_id,
+                    score=new_score
+                )
+                session.add(new_rating)
+        
+        # Commit all search appearance scores in batch
+        session.commit()
 
     return RecommendResponse(extraction=extraction, results=results_list)
 
