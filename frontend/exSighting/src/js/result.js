@@ -236,48 +236,102 @@ window.goToDetail = function(id) {
 // === HÀM XỬ LÝ LIKE/DISLIKE ===
 window.handleLike = async function(event, placeId) {
     event.stopPropagation();
-    await submitRating(placeId, 'like');
+    await togglePlaceLike(event, placeId, true);
 };
 
 window.handleDislike = async function(event, placeId) {
     event.stopPropagation();
-    await submitRating(placeId, 'dislike');
+    await togglePlaceLike(event, placeId, false);
 };
 
-async function submitRating(placeId, interactionType) {
+
+// Toast notification helper (copied from detail.js)
+let toastTimeout;
+let keyListener;
+function showToast(message, type = 'success') {
+    let toast = document.getElementById('toast');
+    let toastMessage = document.getElementById('toastMessage');
+    let icon = toast && toast.querySelector('i');
+    if (!toast || !toastMessage || !icon) return;
+    if (toastTimeout) clearTimeout(toastTimeout);
+    if (keyListener) document.removeEventListener('keydown', keyListener);
+    toastMessage.textContent = message;
+    if (type === 'success') {
+        icon.className = 'fas fa-check-circle';
+        toast.style.background = 'linear-gradient(135deg, #14838B 0%, #0d5f66 100%)';
+    } else if (type === 'error') {
+        icon.className = 'fas fa-exclamation-circle';
+        toast.style.background = 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)';
+    } else if (type === 'warning') {
+        icon.className = 'fas fa-info-circle';
+        toast.style.background = 'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)';
+    }
+    toast.classList.remove('hide');
+    toast.classList.add('show');
+    toastTimeout = setTimeout(() => { hideToast(); }, 4000);
+    keyListener = (e) => { hideToast(); };
+    document.addEventListener('keydown', keyListener, { once: true });
+}
+function hideToast() {
+    let toast = document.getElementById('toast');
+    if (!toast) return;
+    toast.classList.add('hide');
+    setTimeout(() => { toast.classList.remove('show', 'hide'); }, 400);
+    if (toastTimeout) clearTimeout(toastTimeout);
+    if (keyListener) document.removeEventListener('keydown', keyListener);
+}
+
+// Like/Unlike logic for places (copied and adapted from detail.js)
+async function togglePlaceLike(event, placeId, isLike) {
     const token = localStorage.getItem('token');
-    
     if (!token) {
-        alert('Please login to rate places!');
-        window.location.href = 'login.html';
+        showToast('Please login to like places!', 'warning');
+        setTimeout(() => {
+            localStorage.setItem('returnUrl', window.location.href);
+            window.location.href = 'login.html';
+        }, 1500);
         return;
     }
-    
     try {
-        const response = await fetch(`${CONFIG.apiBase}/api/v1/rating`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                place_id: placeId,
-                interaction_type: interactionType
-            })
-        });
-        
-        if (response.ok) {
-            // Show success feedback
-            const btn = event.target.closest('button');
-            if (btn) {
-                btn.style.color = interactionType === 'like' ? '#2ecc71' : '#e74c3c';
-                setTimeout(() => { btn.style.color = ''; }, 1000);
+        const btn = event.target.closest('button');
+        if (isLike) {
+            // Like the place
+            const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/place`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ place_id: parseInt(placeId) })
+            });
+            if (response.ok) {
+                if (btn) {
+                    btn.innerHTML = '<i class="fas fa-thumbs-up"></i>';
+                    btn.style.color = '#14838B';
+                }
+                showToast('✓ Place liked!', 'success');
+            } else if (response.status === 400) {
+                showToast('You already liked this place!', 'warning');
             }
         } else {
-            console.error('Failed to submit rating');
+            // Unlike the place
+            const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/place/${placeId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (response.ok) {
+                if (btn) {
+                    btn.innerHTML = '<i class="far fa-thumbs-down"></i>';
+                    btn.style.color = '#e74c3c';
+                }
+                showToast('Place removed from favorites', 'warning');
+            }
         }
     } catch (error) {
-        console.error('Error submitting rating:', error);
+        console.error('Error toggling place like:', error);
+        showToast('Failed to update like status', 'error');
     }
 }
 
