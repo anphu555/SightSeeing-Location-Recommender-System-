@@ -485,7 +485,7 @@ function showToast(message, type = 'success') {
     // Hide after 10s
     toastTimeout = setTimeout(() => {
         hideToast();
-    }, 10000);
+    }, 3000);
     
     // Close on any key press
     keyListener = (e) => {
