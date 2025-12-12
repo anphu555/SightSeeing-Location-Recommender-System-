@@ -84,6 +84,7 @@ class PlaceDetailResponse(SQLModel):
     description: List[str]
     image: List[str]
     tags: List[str]
+    province: Optional[str] = None  # Province/location, usually from tags[0]
 
     
 from datetime import datetime

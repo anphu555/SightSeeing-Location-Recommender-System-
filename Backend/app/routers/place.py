@@ -19,8 +19,18 @@ def get_place_detail(place_id: int, session: Session = Depends(get_session)):
     if not place:
         raise HTTPException(status_code=404, detail="Không tìm thấy địa điểm này")
     
-    # Trả về dữ liệu
-    return place
+    # Lấy province từ tags[0] nếu có
+    province = place.tags[0] if place.tags and len(place.tags) > 0 else None
+    
+    # Trả về dữ liệu với province
+    return PlaceDetailResponse(
+        id=place.id,
+        name=place.name,
+        description=place.description,
+        image=place.image,
+        tags=place.tags,
+        province=province
+    )
 
 @router.get("/search/by-name", response_model=List[PlaceDetailResponse])
 def search_places_by_name(
@@ -42,6 +52,19 @@ def search_places_by_name(
         Place.name.ilike(search_term)
     ).limit(limit)
     
-    results = session.exec(statement).all()
+    places = session.exec(statement).all()
+    
+    # Convert to PlaceDetailResponse with province
+    results = []
+    for place in places:
+        province = place.tags[0] if place.tags and len(place.tags) > 0 else None
+        results.append(PlaceDetailResponse(
+            id=place.id,
+            name=place.name,
+            description=place.description,
+            image=place.image,
+            tags=place.tags,
+            province=province
+        ))
     
     return results

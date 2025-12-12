@@ -229,6 +229,9 @@ function renderResults(results, query, grid, count, isLoadMore = false) {
             // Format score to 1 decimal place
             const scoreDisplay = item.score ? item.score.toFixed(1) : '0.0';
             
+            // Get province - fallback chain: province -> tags[0] -> 'Vietnam'
+            const province = item.province || (item.tags && item.tags.length > 0 ? item.tags[0] : 'Vietnam');
+            
             return `
             <div class="result-card" onclick="goToDetail(${item.id})" style="cursor: pointer;">
                 <div class="card-img-top">
@@ -237,7 +240,7 @@ function renderResults(results, query, grid, count, isLoadMore = false) {
                 </div>
                 <div class="card-body">
                     <h4 class="card-title">${item.name}</h4>
-                    <p class="card-subtitle">${item.province || 'Vietnam'}</p>
+                    <p class="card-subtitle">${province}</p>
                 </div>
                 <div class="card-footer">
                     <button class="icon-action like-btn" data-place-id="${item.id}" onclick="handleLike(event, ${item.id})"><i class="far fa-thumbs-up"></i></button>
