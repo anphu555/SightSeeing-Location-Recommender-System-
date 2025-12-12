@@ -111,7 +111,7 @@ def get_places_from_db(session: Session, user_query: str) -> Optional[str]:
 
 # --- 4. The Chat Endpoint ---
 
-@router.post("/")
+@router.post("/chat")
 async def chat_endpoint(
     request: ChatbotRequest, 
     session: Session = Depends(get_session) # Inject Session here
@@ -136,7 +136,7 @@ async def chat_endpoint(
 
         # Step C: Generate Response
         response = model.generate_content(prompt)
-        return {"reply": response.text}
+        return {"response": response.text}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

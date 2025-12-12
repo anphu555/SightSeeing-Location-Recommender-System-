@@ -94,7 +94,7 @@ app.include_router(rating.router, prefix="/api/v1/user", tags=["User Actions"]) 
 app.include_router(comment.router, prefix="/api/v1", tags=["Comments"])                 # comments/reviews
 app.include_router(like.router, prefix="/api/v1", tags=["Likes"])                       # likes
 
-app.include_router(chatbot.router, prefix="/chat", tags=["Chatbot"])         # chatbot
+app.include_router(chatbot.router, prefix="/api/v1/chatbot", tags=["Chatbot"])         # chatbot
 
 app.include_router(place.router, prefix="/api/v1/place", tags=["Place Details"])        # place details
 
