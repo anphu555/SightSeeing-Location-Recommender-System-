@@ -638,7 +638,7 @@ async function togglePlaceLike(placeId, isLike) {
             
             if (response.ok) {
                 updatePlaceLikeUI(true);
-                showToast('✓ Place added to your favorites!');
+                showToast('Place added to your favorites!');
             } else if (response.status === 400) {
                 showToast('You already liked this place!', 'warning');
             }
