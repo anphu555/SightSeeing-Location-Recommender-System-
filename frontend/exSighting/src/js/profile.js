@@ -802,9 +802,12 @@ window.unlikeComment = async function(commentId) {
         });
         
         if (response.ok) {
+            showToast('✓ Review removed from liked list');
             loadLikedComments();
         } else {
-            showToast('Failed to unlike review', 'error');
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Unlike failed:', response.status, errorData);
+            showToast(errorData.detail || 'Failed to unlike review', 'error');
         }
     } catch (error) {
         console.error('Error unliking comment:', error);

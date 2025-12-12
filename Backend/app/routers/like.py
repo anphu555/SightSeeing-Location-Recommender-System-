@@ -256,6 +256,7 @@ async def get_liked_comments(
         select(Like)
         .where(Like.user_id == current_user.id)
         .where(Like.comment_id.isnot(None))
+        .where(Like.is_like == True)  # Chỉ lấy likes, không lấy dislikes
         .order_by(Like.created_at.desc())
     )
     
@@ -302,6 +303,7 @@ async def get_liked_places(
         select(Like)
         .where(Like.user_id == current_user.id)
         .where(Like.place_id.isnot(None))
+        .where(Like.is_like == True)  # Chỉ lấy likes, không lấy dislikes
         .order_by(Like.created_at.desc())
     )
     
