@@ -56,6 +56,12 @@ function updateGallery(index) {
 
 // === 5. KHỞI TẠO & GỌI API ===
 document.addEventListener('DOMContentLoaded', async () => {
+    // Apply saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
+    
     checkAuth();
     initHeaderDropdown();
 

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search Results - exSighting</title>
+  <link rel="icon" type="image/png" href="src/images/TUYU_umbrella.png">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="src/css/style.css">
+  <link rel="stylesheet" href="src/css/result.css" />
+  <link rel="stylesheet" href="src/css/chatbot-widget.css">
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header class="navbar-v3">
+    <div class="logo" onclick="window.location.href='home.html'" style="cursor: pointer;">
+      <i class="fas fa-umbrella"></i>
+      <span>exSighting</span>
+    </div>
+    <nav class="nav-links">
+      <a href="about.html" class="nav-item">About us</a>
+    </nav>
+    
+    <div id="authSection">
+      <button class="user-actions-unsigned-in" id="unsignedBlock" onclick="window.location.href='login.html'">
+        <div class="user-icon-bg"><i class="fas fa-user-circle"></i></div>
+        <span class="sign-in-text">Sign In</span>
+      </button>
+      <div class="user-actions-signed-in" id="signedBlock" style="display: none;">
+        <button class="user-profile-toggle">
+          <div class="user-icon-bg" id="headerAvatarContainer"><i class="fas fa-user-circle"></i></div>
+          <span class="username-text" id="displayUsername">User</span>
+          <i class="fas fa-caret-down" style="margin-left: 5px;"></i>
+        </button>
+        <div class="user-dropdown-menu">
+          <a href="profile.html"><i class="fas fa-user-circle"></i> Profile</a>
+          <a href="settings.html"><i class="fas fa-cog"></i> Settings</a>
+          <div class="menu-divider"></div>
+          <a href="#" id="btnLogout"><i class="fas fa-sign-out-alt"></i> Log Out</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Results Section -->
+  <main class="results-section">
+    <div class="results-header">
+      <h2>3 results</h2>
+      <select>
+        <option>Sort by: Price</option>
+        <option>Sort by: Name</option>
+        <option>Sort by: Rating</option>
+      </select>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <img src="src/images/tuyu.png" alt="Ha Long Bay" />
+        <p>HA LONG BAY</p>
+      </div>
+
+      <div class="card">
+        <img src="src/images/tuyu.png" alt="Tuan Chau Park" />
+        <p>TUAN CHAU PARK</p>
+      </div>
+
+      <div class="card">
+        <img src="src/images/yentu.jpg" alt="Yen Tu Mountain" />
+        <p>YEN TU MOUNTAIN</p>
+      </div>
+      
+      <div class="card">
+        <img src="src/images/yentu.jpg" alt="Yen Tu Mountain" />
+        <p>YEN TU MOUNTAIN</p>
+      </div>
+
+      <div class="card">
+        <img src="src/images/yentu.jpg" alt="Yen Tu Mountain" />
+        <p>YEN TU MOUNTAIN</p>
+      </div>
+
+      <div class="card">
+        <img src="src/images/yentu.jpg" alt="Yen Tu Mountain" />
+        <p>YEN TU MOUNTAIN</p>
+      </div>
+
+      <div class="card">
+        <img src="src/images/yentu.jpg" alt="Yen Tu Mountain" />
+        <p>YEN TU MOUNTAIN</p>
+      </div>
+
+      <div class="card">
+        <img src="src/images/yentu.jpg" alt="Yen Tu Mountain" />
+        <p>YEN TU MOUNTAIN</p>
+      </div>
+
+      <div class="card">
+        <img src="src/images/yentu.jpg" alt="Yen Tu Mountain" />
+        <p>YEN TU MOUNTAIN</p>
+      </div>
+      
+    </div>
+  </main>
+<div class="loading-indicator">Đang tải thêm địa điểm...</div>
+
+<!-- Toast container for accessible notifications -->
+<div class="toast-container" aria-live="polite" aria-atomic="true" id="toast-container"></div>
+
+<div id="footer-placeholder"></div>
+
+<!-- <script type="module" src="src/js/result.js"></script> -->
+<script type="module" src="js/main.js"></script>
+<script src="src/js/footer.js"></script>
+
+<script>
+// Auth logic cho result page
+const token = localStorage.getItem('token');
+const username = localStorage.getItem('username');
+
+const unsigned = document.getElementById('unsignedBlock');
+const signed = document.getElementById('signedBlock');
+const displayUser = document.getElementById('displayUsername');
+
+if (token && username) {
+  if(unsigned) unsigned.style.display = 'none';
+  if(signed) signed.style.display = 'inline-block';
+  if(displayUser) displayUser.textContent = username;
+} else {
+  if(unsigned) unsigned.style.display = 'flex';
+  if(signed) signed.style.display = 'none';
+}
+
+// Logout
+const btnLogout = document.getElementById('btnLogout');
+if (btnLogout) {
+  btnLogout.addEventListener('click', (e) => {
+    e.preventDefault();
+    localStorage.clear();
+    window.location.reload();
+  });
+}
+</script>
+<script type="module" src="src/js/chatbot-widget.js"></script>
+
+</body>
+</html>

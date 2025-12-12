@@ -592,10 +592,10 @@ body {
     border-radius: 15px;
     margin-bottom: 40px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.05); /* Bóng nhẹ */
-    border: 1px solid #eee;
+    border: 1px solid #ddd;
 }
 
-.add-review-box h4 { margin: 0 0 15px 0; color: #333; }
+.add-review-box h4 { margin: 0 0 15px 0; color: #14838B; }
 
 .review-textarea {
     width: 100%; padding: 15px;
@@ -894,3 +894,219 @@ body {
         overflow-x: auto; /* Cho phép vuốt ngang */
     }
 }
+
+/* ==================== DARK MODE ==================== */
+body.dark-mode {
+    background: #1a1a1a;
+    color: #e0e0e0;
+}
+
+body.dark-mode .place-intro-card {
+    background: #2d2d2d;
+}
+
+body.dark-mode .place-intro-card h1 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .sub-search-bar {
+    background-color: #2d2d2d; /* Đồng bộ màu với Navbar/Card */
+    border-bottom: 2px solid #404040;
+    padding: 15px 100px;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+body.dark-mode .search-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 400px;
+    position: relative;
+    max-width: 100%;
+}
+
+/* 2. Đổi màu chữ nhập vào thành màu trắng sáng */
+body.dark-mode .search-input-field {
+    width: 100%;
+    background-color: transparent; /* Đảm bảo nền trong suốt */
+    border: none;
+    border-bottom: 2px solid #404040; /* Viền dưới màu xám tối */
+    padding: 5px 0;
+    font-size: 1rem;
+    font-family: 'Poppins', sans-serif;
+    color: #e0e0e0; /* QUAN TRỌNG: Màu chữ sáng */
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+/* 3. Đổi màu chữ gợi ý (Placeholder) thành màu xám sáng hơn */
+body.dark-mode .search-input-field::placeholder {
+    color: #888; /* Màu placeholder sáng hơn để dễ đọc trên nền đen */
+}
+
+/* Hiệu ứng khi click vào ô input ở Dark mode */
+body.dark-mode .search-input-field:focus {
+    border-bottom-color: #14838B; /* Vẫn giữ màu xanh Teal khi focus */
+}
+
+body.dark-mode .province-badge {
+    background: rgba(20, 131, 139, 0.2);
+    color: #14838B;
+}
+
+body.dark-mode .place-stats span {
+    color: #999;
+}
+
+body.dark-mode .place-stats strong {
+    color: #e0e0e0;
+}
+
+body.dark-mode .btn-action {
+    background: #1f1f1f;
+    color: #e0e0e0;
+}
+
+body.dark-mode .btn-action:hover {
+    background: #14838B;
+    color: white;
+}
+
+body.dark-mode .info-section {
+    background: #2d2d2d;
+}
+
+body.dark-mode .info-section h3 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .info-row {
+    border-bottom-color: #404040;
+}
+
+body.dark-mode .info-row strong {
+    color: #e0e0e0;
+}
+
+body.dark-mode .info-row span {
+    color: #999;
+}
+
+body.dark-mode .desc-modal-content {
+    background: #2d2d2d;
+}
+
+body.dark-mode .desc-modal-header {
+    border-bottom-color: #404040;
+}
+
+body.dark-mode .desc-modal-header h2 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .desc-modal-close {
+    color: #e0e0e0;
+}
+
+body.dark-mode .desc-modal-body {
+    color: #e0e0e0;
+}
+
+body.dark-mode .reviews-section {
+    background: #2d2d2d;
+}
+
+body.dark-mode .reviews-header h3 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .write-review-box {
+    background: #1f1f1f;
+    border-color: #404040;
+}
+
+body.dark-mode .write-review-box textarea {
+    background: #2d2d2d;
+    border-color: #404040;
+    color: #e0e0e0;
+}
+
+body.dark-mode .write-review-box textarea::placeholder {
+    color: #666;
+}
+
+body.dark-mode .review-item {
+    background: #1f1f1f;
+    border-color: #404040;
+}
+
+body.dark-mode .review-username {
+    color: #e0e0e0;
+}
+
+body.dark-mode .review-date {
+    color: #999;
+}
+
+body.dark-mode .review-text {
+    color: #e0e0e0;
+}
+
+body.dark-mode .btn-like-comment {
+    color: #999;
+}
+
+body.dark-mode .btn-like-comment:hover {
+    color: #14838B;
+}
+
+body.dark-mode .btn-like-comment.liked {
+    color: #14838B;
+}
+
+body.dark-mode .btn-delete-comment {
+    background: #dc3545;
+}
+
+body.dark-mode .btn-delete-comment:hover {
+    background: #c82333;
+}
+
+body.dark-mode .navbar-v3 {
+    background: #2d2d2d;
+    border-bottom: 1px solid #404040;
+}
+
+body.dark-mode .navbar-v3 .logo {
+    color: #e0e0e0;
+}
+
+body.dark-mode .navbar-v3 .nav-item {
+    color: #e0e0e0;
+}
+
+body.dark-mode .user-profile-toggle {
+    background: #1f1f1f;
+    color: #e0e0e0;
+}
+
+body.dark-mode .user-dropdown-menu {
+    background: #2d2d2d;
+    border-color: #404040;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .user-dropdown-menu a {
+    color: #e0e0e0;
+}
+
+body.dark-mode .user-dropdown-menu a:hover {
+    background: #1f1f1f;
+}
+
+body.dark-mode .menu-divider {
+    background: #404040;
+}
+
