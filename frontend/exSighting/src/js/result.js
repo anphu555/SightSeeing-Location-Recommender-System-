@@ -421,7 +421,7 @@ function showToast(message, type = 'success') {
     toast.classList.remove('hide');
     toast.classList.add('show');
     
-    toastTimeout = setTimeout(() => { hideToast(); }, 4000);
+    toastTimeout = setTimeout(() => { hideToast(); }, 3000); // 3 giây
     
     keyListener = (e) => { hideToast(); };
     document.addEventListener('keydown', keyListener, { once: true });
