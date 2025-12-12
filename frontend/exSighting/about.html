@@ -10,7 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <link rel="stylesheet" href="src/css/style.css"> 
-    <link rel="stylesheet" href="src/css/header.css"> <link rel="stylesheet" href="src/css/footer.css"> <style>
+    <link rel="stylesheet" href="src/css/header.css"> <link rel="stylesheet" href="src/css/footer.css">
+    <link rel="stylesheet" href="src/css/chatbot-widget.css"> <style>
         /* --- CHUNG --- */
         body {
             background-color: #f9f9f9;
@@ -110,6 +111,66 @@
             .hero-content h1 { font-size: 2.5rem; }
             .team-grid { gap: 40px; }
         }
+
+        /* ==================== DARK MODE ==================== */
+        body.dark-mode {
+            background-color: #1a1a1a;
+        }
+
+        body.dark-mode h2 {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode p {
+            color: #999;
+        }
+
+        body.dark-mode .about-hero {
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070') no-repeat center center/cover;
+        }
+
+        body.dark-mode .section-container {
+            background: transparent;
+        }
+
+        body.dark-mode .story-section .story-text,
+        body.dark-mode .story-section .story-img {
+            background: #2d2d2d;
+        }
+
+        body.dark-mode .story-text h2 {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .story-text p {
+            color: #999;
+        }
+
+        body.dark-mode .values-section {
+            background-color: #1a1a1a;
+        }
+
+        body.dark-mode .value-card {
+            background: #2d2d2d;
+            border-color: #404040;
+        }
+
+        body.dark-mode .value-card h3 {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .value-card p {
+            color: #999;
+        }
+
+
+        body.dark-mode .team-member h3 {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .team-member span {
+            color: #14838B;
+        }
     </style>
 </head>
 <body>
@@ -203,6 +264,7 @@
     
     <script type="module" src="src/js/header.js"></script>
     <script src="src/js/footer.js"></script>
+    <script type="module" src="src/js/chatbot-widget.js"></script>
 
 </body>
 </html>

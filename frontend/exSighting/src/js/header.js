@@ -1,6 +1,12 @@
 import { CONFIG } from './config.js';
 
 document.addEventListener("DOMContentLoaded", function() {
+    // Apply saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
+    
     // --- 1. HTML Khớp với CSS mới ---
     const headerHTML = `
     <header class="navbar-v3">

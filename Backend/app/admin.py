@@ -6,7 +6,7 @@ from app.config import settings
 from sqladmin import Admin, ModelView
 
 
-from app.schemas import User, Place, Rating 
+from app.schemas import *
 
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
@@ -47,7 +47,7 @@ security_guard = AdminAuth(secret_key=settings.SECRET_KEY)
 # These classes control what you see in the admin panel.
 # You can customize 'column_list' based on the actual fields in your models.
 class UserAdmin(ModelView, model=User):
-    column_list = [User.id, User.username]         # Add fields you want to see
+    column_list = [User.id, User.username, User.preferences]         # Add fields you want to see
     icon = "fa-solid fa-user"
 
 class PlaceAdmin(ModelView, model=Place):
@@ -57,6 +57,14 @@ class PlaceAdmin(ModelView, model=Place):
 class RatingAdmin(ModelView, model=Rating):
     column_list = [Rating.id, Rating.user_id, Rating.place_id, Rating.score] # Add fields you want to see
     icon = "fa-solid fa-star"
+
+class CommentAdmin(ModelView, model=Comment):
+    column_list = [Comment.id, Comment.user_id, Comment.place_id, Comment.content, Comment.created_at] # Add fields you want to see
+    icon = "fa-solid fa-comment"
+
+class LikeAdmin(ModelView, model=Like):
+    column_list = [Like.id, Like.user_id, Like.place_id, Like.created_at] # Add fields you want to see
+    icon = "fa-solid fa-thumbs-up"
 # ---------------------------------
 
 
@@ -67,3 +75,5 @@ admin = Admin(app, engine, authentication_backend=security_guard)
 admin.add_view(UserAdmin)
 admin.add_view(PlaceAdmin)
 admin.add_view(RatingAdmin)
+admin.add_view(CommentAdmin)
+admin.add_view(LikeAdmin)

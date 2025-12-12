@@ -48,6 +48,12 @@
 import { CONFIG } from './config.js';
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Apply saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
+    
     checkAuth();     // 1. Kiểm tra đăng nhập
     initBanner();    // 2. Khởi tạo Banner Slide
     loadPlaces();    // 3. Tải Popular Places
