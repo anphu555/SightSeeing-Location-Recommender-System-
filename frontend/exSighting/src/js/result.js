@@ -301,11 +301,11 @@ function hideToast() {
     if (keyListener) document.removeEventListener('keydown', keyListener);
 }
 
-// Like/Unlike logic for places (copied and adapted from detail.js)
+// Like/Dislike logic for places
 async function togglePlaceLike(event, placeId, isLike) {
     const token = localStorage.getItem('token');
     if (!token) {
-        showToast('Please login to like places!', 'warning');
+        showToast('Please login to interact with places!', 'warning');
         setTimeout(() => {
             localStorage.setItem('returnUrl', window.location.href);
             window.location.href = 'login.html';
@@ -314,40 +314,54 @@ async function togglePlaceLike(event, placeId, isLike) {
     }
     try {
         const btn = event.target.closest('button');
-        if (isLike) {
-            // Like the place
-            const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/place`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ place_id: parseInt(placeId) })
-            });
-            if (response.ok) {
-                if (btn) {
-                    btn.innerHTML = '<i class="fas fa-thumbs-up"></i>';
-                    btn.style.color = '#14838B';
+        
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/place`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+                place_id: parseInt(placeId),
+                is_like: isLike
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            
+            // Backend trả về: {action: "removed"|"created"|"updated", status: "neutral"|"liked"|"disliked"}
+            if (btn) {
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    if (result.status === 'liked') {
+                        icon.className = 'fas fa-thumbs-up';
+                        btn.style.color = '#14838B';
+                    } else if (result.status === 'disliked') {
+                        icon.className = 'fas fa-thumbs-down';
+                        btn.style.color = '#e74c3c';
+                    } else {
+                        // neutral
+                        icon.className = isLike ? 'far fa-thumbs-up' : 'far fa-thumbs-down';
+                        btn.style.color = '';
+                    }
                 }
-                showToast('✓ Place liked!', 'success');
-            } else if (response.status === 400) {
-                showToast('You already liked this place!', 'warning');
             }
-        } else {
-            // Unlike the place
-            const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/place/${placeId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            if (response.ok) {
-                if (btn) {
-                    btn.innerHTML = '<i class="far fa-thumbs-down"></i>';
-                    btn.style.color = '#e74c3c';
-                }
-                showToast('Place removed from favorites', 'warning');
+            
+            if (result.action === "removed") {
+                showToast(isLike ? 'Like removed' : 'Dislike removed', 'warning');
+            } else if (result.action === "created") {
+                showToast(isLike ? '✓ Place liked!' : 'Place disliked', isLike ? 'success' : 'warning');
+            } else if (result.action === "updated") {
+                showToast(isLike ? 'Changed to like!' : 'Changed to dislike', 'success');
             }
+        } else if (response.status === 401) {
+            showToast('Session expired. Please login again.', 'error');
+            setTimeout(() => {
+                localStorage.clear();
+                localStorage.setItem('returnUrl', window.location.href);
+                window.location.href = 'login.html';
+            }, 2000);
         }
     } catch (error) {
         console.error('Error toggling place like:', error);

@@ -104,7 +104,7 @@ class Comment(SQLModel, table=True):
 
 
 class Like(SQLModel, table=True):
-    """Table để lưu likes của user cho comments và places"""
+    """Table để lưu likes/dislikes của user cho comments và places"""
     id: Optional[int] = Field(default=None, primary_key=True)
     
     # Foreign Keys
@@ -113,6 +113,10 @@ class Like(SQLModel, table=True):
     # Optional foreign keys - hoặc like comment hoặc like place
     comment_id: Optional[int] = Field(default=None, foreign_key="comment.id")
     place_id: Optional[int] = Field(default=None, foreign_key="place.id")
+    
+    # True=Like, False=Dislike
+    # Nếu user bấm lại cùng button -> xóa record này (về trạng thái neutral)
+    is_like: Optional[bool] = Field(default=True)
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
 

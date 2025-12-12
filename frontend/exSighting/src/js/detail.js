@@ -569,28 +569,28 @@ function setupCommentForm(placeId) {
     });
 }
 
-// === LIKE/UNLIKE FUNCTIONALITY ===
+// === LIKE/DISLIKE FUNCTIONALITY ===
 
-// Setup place like/unlike buttons
+// Setup place like/dislike buttons
 function setupPlaceLikeButtons(placeId) {
     const btnLike = document.getElementById('btnLikePlace');
-    const btnUnlike = document.getElementById('btnUnlikePlace');
+    const btnDislike = document.getElementById('btnDislikePlace');
     
-    if (!btnLike || !btnUnlike) return;
+    if (!btnLike || !btnDislike) return;
     
-    // Check if place is already liked
+    // Check current like/dislike status
     checkPlaceLikeStatus(placeId);
     
     btnLike.addEventListener('click', async () => {
         await togglePlaceLike(placeId, true);
     });
     
-    btnUnlike.addEventListener('click', async () => {
+    btnDislike.addEventListener('click', async () => {
         await togglePlaceLike(placeId, false);
     });
 }
 
-// Check if current user has liked this place
+// Check if current user has liked/disliked this place
 async function checkPlaceLikeStatus(placeId) {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -604,19 +604,20 @@ async function checkPlaceLikeStatus(placeId) {
         
         if (response.ok) {
             const data = await response.json();
-            updatePlaceLikeUI(data.liked);
+            // data có: {liked: bool, disliked: bool, status: "liked"|"disliked"|"neutral"}
+            updatePlaceLikeUI(data.status);
         }
     } catch (error) {
         console.error('Error checking place like status:', error);
     }
 }
 
-// Toggle place like/unlike
+// Toggle place like/dislike
 async function togglePlaceLike(placeId, isLike) {
     const token = localStorage.getItem('token');
     
     if (!token) {
-        showToast('Please login to like places!', 'warning');
+        showToast('Please login to interact with places!', 'warning');
         setTimeout(() => {
             localStorage.setItem('returnUrl', window.location.href);
             window.location.href = 'login.html';
@@ -625,36 +626,38 @@ async function togglePlaceLike(placeId, isLike) {
     }
     
     try {
-        if (isLike) {
-            // Like the place
-            const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/place`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ place_id: parseInt(placeId) })
-            });
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/place`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+                place_id: parseInt(placeId),
+                is_like: isLike
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
             
-            if (response.ok) {
-                updatePlaceLikeUI(true);
-                showToast('Place added to your favorites!');
-            } else if (response.status === 400) {
-                showToast('You already liked this place!', 'warning');
-            }
-        } else {
-            // Unlike the place
-            const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/place/${placeId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            // Backend trả về: {action: "removed"|"created"|"updated", status: "neutral"|"liked"|"disliked", data: {...}}
+            updatePlaceLikeUI(result.status);
             
-            if (response.ok) {
-                updatePlaceLikeUI(false);
-                showToast('Place removed from favorites', 'warning');
+            if (result.action === "removed") {
+                showToast(isLike ? 'Like removed' : 'Dislike removed', 'warning');
+            } else if (result.action === "created") {
+                showToast(isLike ? '✓ Place liked!' : 'Place disliked', isLike ? 'success' : 'warning');
+            } else if (result.action === "updated") {
+                showToast(isLike ? 'Changed to like!' : 'Changed to dislike', 'success');
             }
+        } else if (response.status === 401) {
+            showToast('Session expired. Please login again.', 'error');
+            setTimeout(() => {
+                localStorage.clear();
+                localStorage.setItem('returnUrl', window.location.href);
+                window.location.href = 'login.html';
+            }, 2000);
         }
     } catch (error) {
         console.error('Error toggling place like:', error);
@@ -662,20 +665,27 @@ async function togglePlaceLike(placeId, isLike) {
     }
 }
 
-// Update place like button UI
-function updatePlaceLikeUI(isLiked) {
+// Update place like/dislike button UI
+function updatePlaceLikeUI(status) {
     const btnLike = document.getElementById('btnLikePlace');
-    const btnUnlike = document.getElementById('btnUnlikePlace');
+    const btnDislike = document.getElementById('btnDislikePlace');
     
-    if (isLiked) {
+    if (!btnLike || !btnDislike) return;
+    
+    // Reset both buttons first
+    btnLike.innerHTML = '<i class="far fa-thumbs-up"></i>';
+    btnLike.style.color = '';
+    btnDislike.innerHTML = '<i class="far fa-thumbs-down"></i>';
+    btnDislike.style.color = '';
+    
+    if (status === 'liked') {
         btnLike.innerHTML = '<i class="fas fa-thumbs-up"></i>';
-        btnLike.style.color = '#14838B';
-        btnUnlike.innerHTML = '<i class="far fa-thumbs-down"></i>';
-        btnUnlike.style.color = '';
-    } else {
-        btnLike.innerHTML = '<i class="far fa-thumbs-up"></i>';
-        btnLike.style.color = '';
+        btnLike.style.color = '#14838B';  // Teal color for like
+    } else if (status === 'disliked') {
+        btnDislike.innerHTML = '<i class="fas fa-thumbs-down"></i>';
+        btnDislike.style.color = '#e74c3c';  // Red color for dislike
     }
+    // else status === 'neutral' -> both remain unselected
 }
 
 // Setup comment like buttons
@@ -701,19 +711,23 @@ async function setupCommentLikeButtons() {
         
         // Hover effect
         btn.addEventListener('mouseenter', () => {
-            btn.style.color = '#14838B';
+            const currentStatus = btn.dataset.likeStatus || 'neutral';
+            if (currentStatus === 'neutral' || currentStatus === 'disliked') {
+                btn.style.color = '#14838B';
+            }
         });
         btn.addEventListener('mouseleave', () => {
-            if (!btn.classList.contains('liked')) {
-                btn.style.color = '#999';
+            const currentStatus = btn.dataset.likeStatus || 'neutral';
+            if (currentStatus === 'liked') {
+                btn.style.color = '#14838B';
             } else {
-                btn.style.color = '#14838B';  // Keep teal if liked
+                btn.style.color = '#999';
             }
         });
     });
 }
 
-// Check if comment is liked
+// Check if comment is liked/disliked
 async function checkCommentLikeStatus(commentId, btn) {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -727,7 +741,8 @@ async function checkCommentLikeStatus(commentId, btn) {
         
         if (response.ok) {
             const data = await response.json();
-            updateCommentLikeUI(btn, data.liked);
+            // data có: {liked: bool, disliked: bool, status: "liked"|"disliked"|"neutral"}
+            updateCommentLikeUI(btn, data.status);
         }
     } catch (error) {
         console.error('Error checking comment like status:', error);
@@ -747,39 +762,44 @@ async function toggleCommentLike(commentId, btn) {
         return;
     }
     
-    const isLiked = btn.classList.contains('liked');
+    const currentStatus = btn.dataset.likeStatus || 'neutral';
+    
+    // Xác định action: nếu đang neutral hoặc disliked -> like, nếu đang liked -> toggle off (về neutral)
+    const isLike = currentStatus !== 'liked';
     
     try {
-        if (isLiked) {
-            // Unlike
-            const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/comment/${commentId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/comment`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ 
+                comment_id: parseInt(commentId),
+                is_like: isLike
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
             
-            if (response.ok) {
-                updateCommentLikeUI(btn, false);
-                showToast('Review unliked');
-            }
-        } else {
-            // Like
-            const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/comment`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ comment_id: parseInt(commentId) })
-            });
+            // Backend trả về: {action: "removed"|"created"|"updated", status: "neutral"|"liked"|"disliked", data: {...}}
+            updateCommentLikeUI(btn, result.status);
             
-            if (response.ok) {
-                updateCommentLikeUI(btn, true);
-                showToast('✓ Review liked!');
-            } else if (response.status === 400) {
-                showToast('You already liked this review!', 'warning');
+            if (result.action === "removed") {
+                showToast('Like removed');
+            } else if (result.action === "created") {
+                showToast(isLike ? '✓ Review liked!' : 'Review disliked');
+            } else if (result.action === "updated") {
+                showToast(isLike ? 'Changed to like!' : 'Changed to dislike');
             }
+        } else if (response.status === 401) {
+            showToast('Session expired. Please login again.', 'error');
+            setTimeout(() => {
+                localStorage.clear();
+                localStorage.setItem('returnUrl', window.location.href);
+                window.location.href = 'login.html';
+            }, 2000);
         }
     } catch (error) {
         console.error('Error toggling comment like:', error);
@@ -788,19 +808,25 @@ async function toggleCommentLike(commentId, btn) {
 }
 
 // Update comment like button UI
-function updateCommentLikeUI(btn, isLiked) {
+function updateCommentLikeUI(btn, status) {
     const icon = btn.querySelector('i');
     const text = btn.querySelector('.like-text');
     
-    if (isLiked) {
+    // Store current status
+    btn.dataset.likeStatus = status;
+    
+    if (status === 'liked') {
         icon.className = 'fas fa-heart';
         text.textContent = 'Liked';
         btn.style.color = '#14838B';  // Teal color
-        btn.classList.add('liked');
+    } else if (status === 'disliked') {
+        icon.className = 'fas fa-heart-broken';
+        text.textContent = 'Disliked';
+        btn.style.color = '#e74c3c';  // Red color
     } else {
+        // neutral
         icon.className = 'far fa-heart';
         text.textContent = 'Like';
         btn.style.color = '#999';
-        btn.classList.remove('liked');
     }
 }

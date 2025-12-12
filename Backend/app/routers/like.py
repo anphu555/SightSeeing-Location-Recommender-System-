@@ -12,9 +12,11 @@ router = APIRouter()
 
 class LikeCommentRequest(BaseModel):
     comment_id: int
+    is_like: bool  # True=Like, False=Dislike
 
 class LikePlaceRequest(BaseModel):
     place_id: int
+    is_like: bool  # True=Like, False=Dislike
 
 class LikeResponse(BaseModel):
     id: int
@@ -45,22 +47,24 @@ class LikedPlaceResponse(BaseModel):
     created_at: datetime
 
 # ==========================================
-# LIKE COMMENT
+# LIKE/DISLIKE COMMENT
 # ==========================================
-@router.post("/likes/comment", response_model=LikeResponse)
-async def like_comment(
+@router.post("/likes/comment")
+async def like_dislike_comment(
     like_data: LikeCommentRequest,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Like một comment"""
+    """Like hoặc Dislike một comment. 
+    Nếu đã like/dislike trước đó với cùng giá trị is_like -> xóa (toggle off)
+    Nếu đã like/dislike trước đó với khác is_like -> update (switch giữa like và dislike)"""
     
     # Kiểm tra comment có tồn tại không
     comment = session.get(Comment, like_data.comment_id)
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
     
-    # Kiểm tra đã like chưa
+    # Kiểm tra đã có interaction chưa
     statement = select(Like).where(
         Like.user_id == current_user.id,
         Like.comment_id == like_data.comment_id
@@ -68,28 +72,55 @@ async def like_comment(
     existing_like = session.exec(statement).first()
     
     if existing_like:
-        raise HTTPException(status_code=400, detail="Already liked this comment")
+        # Nếu đã có và cùng loại (like->like hoặc dislike->dislike) -> xóa (toggle off)
+        if existing_like.is_like == like_data.is_like:
+            session.delete(existing_like)
+            session.commit()
+            return {"action": "removed", "status": "neutral"}
+        else:
+            # Nếu khác loại (like->dislike hoặc dislike->like) -> update
+            existing_like.is_like = like_data.is_like
+            session.add(existing_like)
+            session.commit()
+            session.refresh(existing_like)
+            
+            return {
+                "action": "updated",
+                "status": "liked" if existing_like.is_like else "disliked",
+                "data": {
+                    "id": existing_like.id,
+                    "user_id": existing_like.user_id,
+                    "comment_id": existing_like.comment_id,
+                    "place_id": None,
+                    "created_at": existing_like.created_at.isoformat()
+                }
+            }
     
-    # Tạo like mới
+    # Tạo like/dislike mới
     new_like = Like(
         user_id=current_user.id,
-        comment_id=like_data.comment_id
+        comment_id=like_data.comment_id,
+        is_like=like_data.is_like
     )
     
     session.add(new_like)
     session.commit()
     session.refresh(new_like)
     
-    return LikeResponse(
-        id=new_like.id,
-        user_id=new_like.user_id,
-        comment_id=new_like.comment_id,
-        place_id=None,
-        created_at=new_like.created_at
-    )
+    return {
+        "action": "created",
+        "status": "liked" if new_like.is_like else "disliked",
+        "data": {
+            "id": new_like.id,
+            "user_id": new_like.user_id,
+            "comment_id": new_like.comment_id,
+            "place_id": None,
+            "created_at": new_like.created_at.isoformat()
+        }
+    }
 
 # ==========================================
-# UNLIKE COMMENT
+# UNLIKE COMMENT (DEPRECATED - use POST with same is_like to toggle)
 # ==========================================
 @router.delete("/likes/comment/{comment_id}")
 async def unlike_comment(
@@ -97,7 +128,7 @@ async def unlike_comment(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Unlike một comment"""
+    """[DEPRECATED] Unlike một comment - Sử dụng POST /likes/comment với cùng is_like để toggle"""
     
     statement = select(Like).where(
         Like.user_id == current_user.id,
@@ -114,22 +145,24 @@ async def unlike_comment(
     return {"message": "Unliked successfully"}
 
 # ==========================================
-# LIKE PLACE
+# LIKE/DISLIKE PLACE
 # ==========================================
-@router.post("/likes/place", response_model=LikeResponse)
-async def like_place(
+@router.post("/likes/place")
+async def like_dislike_place(
     like_data: LikePlaceRequest,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Like một place"""
+    """Like hoặc Dislike một place.
+    Nếu đã like/dislike trước đó với cùng giá trị is_like -> xóa (toggle off)
+    Nếu đã like/dislike trước đó với khác is_like -> update (switch giữa like và dislike)"""
     
     # Kiểm tra place có tồn tại không
     place = session.get(Place, like_data.place_id)
     if not place:
         raise HTTPException(status_code=404, detail="Place not found")
     
-    # Kiểm tra đã like chưa
+    # Kiểm tra đã có interaction chưa
     statement = select(Like).where(
         Like.user_id == current_user.id,
         Like.place_id == like_data.place_id
@@ -137,28 +170,55 @@ async def like_place(
     existing_like = session.exec(statement).first()
     
     if existing_like:
-        raise HTTPException(status_code=400, detail="Already liked this place")
+        # Nếu đã có và cùng loại (like->like hoặc dislike->dislike) -> xóa (toggle off)
+        if existing_like.is_like == like_data.is_like:
+            session.delete(existing_like)
+            session.commit()
+            return {"action": "removed", "status": "neutral"}
+        else:
+            # Nếu khác loại (like->dislike hoặc dislike->like) -> update
+            existing_like.is_like = like_data.is_like
+            session.add(existing_like)
+            session.commit()
+            session.refresh(existing_like)
+            
+            return {
+                "action": "updated",
+                "status": "liked" if existing_like.is_like else "disliked",
+                "data": {
+                    "id": existing_like.id,
+                    "user_id": existing_like.user_id,
+                    "comment_id": None,
+                    "place_id": existing_like.place_id,
+                    "created_at": existing_like.created_at.isoformat()
+                }
+            }
     
-    # Tạo like mới
+    # Tạo like/dislike mới
     new_like = Like(
         user_id=current_user.id,
-        place_id=like_data.place_id
+        place_id=like_data.place_id,
+        is_like=like_data.is_like
     )
     
     session.add(new_like)
     session.commit()
     session.refresh(new_like)
     
-    return LikeResponse(
-        id=new_like.id,
-        user_id=new_like.user_id,
-        comment_id=None,
-        place_id=new_like.place_id,
-        created_at=new_like.created_at
-    )
+    return {
+        "action": "created",
+        "status": "liked" if new_like.is_like else "disliked",
+        "data": {
+            "id": new_like.id,
+            "user_id": new_like.user_id,
+            "comment_id": None,
+            "place_id": new_like.place_id,
+            "created_at": new_like.created_at.isoformat()
+        }
+    }
 
 # ==========================================
-# UNLIKE PLACE
+# UNLIKE PLACE (DEPRECATED - use POST with same is_like to toggle)
 # ==========================================
 @router.delete("/likes/place/{place_id}")
 async def unlike_place(
@@ -166,7 +226,7 @@ async def unlike_place(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Unlike một place"""
+    """[DEPRECATED] Unlike một place - Sử dụng POST /likes/place với cùng is_like để toggle"""
     
     statement = select(Like).where(
         Like.user_id == current_user.id,
@@ -269,7 +329,7 @@ async def get_liked_places(
     return result
 
 # ==========================================
-# CHECK IF USER LIKED
+# CHECK IF USER LIKED/DISLIKED
 # ==========================================
 @router.get("/likes/check/comment/{comment_id}")
 async def check_comment_liked(
@@ -277,7 +337,7 @@ async def check_comment_liked(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Kiểm tra user đã like comment chưa"""
+    """Kiểm tra user đã like/dislike comment chưa"""
     
     statement = select(Like).where(
         Like.user_id == current_user.id,
@@ -285,7 +345,10 @@ async def check_comment_liked(
     )
     like = session.exec(statement).first()
     
-    return {"liked": like is not None}
+    if like:
+        return {"liked": like.is_like, "disliked": not like.is_like, "status": "liked" if like.is_like else "disliked"}
+    else:
+        return {"liked": False, "disliked": False, "status": "neutral"}
 
 @router.get("/likes/check/place/{place_id}")
 async def check_place_liked(
@@ -293,7 +356,7 @@ async def check_place_liked(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Kiểm tra user đã like place chưa"""
+    """Kiểm tra user đã like/dislike place chưa"""
     
     statement = select(Like).where(
         Like.user_id == current_user.id,
@@ -301,4 +364,7 @@ async def check_place_liked(
     )
     like = session.exec(statement).first()
     
-    return {"liked": like is not None}
+    if like:
+        return {"liked": like.is_like, "disliked": not like.is_like, "status": "liked" if like.is_like else "disliked"}
+    else:
+        return {"liked": False, "disliked": False, "status": "neutral"}
