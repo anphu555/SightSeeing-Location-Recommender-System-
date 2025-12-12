@@ -63,41 +63,42 @@ async function fetchAndDisplayResults(isLoadMore = false) {
     }
     
     try {
-        // Gọi API recommendation với user_text
-        const token = localStorage.getItem('token');
-        const headers = {
-            'Content-Type': 'application/json'
-        };
+        let allResults = [];
         
-        // Thêm token nếu user đã đăng nhập
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
+        // CHIẾN LƯỢC TÌM KIẾM KẾT HỢP:
+        // 1. Nếu có query -> tìm theo TÊN địa điểm trước
+        // 2. Sau đó tìm theo SEMANTIC (từ khóa)
+        // 3. Merge và loại bỏ duplicate
+        
+        if (query && query.trim()) {
+            // 1. Tìm theo tên địa điểm
+            const nameResults = await searchByName(query);
+            
+            // 2. Tìm theo semantic/từ khóa
+            const semanticResults = await searchBySemantic(query);
+            
+            // 3. Merge results (ưu tiên name search trước)
+            const seenIds = new Set();
+            
+            // Thêm kết quả tìm theo tên trước
+            nameResults.forEach(place => {
+                if (!seenIds.has(place.id)) {
+                    allResults.push({...place, score: 10.0}); // Boost score cho exact name match
+                    seenIds.add(place.id);
+                }
+            });
+            
+            // Thêm kết quả semantic, loại bỏ duplicate
+            semanticResults.forEach(place => {
+                if (!seenIds.has(place.id)) {
+                    allResults.push(place);
+                    seenIds.add(place.id);
+                }
+            });
+        } else {
+            // Không có query -> chỉ dùng semantic (recommend general)
+            allResults = await searchBySemantic("");
         }
-        
-        // Xác định user_text dựa trên mode và query
-        let userText = query || "Vietnam travel";
-        
-        // Nếu mode là 'recommended' và user đã login, để backend tự recommend dựa trên user preferences
-        if (mode === 'recommended' && token && !query) {
-            userText = ""; // Backend sẽ sử dụng user preferences từ token
-        }
-        
-        // Tăng top_k để lấy nhiều kết quả hơn
-        const response = await fetch(`${CONFIG.apiBase}/api/v1/recommend`, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                user_text: userText,
-                top_k: 100 // Lấy 100 kết quả từ backend
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch recommendations');
-        }
-        
-        const data = await response.json();
-        const allResults = data.results || [];
         
         // Lưu tất cả kết quả và render theo trang
         if (!isLoadMore) {
@@ -133,6 +134,64 @@ async function fetchAndDisplayResults(isLoadMore = false) {
         hasMore = false;
     } finally {
         isLoading = false;
+    }
+}
+
+// === HELPER FUNCTIONS ĐỂ TÌM KIẾM ===
+
+// Tìm kiếm theo tên địa điểm (exact/partial match)
+async function searchByName(query) {
+    try {
+        const response = await fetch(
+            `${CONFIG.apiBase}/api/v1/place/search/by-name?q=${encodeURIComponent(query)}&limit=50`
+        );
+        
+        if (!response.ok) {
+            console.error('Name search failed');
+            return [];
+        }
+        
+        const places = await response.json();
+        return places || [];
+    } catch (error) {
+        console.error('Error searching by name:', error);
+        return [];
+    }
+}
+
+// Tìm kiếm theo semantic/từ khóa (dùng recommend API)
+async function searchBySemantic(query) {
+    try {
+        const token = localStorage.getItem('token');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const userText = query || "Vietnam travel";
+        
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/recommend`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+                user_text: userText,
+                top_k: 100
+            })
+        });
+        
+        if (!response.ok) {
+            console.error('Semantic search failed');
+            return [];
+        }
+        
+        const data = await response.json();
+        return data.results || [];
+    } catch (error) {
+        console.error('Error searching by semantic:', error);
+        return [];
     }
 }
 
@@ -181,8 +240,8 @@ function renderResults(results, query, grid, count, isLoadMore = false) {
                     <p class="card-subtitle">${item.province || 'Vietnam'}</p>
                 </div>
                 <div class="card-footer">
-                    <button class="icon-action like-btn" onclick="handleLike(event, ${item.id})"><i class="fas fa-thumbs-up"></i></button>
-                    <button class="icon-action dislike-btn" onclick="handleDislike(event, ${item.id})"><i class="fas fa-thumbs-down"></i></button>
+                    <button class="icon-action like-btn" data-place-id="${item.id}" onclick="handleLike(event, ${item.id})"><i class="far fa-thumbs-up"></i></button>
+                    <button class="icon-action dislike-btn" data-place-id="${item.id}" onclick="handleDislike(event, ${item.id})"><i class="far fa-thumbs-down"></i></button>
                 </div>
             </div>
             `;
@@ -195,6 +254,9 @@ function renderResults(results, query, grid, count, isLoadMore = false) {
             // Thay thế toàn bộ
             grid.innerHTML = htmlContent;
         }
+        
+        // Check và update trạng thái like/dislike cho tất cả places
+        updateAllLikeStatus();
     }
 }
 
@@ -249,6 +311,77 @@ window.handleDislike = async function(event, placeId) {
     event.stopPropagation();
     await togglePlaceLike(event, placeId, false);
 };
+
+// Update all like/dislike status for places in result page
+async function updateAllLikeStatus() {
+    const token = localStorage.getItem('token');
+    if (!token) return; // Không login thì không cần check
+    
+    // Lấy tất cả các nút like/dislike
+    const likeButtons = document.querySelectorAll('.like-btn');
+    const dislikeButtons = document.querySelectorAll('.dislike-btn');
+    
+    // Tạo Map để lưu buttons theo placeId
+    const buttonsByPlace = new Map();
+    
+    likeButtons.forEach(btn => {
+        const placeId = btn.dataset.placeId;
+        if (!buttonsByPlace.has(placeId)) {
+            buttonsByPlace.set(placeId, { like: null, dislike: null });
+        }
+        buttonsByPlace.get(placeId).like = btn;
+    });
+    
+    dislikeButtons.forEach(btn => {
+        const placeId = btn.dataset.placeId;
+        if (!buttonsByPlace.has(placeId)) {
+            buttonsByPlace.set(placeId, { like: null, dislike: null });
+        }
+        buttonsByPlace.get(placeId).dislike = btn;
+    });
+    
+    // Check status cho từng place
+    for (const [placeId, buttons] of buttonsByPlace.entries()) {
+        try {
+            const response = await fetch(`${CONFIG.apiBase}/api/v1/likes/check/place/${placeId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                updatePlaceLikeButtonsUI(buttons.like, buttons.dislike, data.status);
+            }
+        } catch (error) {
+            console.error(`Error checking like status for place ${placeId}:`, error);
+        }
+    }
+}
+
+// Update UI cho một cặp nút like/dislike
+function updatePlaceLikeButtonsUI(likeBtn, dislikeBtn, status) {
+    if (!likeBtn || !dislikeBtn) return;
+    
+    // Reset both buttons
+    const likeIcon = likeBtn.querySelector('i');
+    const dislikeIcon = dislikeBtn.querySelector('i');
+    
+    if (likeIcon) likeIcon.className = 'far fa-thumbs-up';
+    if (dislikeIcon) dislikeIcon.className = 'far fa-thumbs-down';
+    likeBtn.style.color = '';
+    dislikeBtn.style.color = '';
+    
+    // Apply style based on status
+    if (status === 'liked') {
+        if (likeIcon) likeIcon.className = 'fas fa-thumbs-up';
+        likeBtn.style.color = '#14838B'; // Teal
+    } else if (status === 'disliked') {
+        if (dislikeIcon) dislikeIcon.className = 'fas fa-thumbs-down';
+        dislikeBtn.style.color = '#e74c3c'; // Red
+    }
+    // else neutral - keep default outline style
+}
 
 
 // Toast notification helper (copied from detail.js)
@@ -336,22 +469,19 @@ async function togglePlaceLike(event, placeId, isLike) {
         if (response.ok) {
             const result = await response.json();
             
-            // Backend trả về: {action: "removed"|"created"|"updated", status: "neutral"|"liked"|"disliked"}
-            if (btn) {
-                const icon = btn.querySelector('i');
-                if (icon) {
-                    if (result.status === 'liked') {
-                        icon.className = 'fas fa-thumbs-up';
-                        btn.style.color = '#14838B';
-                    } else if (result.status === 'disliked') {
-                        icon.className = 'fas fa-thumbs-down';
-                        btn.style.color = '#e74c3c';
-                    } else {
-                        // neutral
-                        icon.className = isLike ? 'far fa-thumbs-up' : 'far fa-thumbs-down';
-                        btn.style.color = '';
-                    }
-                }
+            // Tìm cả 2 nút like và dislike của place này
+            const cardFooter = btn ? btn.closest('.card-footer') : null;
+            let likeBtn = null;
+            let dislikeBtn = null;
+            
+            if (cardFooter) {
+                likeBtn = cardFooter.querySelector('.like-btn');
+                dislikeBtn = cardFooter.querySelector('.dislike-btn');
+            }
+            
+            // Update UI cho cả 2 nút
+            if (likeBtn && dislikeBtn) {
+                updatePlaceLikeButtonsUI(likeBtn, dislikeBtn, result.status);
             }
             
             if (result.action === "removed") {
