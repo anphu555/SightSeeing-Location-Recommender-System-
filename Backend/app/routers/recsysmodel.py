@@ -9,8 +9,26 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sqlmodel import Session, select
 from typing import Optional
+import unicodedata
 
 from app.schemas import Place, Rating, Like
+
+# ==========================================
+# HELPER FUNCTION: Remove Vietnamese Diacritics
+# ==========================================
+
+def remove_diacritics(text: str) -> str:
+    """
+    Remove Vietnamese diacritics from text for matching purposes.
+    Example: "Quảng Ninh" -> "Quang Ninh"
+    """
+    if not text:
+        return text
+    # Normalize to NFD (decompose characters)
+    nfd = unicodedata.normalize('NFD', text)
+    # Filter out combining characters (diacritics)
+    without_diacritics = ''.join(char for char in nfd if unicodedata.category(char) != 'Mn')
+    return without_diacritics
 
 # ==========================================
 # 1. LOAD DỮ LIỆU TỪ DATABASE.DB
@@ -250,19 +268,48 @@ def recommend_content_based(user_prefs_tags, user_id: Optional[int] = None, top_
     results['province'] = results['tags'].apply(lambda x: x[0] if x and len(x) > 0 else 'Vietnam')
     
     # --- BƯỚC 4: LỌC THEO LOCATION (NẾU CÓ) ---
+        # Danh sách các từ khóa tỉnh/thành phố Việt Nam (bao gồm cả có và không dấu)
+    province_keywords = [
+        'hanoi', 'hà nội', 'ha noi',
+        'saigon', 'ho chi minh', 'hồ chí minh', 'hcm',
+        'danang', 'đà nẵng', 'da nang',
+        'hue', 'huế',
+        'nhatrang', 'nha trang',
+        'dalat', 'đà lạt', 'da lat',
+        'hoi an', 'hội an',
+        'phu quoc', 'phú quốc', 'phu quốc',
+        'sapa', 'sa pa',
+        'quang ninh', 'quảng ninh',
+        'halong', 'hạ long', 'ha long',
+        'vung tau', 'vũng tàu',
+        'quy nhon', 'quy nhơn',
+        'can tho', 'cần thơ',
+        'ninh binh', 'ninh bình',
+        'quang binh', 'quảng bình',
+        'binh thuan', 'bình thuận',
+        'lam dong', 'lâm đồng',
+        'kien giang', 'kiên giang',
+        'ba ria', 'bà rịa',
+        'thanh hoa', 'thanh hóa',
+        'nghe an', 'nghệ an',
+        'hai phong', 'hải phòng'
+    ]
+    
     # Tìm location tags từ user_prefs_tags
-    location_tags = [tag for tag in user_prefs_tags if any(province_keyword in tag.lower() for province_keyword in ['hanoi', 'saigon', 'danang', 'hue', 'nhatrang', 'dalat', 'hoi an', 'phu quoc', 'sapa'])]
+    location_tags = [tag for tag in user_prefs_tags if any(province_keyword in remove_diacritics(tag.lower()) for province_keyword in province_keywords)]
     
     if location_tags:
-        location_tags_lower = [loc.lower().strip() for loc in location_tags]
+        # Normalize và lowercase location tags để so sánh
+        location_tags_normalized = [remove_diacritics(loc.lower().strip()) for loc in location_tags]
         
         def matches_location(tags_list):
             if not tags_list:
                 return False
-            tags_lower = [tag.lower() for tag in tags_list]
+            # Normalize tags trong database để so sánh
+            tags_normalized = [remove_diacritics(tag.lower()) for tag in tags_list]
             return any(
-                any(user_loc in tag for user_loc in location_tags_lower)
-                for tag in tags_lower
+                any(user_loc in tag for user_loc in location_tags_normalized)
+                for tag in tags_normalized
             )
         
         # Filter places có tags chứa location
