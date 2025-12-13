@@ -35,7 +35,7 @@ function showToast(message, type = 'success') {
     // Hide after 10s
     toastTimeout = setTimeout(() => {
         hideToast();
-    }, 10000);
+    }, 3000);
     
     // Close on any key press
     keyListener = (e) => {
@@ -802,9 +802,12 @@ window.unlikeComment = async function(commentId) {
         });
         
         if (response.ok) {
+            showToast('✓ Review removed from liked list');
             loadLikedComments();
         } else {
-            showToast('Failed to unlike review', 'error');
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Unlike failed:', response.status, errorData);
+            showToast(errorData.detail || 'Failed to unlike review', 'error');
         }
     } catch (error) {
         console.error('Error unliking comment:', error);
