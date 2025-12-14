@@ -1,5 +1,6 @@
 // === 1. IMPORT CONFIG ===
 import { CONFIG } from './config.js';
+import { getUserLocationWithCache, calculateDistance, formatDistance } from './gps-utils.js';
 
 // === 2. QUẢN LÝ TRẠNG THÁI ===
 let currentImgIndex = 0;
@@ -84,17 +85,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const placeData = await response.json();
         
-        // Xử lý dữ liệu từ backend
+        // Calculate distance from user (if GPS available)
+        let distanceText = null;
+        if (placeData.latitude && placeData.longitude) {
+            try {
+                const userLocation = await getUserLocationWithCache();
+                const distance = calculateDistance(
+                    userLocation.lat, 
+                    userLocation.lon, 
+                    placeData.latitude, 
+                    placeData.longitude
+                );
+                distanceText = formatDistance(distance);
+            } catch (error) {
+                console.log('Could not get user location for distance calculation:', error);
+                // Silently fail - distance will not be shown
+            }
+        }
+        
+        // Process data from backend
         const data = {
             name: placeData.name || 'Unknown',
             location: placeData.tags && placeData.tags.length > 0 ? placeData.tags[0] : 'Vietnam',
-            distance: Math.floor(Math.random() * 500 + 50), // Random distance (có thể tính thật từ GPS)
+            distance: distanceText, // Actual distance or null
             desc: formatDescription(placeData.description),
             images: placeData.image && placeData.image.length > 0 
                 ? placeData.image 
                 : ['https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070'],
             tags: placeData.tags || [],
-            reviews: [] // Reviews có thể lấy từ comment table sau
+            reviews: [] // Reviews can be fetched from comment table later
         };
         
         currentImagesList = data.images;
@@ -145,7 +164,16 @@ function formatDescription(descArray) {
 function renderPage(data) {
     document.getElementById('detailTitle').innerText = data.name;
     document.getElementById('detailLocation').innerText = data.location;
-    document.getElementById('detailDistance').innerText = data.distance + " km from you";
+    
+    // Show distance if available
+    const distanceEl = document.getElementById('detailDistance');
+    if (data.distance) {
+        distanceEl.innerHTML = `<i class="fas fa-map-marker-alt"></i> ${data.distance} from you`;
+        distanceEl.style.display = 'inline-block';
+    } else {
+        distanceEl.style.display = 'none';
+    }
+    
     document.getElementById('detailDesc').innerHTML = data.desc;
     
     const thumbsContainer = document.getElementById('detailThumbs');

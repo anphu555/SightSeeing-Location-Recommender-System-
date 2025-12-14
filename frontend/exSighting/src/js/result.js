@@ -1,4 +1,5 @@
 import { CONFIG } from './config.js';
+import { getUserLocationWithCache, formatDistance, isGeolocationSupported } from './gps-utils.js';
 
 // Biến theo dõi phân trang và trạng thái
 let currentPage = 0;
@@ -7,6 +8,7 @@ let hasMore = true;
 let currentQuery = "";
 const ITEMS_PER_PAGE = 20;
 let allLoadedResults = []; // Lưu tất cả kết quả đã load
+let currentSortMode = 'newest'; // Track current sort mode
 
 document.addEventListener('DOMContentLoaded', () => {
     // Apply saved theme
@@ -232,11 +234,17 @@ function renderResults(results, query, grid, count, isLoadMore = false) {
             // Get province - fallback chain: province -> tags[0] -> 'Vietnam'
             const province = item.province || (item.tags && item.tags.length > 0 ? item.tags[0] : 'Vietnam');
             
+            // Show distance if available
+            const distanceBadge = item.distance !== undefined 
+                ? `<div class="distance-badge"><i class="fas fa-map-marker-alt"></i> ${formatDistance(item.distance)}</div>` 
+                : '';
+            
             return `
             <div class="result-card" onclick="goToDetail(${item.id})" style="cursor: pointer;">
                 <div class="card-img-top">
                     <img src="${imgSrc}" alt="${item.name}" onerror="this.src='https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070';">
                     <div class="view-badge"><i class="fas fa-star"></i> ${scoreDisplay}</div>
+                    ${distanceBadge}
                 </div>
                 <div class="card-body">
                     <h4 class="card-title">${item.name}</h4>
@@ -558,17 +566,135 @@ function initSortDropdown() {
     };
 
     options.forEach(opt => {
-        opt.onclick = () => {
+        opt.onclick = async () => {
+            const sortValue = opt.getAttribute('data-value');
+            
             if(display) display.innerText = opt.innerText;
             options.forEach(o => o.classList.remove('active'));
             opt.classList.add('active');
             dropdown.classList.remove('open');
+            
+            // Handle sorting
+            currentSortMode = sortValue;
+            
+            if (sortValue === 'nearby') {
+                await sortByDistance();
+            } else {
+                // Other sort modes - reload with normal API
+                currentPage = 0;
+                allLoadedResults = [];
+                hasMore = true;
+                fetchAndDisplayResults();
+            }
         };
     });
 
     document.onclick = (e) => {
         if(!dropdown.contains(e.target)) dropdown.classList.remove('open');
     };
+}
+
+// === SORT BY DISTANCE (GPS-BASED) ===
+async function sortByDistance() {
+    console.log('🔍 sortByDistance() called');
+    console.log('📊 Current state - isLoading:', isLoading);
+    
+    // Check if geolocation is supported
+    if (!isGeolocationSupported()) {
+        console.error('❌ Geolocation not supported');
+        showToast('Your browser does not support GPS location', 'error');
+        return;
+    }
+    
+    // Prevent multiple requests
+    if (isLoading) {
+        console.warn('⚠️ Already loading, skipping...');
+        return;
+    }
+    isLoading = true;
+    console.log('✅ Set isLoading = true');
+    
+    const grid = document.getElementById('resultsGrid');
+    const count = document.getElementById('totalCount');
+    
+    // Show loading
+    if (grid) {
+        grid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 50px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #4A90E2;"></i>
+                <p style="margin-top: 20px; color: #666;">Getting your location...</p>
+            </div>
+        `;
+    }
+    
+    try {
+        // Get user location (with cache)
+        console.log('📍 Getting user location...');
+        const userLocation = await getUserLocationWithCache();
+        console.log('✅ Got user location:', userLocation);
+        
+        // Call nearby API
+        const apiUrl = `${CONFIG.apiBase}/api/v1/place/search/nearby?lat=${userLocation.lat}&lon=${userLocation.lon}&limit=100&max_distance=500`;
+        console.log('🌐 Calling API:', apiUrl);
+        
+        const response = await fetch(apiUrl);
+        console.log('📡 API response status:', response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ API error:', response.status, errorText);
+            throw new Error(`Failed to fetch nearby places: ${response.status}`);
+        }
+        
+        const places = await response.json();
+        console.log(`✅ Found ${places.length} nearby places:`, places.slice(0, 3));
+        
+        // Update results
+        allLoadedResults = places;
+        currentPage = 0;
+        hasMore = false; // Đã load hết rồi
+        
+        console.log('🎨 Rendering results...');
+        // Call renderResults with correct parameters: (results, query, grid, count, isLoadMore)
+        renderResults(places, '', grid, count, false);
+        
+        if (count) count.innerText = places.length;
+        
+        if (places.length === 0) {
+            showToast('No places found nearby (within 500km radius)', 'warning');
+        } else {
+            showToast(`Found ${places.length} places near you`, 'success');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error in sortByDistance:', error);
+        console.error('Error stack:', error.stack);
+        
+        let errorMessage = 'Unable to get your location';
+        if (error.message.includes('denied')) {
+            errorMessage = 'Location access denied. Please enable location permission in your browser settings.';
+        } else if (error.message.includes('fetch')) {
+            errorMessage = 'Unable to connect to server. Please check your internet connection.';
+        }
+        
+        showToast(errorMessage, 'error');
+        
+        // Fallback to normal view
+        if (grid) {
+            grid.innerHTML = `
+                <div style="grid-column: 1/-1; text-align: center; padding: 50px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: #f39c12;"></i>
+                    <p style="margin-top: 20px; color: #666;">${errorMessage}</p>
+                    <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #4A90E2; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                        Try Again
+                    </button>
+                </div>
+            `;
+        }
+    } finally {
+        isLoading = false;
+        console.log('✅ Set isLoading = false');
+    }
 }
 
 // === HÀM INFINITE SCROLL ===

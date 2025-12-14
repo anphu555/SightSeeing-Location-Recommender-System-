@@ -278,10 +278,20 @@ body {
 }
 
 .distance-tag {
-    font-size: 0.9rem;
-    color: #888;
-    margin-top: 5px;
-    display: block;
+    font-size: 0.85rem;
+    color: #14838B;
+    font-weight: 600;
+    margin-top: 8px;
+    display: inline-block;
+    background: rgba(20, 131, 139, 0.1);
+    padding: 5px 12px;
+    border-radius: 15px;
+    border: 1px solid rgba(20, 131, 139, 0.3);
+}
+
+.distance-tag i {
+    margin-right: 5px;
+    font-size: 0.8rem;
 }
 
 /* Group 2: Mô tả (Nằm trong nền xanh) */

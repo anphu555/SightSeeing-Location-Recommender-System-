@@ -51,6 +51,10 @@ class Place(SQLModel, table=True):
     description: List[str] = Field(default=[], sa_column=Column(JSON))
     image: List[str] = Field(default=[], sa_column=Column(JSON))
     tags: List[str] = Field(default=[], sa_column=Column(JSON))
+    
+    # 4. GPS Coordinates
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
     # Relationships
     ratings: List["Rating"] = Relationship(back_populates="place")
@@ -206,6 +210,18 @@ class UserProfileUpdate(SQLModel):
 # Define request body structure for Chatbot
 class ChatbotRequest(SQLModel):
     message: str
+
+# --- Place with Distance (for nearby search) ---
+class PlaceWithDistance(SQLModel):
+    id: int
+    name: str
+    description: List[str]
+    image: List[str]
+    tags: List[str]
+    province: Optional[str] = None
+    distance: float  # Distance in kilometers
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 
