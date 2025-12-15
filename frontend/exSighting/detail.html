@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="src/css/style.css"> 
     <link rel="stylesheet" href="src/css/detail.css">
     <link rel="stylesheet" href="src/css/footer.css">
+    <link rel="stylesheet" href="src/css/chatbot.css">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -161,10 +162,48 @@
         </div>
     </div>
 
+    <!-- Chatbot -->
+    <div class="chat-widget-closed" onclick="toggleChat()">
+        <div class="chat-button" id="chatButton">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        </div>
+    </div>
+
+    <div class="chat-window" id="chatWindow">
+        <div class="chat-header">
+            <div class="header-content">
+                <img src="src/images/tuyu.png" alt="Logo" class="header-logo">
+                <div class="header-info">
+                    <h3>exSighting Assistant</h3>
+                    <p>🟢 Online - Ready to help</p>
+                </div>
+            </div>
+            <div class="close-btn" onclick="toggleChat()">✕</div>
+        </div>
+
+        <div class="chat-body" id="chat-box">
+            <div class="message bot-message">
+                Hello! I'm your virtual travel assistant 🏝️<br>
+                I can help you recommend destinations, explain local cultures, and provide travel tips in Vietnam.
+                <!-- <br><br> -->
+                <!-- <strong>Which service are you interested in?</strong> -->
+            </div>
+        </div>
+
+        <div class="chat-footer">
+            <div class="input-group">
+                <input type="text" id="user-input" placeholder="Enter your question..." autocomplete="off">
+                <button onclick="sendMessage()">➤</button>
+            </div>
+            <div class="powered-by">Powered by exSighting Travel</div>
+        </div>
+    </div>
+
     <script type="module" src="src/js/detail.js"></script>
 
     <div id="footer-placeholder"></div>
     <script src="src/js/footer.js"></script>
+    <script src="src/js/chatbot.js"></script>
     
     <script>
         // Hàm mở modal
