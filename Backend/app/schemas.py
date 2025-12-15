@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship, JSON, Column
-
+from pydantic import BaseModel, Field
 from enum import Enum
 
 # ==========================================
@@ -150,12 +150,15 @@ class PlaceOut(SQLModel):
     score: float
     image: Optional[List[str]] = None
 
+# --- Recommendation Schemas ---
 
-# class PreferenceEnum(str, Enum):
-#     like = "like"
-#     dislike = "dislike"
-#     none = "none"
+class RecommendationRequest(SQLModel):
+    """Schema cho body của request tìm kiếm gợi ý"""
+    query: str = Field(..., description="Câu truy vấn mô tả sở thích hoặc địa điểm mong muốn")
+    limit: int = Field(default=10, description="Số lượng địa điểm muốn gợi ý")
 
+# Lưu ý: Chúng ta sẽ dùng lại 'PlaceOut' đã có sẵn trong file schemas.py 
+# làm model trả về cho Recommendation thay vì tạo PlaceResponse mới.
     
 class RecommendResponse(SQLModel):
     extraction: Optional[GroqExtraction] = None

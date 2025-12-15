@@ -1,189 +1,107 @@
-from fastapi import APIRouter, Depends
-from sqlmodel import Session, select
-from collections import Counter
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from app import database, models, schemas
+from app.security import get_current_user
 from typing import List
-import ast
+import numpy as np
 
-from app.schemas import RecommendRequest, RecommendResponse, User, PlaceOut, Rating, Place, Like
-from app.database import get_session
-from app.routers.auth import get_current_user_optional
-from app.services.llm_service import extract_with_groq
-from app.routers.recsysmodel import recommend_two_tower 
-# from sqlmodel import Session, select
-# from app.database import engine
-# from app.schemas import Place, PlaceDetailResponse # Import thêm Place và Schema mới
+# Import model
+from .recsysmodel import RECSYS_MODEL, bert_encode 
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/recommendation",
+    tags=["Recommendation"]
+)
 
-def get_history_tags(user_id: int, session: Session, limit=5) -> List[str]:
-    """Lấy tags từ những nơi user đã tương tác tốt (Rating >= 3.0 hoặc Like)"""
-    tags_pool = []
+# --- UTILS ---
+# Sửa PlaceResponse thành schemas.PlaceOut
+def get_place_details(place_ids: List[int], db: Session) -> List[schemas.PlaceOut]:
+    """Lấy chi tiết địa điểm từ DB và trả về theo đúng định dạng PlaceOut."""
+    if not place_ids:
+        return []
+        
+    places = db.query(models.Place).filter(models.Place.id.in_(place_ids)).all()
     
-    # 1. Lấy từ Ratings (score >= 3.0)
-    statement = select(Rating).where(Rating.user_id == user_id, Rating.score >= 3.0)
-    ratings = session.exec(statement).all()
-    
-    for r in ratings:
-        place = session.get(Place, r.place_id)
-        if place and place.tags:
-            tags_pool.extend(place.tags)
-    
-    # 2. Lấy từ Likes (tín hiệu mạnh hơn - ưu tiên cao)
-    like_statement = select(Like).where(
-        Like.user_id == user_id,
-        Like.place_id.isnot(None)  # Chỉ lấy likes cho place
-    )
-    likes = session.exec(like_statement).all()
-    
-    for like in likes:
-        place = session.get(Place, like.place_id)
-        if place and place.tags:
-            # Like có trọng số cao hơn, thêm 2 lần để tăng tần suất
-            tags_pool.extend(place.tags)
-            tags_pool.extend(place.tags)  # Thêm lần 2 để tăng weight
-            
-    if not tags_pool: return []
-    # Lấy top tags xuất hiện nhiều nhất
-    return [tag for tag, _ in Counter(tags_pool).most_common(limit)]
+    # Map để giữ đúng thứ tự gợi ý
+    place_map = {place.id: place for place in places}
+    sorted_places = [place_map.get(pid) for pid in place_ids if pid in place_map]
 
-@router.post("/recommend", response_model=RecommendResponse)
-async def get_recommendations(
-    req: RecommendRequest,
-    current_user: User = Depends(get_current_user_optional),
-    session: Session = Depends(get_session)
+    # Convert sang PlaceOut (SQLModel tự động validate từ ORM object)
+    # Lưu ý: PlaceOut cần các trường province_name, tags... bạn cần đảm bảo query lấy đủ hoặc model Place có relationship
+    results = []
+    for place in sorted_places:
+        # Logic đơn giản để map từ DB model sang Schema nếu cần xử lý thêm
+        # Nếu cấu trúc Place và PlaceOut khớp nhau, có thể dùng .from_orm hoặc validate trực tiếp
+        results.append(schemas.PlaceOut.model_validate(place))
+        
+    return results
+
+# --- CORE LOGIC ---
+def run_two_tower_recommendation(query_text: str, limit: int, db: Session) -> List[schemas.PlaceOut]:
+    if not query_text or not query_text.strip():
+         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Truy vấn không được rỗng.")
+
+    try:
+        model_data = RECSYS_MODEL.model_data
+        item_embeddings = model_data['item_embeddings']
+        places_df = model_data['places_df']
+        user_tower_model = model_data['user_tower_model']
+        
+        # 1. Encode query
+        input_ids_tf, attention_mask_tf = bert_encode([query_text])
+        
+        # 2. Predict User Vector
+        user_vector = user_tower_model.predict(
+            [input_ids_tf.numpy(), attention_mask_tf.numpy()], 
+            verbose=0
+        )
+        
+        # 3. Dot Product
+        scores = np.dot(item_embeddings, user_vector.T).flatten()
+        
+        # 4. Top N
+        top_indices = scores.argsort()[-limit:][::-1]
+        
+        # 5. Get IDs
+        recommended_place_ids = places_df.iloc[top_indices]['id'].tolist()
+        
+        # 6. Get Details
+        return get_place_details(recommended_place_ids, db)
+
+    except Exception as e:
+        print(f"❌ Error Two-Tower Rec: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Lỗi hệ thống gợi ý: {e}"
+        )
+
+# --- ENDPOINTS ---
+
+# 1. Dựa trên sở thích User
+@router.get("/based-on-user-preference", response_model=List[schemas.PlaceOut])
+def get_recommendations_based_on_preference(
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(get_current_user),
+    limit: int = 10
 ):
-    # ==========================
-    # 1. SHORT-TERM INTENT (Từ Input Text + Groq)
-    # ==========================
-    current_intent_tags = []
-    extraction = None
+    user_prefs = current_user.preferences
     
-    if req.user_text and len(req.user_text.strip()) > 0:
-        # Gọi Groq để hiểu ý định (đây là cái bạn đã tin tưởng)
-        extraction = await extract_with_groq(req.user_text)
-        
-        # --- QUAN TRỌNG: Flatten GroqOutput thành Tags ---
-        # Groq trả về object (type, budget...), ta cần biến nó thành list strings cho Two-Tower
-        
-        # 1. Location (Ưu tiên cao nhất)
-        if extraction.location:
-            current_intent_tags.extend(extraction.location)
-            
-        # 2. Type (Vd: "Nature", "Historical"...)
-        if extraction.type and extraction.type.lower() != "none":
-            current_intent_tags.append(extraction.type)
-            
-        # 3. Budget (Vd: "Cheap", "Luxury" - nếu trong data tags của bạn có)
-        if extraction.budget and extraction.budget.lower() != "none":
-            current_intent_tags.append(extraction.budget)
-
-        # 4. Weather/Crowded (Nếu data tags có, vd: "Sunny", "Quiet")
-        if extraction.weather and extraction.weather.lower() != "none":
-            current_intent_tags.append(extraction.weather)
-    
-    # ==========================
-    # 2. LONG-TERM PREFERENCE (Từ Lịch sử & Profile)
-    # ==========================
-    history_tags = []
-    if current_user:
-        # Lấy từ hành vi (Click, Like)
-        history_tags = get_history_tags(current_user.id, session)
-        # Lấy từ profile tĩnh (nếu có lúc đăng ký)
-        if current_user.preferences:
-            history_tags.extend(current_user.preferences)
-
-    # ==========================
-    # 3. HYBRID STRATEGY (Kết hợp)
-    # ==========================
-    # Logic: Nếu user đang tìm kiếm (có intent), dùng intent là chính.
-    # Lịch sử chỉ dùng để bổ trợ hoặc fill nếu intent quá ít thông tin.
-    
-    final_tags = []
-    
-    if current_intent_tags:
-        # Lấy intent làm trọng tâm
-        final_tags = current_intent_tags 
-        # Bổ sung thêm 2-3 tags sở thích mạnh nhất của user để lọc kết quả phù hợp gu
-        if history_tags:
-            # Chỉ lấy những tag lịch sử không trùng với intent hiện tại
-            additional_tags = [t for t in history_tags if t not in current_intent_tags][:3]
-            final_tags.extend(additional_tags)
+    # Fallback query tiếng Anh để model hiểu tốt nhất (như đã bàn ở trên)
+    if not user_prefs:
+        query_text = "I am looking for a famous and popular tourist destination in Vietnam"
     else:
-        # Nếu không gõ gì (Trang chủ), dùng hoàn toàn lịch sử
-        final_tags = history_tags
-    
-    # Clean duplicates
-    if final_tags:
-        final_tags = list(set(final_tags))
-    # Nếu không có tags nào, để empty list - model sẽ trả về popular/diverse places
-
-    # ==========================
-    # 4. PREDICT & RETURN
-    # ==========================
-    # Truyền tags và user_id vào Two-Tower model để kết hợp user history
-    user_id = current_user.id if current_user else None
-    results_df = recommend_two_tower(final_tags, user_id=user_id, top_k=req.top_k)
-    
-    results_list = []
-    for _, row in results_df.iterrows():
-        # Parse tags từ string sang list nếu cần
-        tags_raw = row.get('tags', [])
-        
-        # Nếu tags là string (JSON representation), parse nó
-        if isinstance(tags_raw, str):
-            try:
-                tags = ast.literal_eval(tags_raw)
-            except:
-                tags = []
+        # Nếu preferences là list JSON, join lại thành string
+        if isinstance(user_prefs, list):
+             query_text = f"I am interested in {' '.join(user_prefs)}"
         else:
-            tags = tags_raw if tags_raw else []
-        # Lấy place từ database để có ảnh
-        place = session.get(Place, int(row.get('id')))
-        
-        # Đảm bảo tags là list
-        if not isinstance(tags, list):
-            tags = []
-        
-        results_list.append(PlaceOut(
-            id=int(row.get('id')),
-            name=str(row.get('name')),
-            province=tags[0] if tags else "Vietnam",
-            themes=tags,
-            score=float(row.get('score', 0.0)),
-            image=place.image if place and place.image else None
-        ))
+             query_text = f"I am interested in {user_prefs}"
+            
+    return run_two_tower_recommendation(query_text, limit, db)
 
-    return RecommendResponse(extraction=extraction, results=results_list)
-
-@router.get("/debug/vocabulary")
-async def get_vocabulary():
-    """Debug endpoint để xem vocabulary của model"""
-    from app.routers.recsysmodel import loaded_mlb
-    
-    if loaded_mlb is None:
-        return {"error": "Model not loaded yet"}
-    
-    vocab = list(loaded_mlb.classes_)
-    return {
-        "total_tags": len(vocab),
-        "sample_tags": vocab[:50],  # Hiển thị 50 tags đầu
-        "all_tags": vocab  # Toàn bộ vocabulary
-    }
-
-# @router.get("/place/{place_id}", response_model=PlaceDetailResponse)
-# def get_place_detail(place_id: int):
-#     with Session(engine) as session:
-#         # Truy vấn địa điểm theo ID
-#         place = session.get(Place, place_id)
-
-#         if not place:
-#             raise HTTPException(status_code=404, detail="Place not found")
-
-#         # Trả về dữ liệu
-#         return PlaceDetailResponse(
-#             id=place.id,
-#             name=place.name,
-#             description=place.description, # Lấy description từ DB
-#             image=place.image,             # Lấy ảnh từ DB
-#             tags=place.tags
-#         )
+# 2. Dựa trên Search Query (Dùng schema mới RecommendationRequest)
+@router.post("/search-recommendation", response_model=List[schemas.PlaceOut])
+def get_recommendations_based_on_search(
+    request: schemas.RecommendationRequest, 
+    db: Session = Depends(database.get_db)
+):
+    return run_two_tower_recommendation(request.query, request.limit, db)
