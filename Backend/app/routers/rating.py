@@ -14,12 +14,9 @@ router = APIRouter()
 # ==========================================
 
 class ViewTimeRequest(BaseModel):
-    """Request model for tracking view time"""
+    """Request model for tracking view time (simple time-based)"""
     place_id: int
     view_time_seconds: float
-    raw_view_time: Optional[float] = None  # Original view time before engagement adjustment
-    scroll_depth: Optional[int] = None  # Scroll depth percentage (0-100)
-    has_interacted: Optional[bool] = None  # Whether user interacted (scroll, click, etc.)
 
 class RatingResponse(BaseModel):
     """Response model for rating operations"""
@@ -40,19 +37,12 @@ async def track_view_time(
 ):
     """
     Track user view time on a place and calculate rating score.
-    Includes engagement metrics (scroll depth, interactions).
+    Simple time-based tracking from page load to page exit.
     """
-    # Log engagement metrics for monitoring
-    print(f"[View Time Tracking] User {current_user.id} - Place {view_data.place_id}:")
-    print(f"  - Adjusted view time: {view_data.view_time_seconds}s")
-    if view_data.raw_view_time:
-        print(f"  - Raw view time: {view_data.raw_view_time}s")
-    if view_data.scroll_depth is not None:
-        print(f"  - Scroll depth: {view_data.scroll_depth}%")
-    if view_data.has_interacted is not None:
-        print(f"  - Has interacted: {view_data.has_interacted}")
+    # Log view time
+    print(f"[View Time Tracking] User {current_user.id} -> Place {view_data.place_id}: {view_data.view_time_seconds}s")
     
-    # Update rating using the scoring algorithm (uses adjusted view time)
+    # Update rating using the scoring algorithm
     rating = RatingScorer.update_rating(
         user_id=current_user.id,
         place_id=view_data.place_id,
