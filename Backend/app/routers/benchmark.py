@@ -1,63 +1,69 @@
 import time
-import pandas as pd
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from app.routers.recsysmodel import load_places_from_db
+from app.routers.recsysmodel import (
+    load_places_from_db,
+    recommend_two_tower,
+    recommend_two_tower_tfidf,
+)
 
-# 1. Load dữ liệu thật
-print("--- Loading Data ---")
-df = load_places_from_db()
-if df.empty:
-    print("Không có dữ liệu để test")
-    exit()
 
-data_soup = df['soup'].tolist()
+def main():
+    # 1. Load dữ liệu thật
+    print("--- Loading Data ---")
+    df = load_places_from_db()
+    if df.empty:
+        print("Không có dữ liệu để test")
+        return
 
-# 2. Hàm đo lường
-def benchmark_model(model_name, vectorizer_class):
-    start_time = time.time()
-    
-    # Khởi tạo và fit model
-    vectorizer = vectorizer_class(stop_words='english', max_features=5000)
-    matrix = vectorizer.fit_transform(data_soup)
-    
-    # Giả lập 1 query tìm kiếm (Ví dụ: tìm địa điểm có tag đầu tiên của hàng đầu tiên)
-    test_query = df.iloc[0]['tags'][0] if df.iloc[0]['tags'] else "nature"
-    query_vec = vectorizer.transform([test_query])
-    
-    # Tính similarity
-    sim = cosine_similarity(query_vec, matrix)
-    
-    end_time = time.time()
-    duration = end_time - start_time
-    
-    # Lấy Top 5 kết quả
-    scores = sim[0]
-    top_indices = scores.argsort()[-5:][::-1]
-    
-    print(f"\nMODEL: {model_name}")
-    print(f"Time executed: {duration:.4f} seconds")
-    print(f"Search Query: '{test_query}'")
-    print("Top 3 Recommendations:")
-    for idx in top_indices[:3]:
-        print(f" - {df.iloc[idx]['name']} (Score: {scores[idx]:.4f})")
-        
-    return duration, scores
+    # Lấy query tags từ địa điểm đầu tiên (giả lập intent của user)
+    first_tags = df.iloc[0]["tags"]
+    if not first_tags:
+        print("Bản ghi đầu tiên không có tags, dùng fallback ['nature']")
+        query_tags = ["nature"]
+    else:
+        query_tags = first_tags
 
-# 3. Chạy so sánh
-print("\n--- BẮT ĐẦU BENCHMARK ---")
+    print(f"Query tags dùng cho benchmark: {query_tags}")
 
-# Model 1: CountVectorizer (Của bạn)
-time_cv, scores_cv = benchmark_model("CountVectorizer", CountVectorizer)
+    user_id = None  # Có thể set user_id cụ thể nếu muốn test với history
+    top_k = 10
 
-# Model 2: TfidfVectorizer (Đối thủ)
-time_tfidf, scores_tfidf = benchmark_model("TF-IDF", TfidfVectorizer)
+    # 2. Benchmark CountVectorizer-based model
+    start_cv = time.time()
+    results_cv = recommend_two_tower(query_tags, user_id=user_id, top_k=top_k)
+    end_cv = time.time()
+    time_cv = end_cv - start_cv
 
-# 4. Phân tích sự khác biệt (Dành cho báo cáo)
-# Tìm trường hợp mà TF-IDF đánh giá thấp các từ khóa quan trọng
-diff = scores_cv - scores_tfidf
-max_diff_idx = diff.argmax()
-print(f"\n--- PHÂN TÍCH SỰ KHÁC BIỆT ---")
-print(f"Địa điểm chênh lệch điểm số nhiều nhất: {df.iloc[max_diff_idx]['name']}")
-print(f"CountVec Score: {scores_cv[max_diff_idx]:.4f} | TF-IDF Score: {scores_tfidf[max_diff_idx]:.4f}")
-print("Nhận xét: Nếu CountVec Score > TF-IDF Score đáng kể, chứng tỏ TF-IDF đang bị phạt nặng do từ khóa xuất hiện quá nhiều (IDF thấp).")
+    # 3. Benchmark TF-IDF-based model
+    start_tfidf = time.time()
+    results_tfidf = recommend_two_tower_tfidf(query_tags, user_id=user_id, top_k=top_k)
+    end_tfidf = time.time()
+    time_tfidf = end_tfidf - start_tfidf
+
+    # 4. In kết quả
+    print("\n--- KẾT QUẢ BENCHMARK (END-TO-END PIPELINE) ---")
+    print(f"CountVectorizer model time: {time_cv:.4f} seconds")
+    print(f"TF-IDF model time        : {time_tfidf:.4f} seconds")
+
+    def print_top(df_results, title):
+        print(f"\n{title}")
+        if df_results is None or df_results.empty:
+            print("  (Không có kết quả)")
+            return
+        for _, row in df_results.head(5).iterrows():
+            print(f" - {row['name']} (Score: {row['score']:.4f})")
+
+    print_top(results_cv, "TOP 5 CountVectorizer Recommendations:")
+    print_top(results_tfidf, "TOP 5 TF-IDF Recommendations:")
+
+    # 5. Phân tích overlap giữa 2 mô hình
+    if not results_cv.empty and not results_tfidf.empty:
+        set_cv = set(results_cv["id"].tolist())
+        set_tfidf = set(results_tfidf["id"].tolist())
+        overlap = set_cv & set_tfidf
+        print(f"\nSố lượng địa điểm trùng nhau trong TOP {top_k}: {len(overlap)}")
+        if overlap:
+            print("IDs trùng nhau:", list(overlap))
+
+
+if __name__ == "__main__":
+    main()
