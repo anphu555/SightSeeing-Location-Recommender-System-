@@ -6,6 +6,7 @@ from datetime import datetime
 from app.schemas import Comment, User, Place
 from app.database import get_session
 from app.routers.auth import get_current_user
+from app.services.scoring_service import RatingScorer
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -32,7 +33,7 @@ async def create_comment(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Tạo comment mới cho địa điểm"""
+    """Tạo comment mới cho địa điểm và tự động cập nhật rating score (+0.5 cho comment đầu tiên)"""
     
     # Kiểm tra place có tồn tại không
     place = session.get(Place, comment_data.place_id)
@@ -49,6 +50,14 @@ async def create_comment(
     session.add(new_comment)
     session.commit()
     session.refresh(new_comment)
+    
+    # Update rating score (only +0.5 for first comment)
+    RatingScorer.update_rating(
+        user_id=current_user.id,
+        place_id=comment_data.place_id,
+        session=session,
+        has_commented=True
+    )
     
     return CommentResponse(
         id=new_comment.id,

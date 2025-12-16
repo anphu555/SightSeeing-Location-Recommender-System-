@@ -6,6 +6,7 @@ from datetime import datetime
 from app.schemas import Like, User, Place, Comment
 from app.database import get_session
 from app.routers.auth import get_current_user
+from app.services.scoring_service import RatingScorer
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -155,7 +156,12 @@ async def like_dislike_place(
 ):
     """Like hoặc Dislike một place.
     Nếu đã like/dislike trước đó với cùng giá trị is_like -> xóa (toggle off)
-    Nếu đã like/dislike trước đó với khác is_like -> update (switch giữa like và dislike)"""
+    Nếu đã like/dislike trước đó với khác is_like -> update (switch giữa like và dislike)
+    
+    Tự động cập nhật rating score theo thuật toán:
+    - Like: +4 điểm
+    - Dislike: -5 điểm hoặc điểm tối thiểu 1
+    """
     
     # Kiểm tra place có tồn tại không
     place = session.get(Place, like_data.place_id)
@@ -169,12 +175,17 @@ async def like_dislike_place(
     )
     existing_like = session.exec(statement).first()
     
+    action = None
+    status_str = None
+    
     if existing_like:
         # Nếu đã có và cùng loại (like->like hoặc dislike->dislike) -> xóa (toggle off)
         if existing_like.is_like == like_data.is_like:
             session.delete(existing_like)
             session.commit()
-            return {"action": "removed", "status": "neutral"}
+            action = "removed"
+            status_str = "neutral"
+            # Note: We don't update rating when removing like/dislike
         else:
             # Nếu khác loại (like->dislike hoặc dislike->like) -> update
             existing_like.is_like = like_data.is_like
@@ -182,40 +193,54 @@ async def like_dislike_place(
             session.commit()
             session.refresh(existing_like)
             
-            return {
-                "action": "updated",
-                "status": "liked" if existing_like.is_like else "disliked",
-                "data": {
-                    "id": existing_like.id,
-                    "user_id": existing_like.user_id,
-                    "comment_id": None,
-                    "place_id": existing_like.place_id,
-                    "created_at": existing_like.created_at.isoformat()
-                }
+            # Update rating score
+            RatingScorer.update_rating(
+                user_id=current_user.id,
+                place_id=like_data.place_id,
+                session=session,
+                is_like=like_data.is_like
+            )
+            
+            action = "updated"
+            status_str = "liked" if existing_like.is_like else "disliked"
+    else:
+        # Tạo like/dislike mới
+        new_like = Like(
+            user_id=current_user.id,
+            place_id=like_data.place_id,
+            is_like=like_data.is_like
+        )
+        
+        session.add(new_like)
+        session.commit()
+        session.refresh(new_like)
+        
+        # Update rating score
+        RatingScorer.update_rating(
+            user_id=current_user.id,
+            place_id=like_data.place_id,
+            session=session,
+            is_like=like_data.is_like
+        )
+        
+        action = "created"
+        status_str = "liked" if new_like.is_like else "disliked"
+        existing_like = new_like
+    
+    if action in ["created", "updated"]:
+        return {
+            "action": action,
+            "status": status_str,
+            "data": {
+                "id": existing_like.id,
+                "user_id": existing_like.user_id,
+                "comment_id": None,
+                "place_id": existing_like.place_id,
+                "created_at": existing_like.created_at.isoformat()
             }
-    
-    # Tạo like/dislike mới
-    new_like = Like(
-        user_id=current_user.id,
-        place_id=like_data.place_id,
-        is_like=like_data.is_like
-    )
-    
-    session.add(new_like)
-    session.commit()
-    session.refresh(new_like)
-    
-    return {
-        "action": "created",
-        "status": "liked" if new_like.is_like else "disliked",
-        "data": {
-            "id": new_like.id,
-            "user_id": new_like.user_id,
-            "comment_id": None,
-            "place_id": new_like.place_id,
-            "created_at": new_like.created_at.isoformat()
         }
-    }
+    else:
+        return {"action": action, "status": status_str}
 
 # ==========================================
 # UNLIKE PLACE (DEPRECATED - use POST with same is_like to toggle)

@@ -6,6 +6,187 @@ let currentImgIndex = 0;
 let currentImagesList = [];
 const ITEMS_PER_PAGE = 4; // Số lượng ảnh hiển thị 1 lần
 
+// === VIEW TIME TRACKING ===
+let viewStartTime = Date.now();
+let currentPlaceId = null;
+let maxScrollDepth = 0; // Track maximum scroll depth (0-100%)
+let hasInteracted = false; // Track if user has interacted (scroll, click, etc.)
+
+// Track scroll depth
+function updateScrollDepth() {
+    const windowHeight = window.innerHeight;
+    const documentHeight = document.documentElement.scrollHeight;
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    
+    // Calculate scroll percentage (0-100)
+    const scrollPercentage = ((scrollTop + windowHeight) / documentHeight) * 100;
+    
+    // Update max scroll depth
+    maxScrollDepth = Math.max(maxScrollDepth, Math.min(scrollPercentage, 100));
+    hasInteracted = true;
+}
+
+// Listen to scroll events
+window.addEventListener('scroll', updateScrollDepth, { passive: true });
+
+// Also track other interactions (click, touch)
+['click', 'touchstart', 'keydown'].forEach(eventType => {
+    document.addEventListener(eventType, () => {
+        hasInteracted = true;
+    }, { once: true, passive: true });
+});
+
+/**
+ * Calculate engagement multiplier based on behavior
+ * 
+ * Logic:
+ * - No scroll, no interaction → 0.5x (user opened tab but didn't engage)
+ * - Scrolled < 30% → 0.7x (minimal engagement)
+ * - Scrolled 30-60% → 1.0x (normal engagement)
+ * - Scrolled 60-90% → 1.2x (good engagement)
+ * - Scrolled > 90% → 1.5x (excellent engagement - read everything)
+ */
+function calculateEngagementMultiplier(viewTime, scrollDepth, interacted) {
+    // Base multiplier
+    let multiplier = 1.0;
+    
+    // Penalty for no interaction at all
+    if (!interacted && scrollDepth < 10) {
+        return 0.5; // Likely tab left open by accident
+    }
+    
+    // Adjust based on scroll depth
+    if (scrollDepth < 30) {
+        multiplier = 0.7; // Minimal engagement
+    } else if (scrollDepth < 60) {
+        multiplier = 1.0; // Normal engagement
+    } else if (scrollDepth < 90) {
+        multiplier = 1.2; // Good engagement
+    } else {
+        multiplier = 1.5; // Excellent - read everything
+    }
+    
+    // Bonus for very long view time with good scroll
+    if (viewTime > 60 && scrollDepth > 50) {
+        multiplier *= 1.1; // Extra bonus for thorough reading
+    }
+    
+    return multiplier;
+}
+
+// Track view time when user leaves the page
+window.addEventListener('beforeunload', (event) => {
+    const viewTimeSeconds = (Date.now() - viewStartTime) / 1000;
+    
+    // Calculate engagement score based on time + scroll + interaction
+    const engagementMultiplier = calculateEngagementMultiplier(viewTimeSeconds, maxScrollDepth, hasInteracted);
+    const adjustedViewTime = viewTimeSeconds * engagementMultiplier;
+    
+    console.log('[View Time Tracking] beforeunload:', {
+        raw_view_time: viewTimeSeconds,
+        scroll_depth: Math.round(maxScrollDepth) + '%',
+        has_interacted: hasInteracted,
+        engagement_multiplier: engagementMultiplier.toFixed(2),
+        adjusted_view_time: adjustedViewTime.toFixed(2),
+        place_id: currentPlaceId,
+        will_send: viewTimeSeconds >= 5 && !!currentPlaceId
+    });
+    
+    if (viewTimeSeconds >= 5 && currentPlaceId) {
+        const token = localStorage.getItem('token');
+        if (token) {
+            // Use fetch with keepalive for beforeunload
+            // This ensures the request completes even after page unload
+            console.log('[View Time Tracking] Sending request from beforeunload...');
+            fetch(`${CONFIG.apiBase}/api/v1/rating/view-time`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    place_id: currentPlaceId,
+                    view_time_seconds: Math.round(adjustedViewTime * 100) / 100,
+                    raw_view_time: Math.round(viewTimeSeconds * 100) / 100,
+                    scroll_depth: Math.round(maxScrollDepth),
+                    has_interacted: hasInteracted
+                }),
+                keepalive: true // Critical for beforeunload
+            }).then(response => {
+                console.log('[View Time Tracking] Response:', response.status);
+                return response.json();
+            }).then(data => {
+                console.log('[View Time Tracking] Success:', data);
+            }).catch(err => {
+                // Silent fail - don't block navigation
+                console.log('[View Time Tracking] Error:', err.message);
+            });
+        }
+    }
+});
+
+// Also track when visibility changes (user switches tab)
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && currentPlaceId) {
+        const viewTimeSeconds = (Date.now() - viewStartTime) / 1000;
+        
+        // Calculate engagement score
+        const engagementMultiplier = calculateEngagementMultiplier(viewTimeSeconds, maxScrollDepth, hasInteracted);
+        const adjustedViewTime = viewTimeSeconds * engagementMultiplier;
+        
+        console.log('[View Time Tracking] visibilitychange (hidden):', {
+            raw_view_time: viewTimeSeconds,
+            scroll_depth: Math.round(maxScrollDepth) + '%',
+            has_interacted: hasInteracted,
+            engagement_multiplier: engagementMultiplier.toFixed(2),
+            adjusted_view_time: adjustedViewTime.toFixed(2),
+            place_id: currentPlaceId,
+            will_send: viewTimeSeconds >= 5
+        });
+        
+        if (viewTimeSeconds >= 5) {
+            const token = localStorage.getItem('token');
+            if (token) {
+                // Send view time when tab becomes hidden
+                console.log('[View Time Tracking] Sending request from visibilitychange...');
+                fetch(`${CONFIG.apiBase}/api/v1/rating/view-time`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        place_id: currentPlaceId,
+                        view_time_seconds: Math.round(adjustedViewTime * 100) / 100,
+                        raw_view_time: Math.round(viewTimeSeconds * 100) / 100,
+                        scroll_depth: Math.round(maxScrollDepth),
+                        has_interacted: hasInteracted
+                    }),
+                    keepalive: true
+                }).then(response => {
+                    console.log('[View Time Tracking] Response:', response.status);
+                    return response.json();
+                }).then(data => {
+                    console.log('[View Time Tracking] Success:', data);
+                }).catch(err => {
+                    console.log('[View Time Tracking] Error:', err.message);
+                });
+                
+                // Reset timer for next viewing session
+                viewStartTime = Date.now();
+                maxScrollDepth = 0; // Reset scroll tracking
+                hasInteracted = false; // Reset interaction tracking
+            }
+        }
+    } else if (!document.hidden) {
+        // When tab becomes visible again, reset timer
+        viewStartTime = Date.now();
+        maxScrollDepth = 0;
+        hasInteracted = false;
+        console.log('[View Time Tracking] Tab visible again, timer and engagement reset');
+    }
+});
+
 // === 3. HÀM ĐIỀU HƯỚNG (Next/Prev) ===
 window.slideThumbs = function(direction) {
     let newIndex = currentImgIndex + direction;
@@ -73,6 +254,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'results.html';
         return;
     }
+    
+    // Set current place ID for view time tracking
+    currentPlaceId = parseInt(id);
+    viewStartTime = Date.now(); // Reset start time
+    maxScrollDepth = 0; // Reset scroll depth
+    hasInteracted = false; // Reset interaction flag
+    
+    console.log('[View Time Tracking] Initialized:', {
+        place_id: currentPlaceId,
+        start_time: new Date(viewStartTime).toLocaleTimeString(),
+        token_exists: !!localStorage.getItem('token')
+    });
     
     try {
         // Gọi API lấy thông tin địa điểm

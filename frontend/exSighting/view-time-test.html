@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Time Tracking - Test Page</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .timer {
+            font-size: 48px;
+            text-align: center;
+            margin: 30px 0;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        .info {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .badge {
+            background: #4CAF50;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        .badge.warning {
+            background: #ff9800;
+        }
+        .badge.error {
+            background: #f44336;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        .log {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #4CAF50;
+            padding-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>⏱️ View Time Tracking Demo</h1>
+        
+        <div class="timer" id="timer">00:00</div>
+        
+        <div class="info">
+            <div class="status">
+                <span>Current Place ID:</span>
+                <span class="badge" id="placeId">123</span>
+            </div>
+            <div class="status">
+                <span>Status:</span>
+                <span class="badge" id="status">Tracking...</span>
+            </div>
+            <div class="status">
+                <span>Predicted Score:</span>
+                <span class="badge" id="score">0.0</span>
+            </div>
+            <div class="status">
+                <span>Will Send?</span>
+                <span class="badge warning" id="willSend">No (< 5s)</span>
+            </div>
+        </div>
+
+        <button class="btn-primary" onclick="simulateSend()">📤 Simulate Send Data</button>
+        <button class="btn-danger" onclick="resetTimer()">🔄 Reset Timer</button>
+
+        <div class="log" id="log"></div>
+    </div>
+
+    <script>
+        let startTime = Date.now();
+        let timerInterval;
+
+        function calculateScore(seconds) {
+            if (seconds < 5) return 0;
+            if (seconds >= 90) return 4.0;
+            return 2.5 + ((seconds - 5) / 85) * 1.5;
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function addLog(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const timestamp = new Date().toLocaleTimeString();
+            entry.innerHTML = `[${timestamp}] ${message}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+        }
+
+        function updateTimer() {
+            const elapsed = (Date.now() - startTime) / 1000;
+            const score = calculateScore(elapsed);
+
+            // Update timer
+            document.getElementById('timer').textContent = formatTime(elapsed);
+
+            // Update score
+            const scoreEl = document.getElementById('score');
+            scoreEl.textContent = score.toFixed(2);
+            if (score >= 4.0) {
+                scoreEl.className = 'badge';
+            } else if (score >= 2.5) {
+                scoreEl.className = 'badge warning';
+            } else {
+                scoreEl.className = 'badge error';
+            }
+
+            // Update will send
+            const willSendEl = document.getElementById('willSend');
+            if (elapsed >= 5) {
+                willSendEl.textContent = `Yes (${elapsed.toFixed(1)}s)`;
+                willSendEl.className = 'badge';
+            } else {
+                willSendEl.textContent = `No (< 5s)`;
+                willSendEl.className = 'badge warning';
+            }
+
+            // Log milestones
+            const wholeSeconds = Math.floor(elapsed);
+            if (wholeSeconds === 5 && !window.logged5) {
+                addLog('✅ Reached 5 seconds - will send data on close');
+                window.logged5 = true;
+            }
+            if (wholeSeconds === 30 && !window.logged30) {
+                addLog('📊 30 seconds - Score: ' + score.toFixed(2));
+                window.logged30 = true;
+            }
+            if (wholeSeconds === 60 && !window.logged60) {
+                addLog('📊 60 seconds - Score: ' + score.toFixed(2));
+                window.logged60 = true;
+            }
+            if (wholeSeconds === 90 && !window.logged90) {
+                addLog('🎯 90 seconds - Max score reached: 4.0');
+                window.logged90 = true;
+            }
+        }
+
+        function simulateSend() {
+            const elapsed = (Date.now() - startTime) / 1000;
+            const score = calculateScore(elapsed);
+
+            if (elapsed < 5) {
+                addLog('❌ Cannot send: View time < 5 seconds');
+                return;
+            }
+
+            addLog(`📤 Sending data to backend...`);
+            addLog(`   - Place ID: 123`);
+            addLog(`   - View Time: ${elapsed.toFixed(2)}s`);
+            addLog(`   - Calculated Score: ${score.toFixed(2)}`);
+            
+            // Simulate API call
+            setTimeout(() => {
+                addLog('✅ Data sent successfully!');
+                document.getElementById('status').textContent = 'Sent!';
+                document.getElementById('status').className = 'badge';
+            }, 500);
+        }
+
+        function resetTimer() {
+            startTime = Date.now();
+            window.logged5 = false;
+            window.logged30 = false;
+            window.logged60 = false;
+            window.logged90 = false;
+            document.getElementById('log').innerHTML = '';
+            document.getElementById('status').textContent = 'Tracking...';
+            document.getElementById('status').className = 'badge warning';
+            addLog('🔄 Timer reset - tracking started');
+        }
+
+        // Start timer
+        timerInterval = setInterval(updateTimer, 100);
+        addLog('🚀 View time tracking started');
+
+        // Simulate beforeunload
+        window.addEventListener('beforeunload', () => {
+            const elapsed = (Date.now() - startTime) / 1000;
+            if (elapsed >= 5) {
+                console.log('Would send view time:', elapsed, 'seconds');
+            }
+        });
+    </script>
+</body>
+</html>
