@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Relationship, JSON, Column
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from enum import Enum
 
 # ==========================================
@@ -73,8 +73,8 @@ class Rating(SQLModel, table=True):
 
     # Relationships
     # User can check its relationship by user.ratings.place.....
-    user: Optional[User] = Relationship(back_populates="ratings")            
-    place: Optional[Place] = Relationship(back_populates="ratings")
+    user: Optional["User"] = Relationship(back_populates="ratings")            
+    place: Optional["Place"] = Relationship(back_populates="ratings")
 
 
 
@@ -100,8 +100,8 @@ class Comment(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
     # Relationships
-    user: Optional[User] = Relationship(back_populates="comments")
-    place: Optional[Place] = Relationship(back_populates="comments")
+    user: Optional["User"] = Relationship(back_populates="comments")
+    place: Optional["Place"] = Relationship(back_populates="comments")
 
 
 class Like(SQLModel, table=True):

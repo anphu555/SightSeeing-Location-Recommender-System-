@@ -2,6 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 from app.config import settings
 
@@ -20,17 +25,25 @@ from contextlib import asynccontextmanager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # This runs when the app starts: Create tables in .db file (SQLModel)
+    logger.info("=== STARTING APPLICATION STARTUP ===")
     create_db_and_tables()
-    print("Startup: Database tables created!")
+    logger.info("✅ Startup: Database tables created!")
     
     # Khởi tạo Content-Based RecSys model
-    from app.routers.recsysmodel import initialize_recsys
-    initialize_recsys()
-    print("Startup: Content-Based RecSys model initialized!")
+    try:
+        logger.info("Attempting to initialize RecSys model...")
+        from app.routers.recsysmodel import initialize_recsys
+        result = initialize_recsys()
+        logger.info(f"✅ Startup: Content-Based RecSys model initialized! Result: {result}")
+    except Exception as e:
+        logger.error(f"❌ ERROR during RecSys initialization: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
     
+    logger.info("=== APPLICATION STARTUP COMPLETE ===")
     yield
     # This runs when the app stops (optional)
-    print("Shutdown: App is stopping")
+    logger.info("Shutdown: App is stopping")
 
 # Khởi tạo bảng users khi chạy app
 # init_db()

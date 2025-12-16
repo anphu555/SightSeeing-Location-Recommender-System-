@@ -65,12 +65,15 @@ async function fetchAndDisplayResults(isLoadMore = false) {
     try {
         let allResults = [];
         
-        // CHIẾN LƯỢC TÌM KIẾM KẾT HỢP:
-        // 1. Nếu có query -> tìm theo TÊN địa điểm trước
-        // 2. Sau đó tìm theo SEMANTIC (từ khóa)
-        // 3. Merge và loại bỏ duplicate
+        // CHIẾN LƯỢC TÌM KIẾM:
+        // 1. Nếu mode=recommended -> gợi ý dựa trên sở thích user
+        // 2. Nếu có query -> tìm theo TÊN địa điểm trước, sau đó SEMANTIC
+        // 3. Không có gì -> gợi ý popular places
         
-        if (query && query.trim()) {
+        if (mode === 'recommended') {
+            // Gợi ý dựa trên sở thích user
+            allResults = await getRecommendedByUserPreference();
+        } else if (query && query.trim()) {
             // 1. Tìm theo tên địa điểm
             const nameResults = await searchByName(query);
             
@@ -96,8 +99,8 @@ async function fetchAndDisplayResults(isLoadMore = false) {
                 }
             });
         } else {
-            // Không có query -> chỉ dùng semantic (recommend general)
-            allResults = await searchBySemantic("");
+            // Không có query -> gợi ý popular places
+            allResults = await getPopularPlaces();
         }
         
         // Lưu tất cả kết quả và render theo trang
@@ -173,12 +176,12 @@ async function searchBySemantic(query) {
         
         const userText = query || "Vietnam travel";
         
-        const response = await fetch(`${CONFIG.apiBase}/api/v1/recommend`, {
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/recommendation/search-recommendation`, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({
-                user_text: userText,
-                top_k: 100
+                query: userText,
+                limit: 100
             })
         });
         
@@ -188,10 +191,58 @@ async function searchBySemantic(query) {
         }
         
         const data = await response.json();
-        return data.results || [];
+        return data || [];
     } catch (error) {
         console.error('Error searching by semantic:', error);
         return [];
+    }
+}
+
+// Gợi ý địa điểm phổ biến (không cần auth, không cần query)
+async function getPopularPlaces() {
+    try {
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/recommendation/popular-places?limit=100`);
+        
+        if (!response.ok) {
+            console.error('Failed to get popular places');
+            return [];
+        }
+        
+        const data = await response.json();
+        return data || [];
+    } catch (error) {
+        console.error('Error getting popular places:', error);
+        return [];
+    }
+}
+
+// Gợi ý dựa trên sở thích user (cần auth)
+async function getRecommendedByUserPreference() {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.error('Not authenticated. Falling back to popular places.');
+            return await getPopularPlaces();
+        }
+        
+        const headers = {
+            'Authorization': `Bearer ${token}`
+        };
+        
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/recommendation/based-on-user-preference?limit=100`, {
+            headers: headers
+        });
+        
+        if (!response.ok) {
+            console.error('Failed to get user-based recommendations');
+            return await getPopularPlaces();
+        }
+        
+        const data = await response.json();
+        return data || [];
+    } catch (error) {
+        console.error('Error getting user-based recommendations:', error);
+        return await getPopularPlaces();
     }
 }
 

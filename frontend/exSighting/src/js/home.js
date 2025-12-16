@@ -169,30 +169,13 @@ async function loadPlaces() {
     
     try {
         // Gọi API recommendation để lấy địa điểm phổ biến
-        const token = localStorage.getItem('token');
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-        
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-        
-        const response = await fetch(`${CONFIG.apiBase}/api/v1/recommend`, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({
-                user_text: "popular places in Vietnam",
-                top_k: 12
-            })
-        });
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/recommendation/popular-places?limit=12`);
         
         if (!response.ok) {
             throw new Error('Failed to fetch places');
         }
         
-        const apiData = await response.json();
-        const places = apiData.results || [];
+        const places = await response.json();
         
         // Map dữ liệu từ API sang format cần thiết
         const formattedData = places.map(item => {

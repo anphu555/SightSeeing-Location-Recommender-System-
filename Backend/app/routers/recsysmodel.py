@@ -125,7 +125,9 @@ class RecSysModel:
         return cls._instance
 
     def _load_model_and_data(self) -> Dict[str, Any]:
-        print("\n--- Đang tải mô hình Two-Tower và dữ liệu RecSys... ---")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info("\n--- Đang tải mô hình Two-Tower và dữ liệu RecSys... ---")
         
         # 1. Load Data
         try:
@@ -136,7 +138,7 @@ class RecSysModel:
             with open(EMBEDDINGS_FILE, 'rb') as f:
                 item_embeddings = pickle.load(f)
         except Exception as e:
-            print(f"❌ Lỗi tải dữ liệu RecSys: {e}")
+            logger.error(f"❌ Lỗi tải dữ liệu RecSys: {e}")
             raise Exception(f"Không tìm thấy hoặc không thể tải file RecSys cần thiết: {e}")
 
         # 2. Build and Load Model
@@ -147,16 +149,16 @@ class RecSysModel:
             
             if WEIGHTS_FILE.exists():
                 full_model.load_weights(str(WEIGHTS_FILE))
-                print(f"✅ Đã tải trọng số từ {WEIGHTS_FILE} thành công.")
+                logger.info(f"✅ Đã tải trọng số từ {WEIGHTS_FILE} thành công.")
             else:
-                print(f"⚠️ Cảnh báo: Không tìm thấy file trọng số {WEIGHTS_FILE}. Dùng model khởi tạo.")
+                logger.warning(f"⚠️ Cảnh báo: Không tìm thấy file trọng số {WEIGHTS_FILE}. Dùng model khởi tạo.")
                 
         except Exception as e:
-            print(f"❌ Lỗi tải/load model RecSys: {e}")
+            logger.error(f"❌ Lỗi tải/load model RecSys: {e}")
             # Lỗi này có thể do phiên bản TF/Keras hoặc thư viện Transformers
             raise Exception(f"Lỗi nghiêm trọng khi khởi tạo/tải trọng số mô hình: {e}")
 
-        print("--- Tải RecSys hoàn tất. ---")
+        logger.info("--- Tải RecSys hoàn tất. ---")
         
         return {
             "item_embeddings": item_embeddings,
@@ -165,5 +167,26 @@ class RecSysModel:
             "user_tower_model": user_tower_model, # Chỉ dùng User Tower cho inference
         }
 
-# Khởi tạo instance RecSysModel. Nó sẽ tải mọi thứ vào bộ nhớ khi server khởi động lần đầu.
-RECSYS_MODEL = RecSysModel()
+# Global instance
+RECSYS_MODEL = None
+
+def initialize_recsys():
+    """Initialize the RecSys model on application startup."""
+    import logging
+    logger = logging.getLogger(__name__)
+    global RECSYS_MODEL
+    if RECSYS_MODEL is None:
+        try:
+            logger.info("Initializing RECSYS_MODEL singleton...")
+            RECSYS_MODEL = RecSysModel()
+            logger.info(f"✅ RECSYS_MODEL initialized successfully: {RECSYS_MODEL}")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize RECSYS_MODEL: {e}")
+            raise
+    else:
+        logger.info(f"RECSYS_MODEL already initialized: {RECSYS_MODEL}")
+    return RECSYS_MODEL
+
+def get_recsys_model():
+    """Get the initialized RecSys model instance."""
+    return RECSYS_MODEL
