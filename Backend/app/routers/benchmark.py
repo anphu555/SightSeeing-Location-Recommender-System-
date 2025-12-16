@@ -50,7 +50,12 @@ def main():
             print("  (Không có kết quả)")
             return
         for _, row in df_results.head(5).iterrows():
-            print(f" - {row['name']} (Score: {row['score']:.4f})")
+            place_id = row.get("id", "N/A")
+            tags = row.get("tags", "N/A")
+            print(
+                f" - ID: {place_id} | Name: {row['name']} | "
+                f"Score: {row['score']:.4f} | Tags: {tags}"
+            )
 
     print_top(results_cv, "TOP 5 CountVectorizer Recommendations:")
     print_top(results_tfidf, "TOP 5 TF-IDF Recommendations:")
