@@ -20,6 +20,11 @@ from typing import List, Dict, Tuple, Optional
 from collections import defaultdict
 import json
 
+import sys
+import os
+# Add backend directory to path
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
 from app.database import engine
 from app.schemas import User, Place, Rating, Like
 from app.routers.recsysmodel import recommend_two_tower, initialize_recsys

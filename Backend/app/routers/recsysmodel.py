@@ -38,14 +38,18 @@ def load_places_from_db():
             tags_text = " ".join(place.tags) if place.tags else ""
             desc_text = " ".join(place.description) if place.description else ""
             
+            # IMPROVED: Weight tags heavily (5x) vs description
+            # Tags are more indicative of place characteristics
+            weighted_tags = " ".join([tags_text] * 5) if tags_text else ""
+            
             places_data.append({
                 "id": place.id,
                 "name": place.name,
                 "tags": place.tags,
                 "description": place.description,
                 "images": place.image,
-                # Tạo soup để vectorize
-                "soup": f"{place.name} {tags_text} {desc_text}"
+                # Tạo soup để vectorize: heavily weighted tags
+                "soup": f"{place.name} {weighted_tags} {desc_text}"
             })
         
         return pd.DataFrame(places_data)
@@ -248,7 +252,8 @@ def build_user_profile(user_id: int):
             # Exponential weighting: high scores có impact lớn hơn
             # Score 5 → 1.0, Score 4 → 0.5, Score 3 → 0, Score 2 → -0.5, Score 1 → -1.0
             if rating.score >= 3.0:
-                weight = ((rating.score - 3.0) / 2.0) ** 1.5  # Emphasize high ratings
+                # STRONGER emphasis: score 5 → 8x, score 4 → 2x, score 3 → 0.5x
+                weight = 2 ** (rating.score - 3.0)
             else:
                 weight = (rating.score - 3.0) / 2.0  # Linear for low ratings
             
@@ -256,7 +261,7 @@ def build_user_profile(user_id: int):
             total_weight += abs(weight)
     
     # 2. XỬ LÝ LIKES (strong positive signal)
-    LIKE_WEIGHT = 1.2
+    LIKE_WEIGHT = 2.0  # Increased from 1.2 to 2.0
     
     for place_id in liked_place_ids:
         item_vec = get_item_vector(place_id)
@@ -307,7 +312,7 @@ def recommend_content_based(user_prefs_tags, user_id: Optional[int] = None, top_
     if count_matrix is None or items_df is None or len(items_df) == 0:
         return pd.DataFrame()  # Return empty dataframe
     
-    # --- BƯỚC 1: XÂY DỰNG QUERY VECTOR TỪ TAGS ---
+    # --- BƯỚC 1: XÂY DỰNG QUERY VECTOR TỪ TAGS (NO EXPANSION - keeps it simple) ---
     search_query = " ".join(user_prefs_tags) if user_prefs_tags else ""
     
     # Tạo vector từ tags (TF-IDF)
@@ -326,8 +331,8 @@ def recommend_content_based(user_prefs_tags, user_id: Optional[int] = None, top_
         user_liked_places = get_user_likes(user_id)
         
         if user_profile_vec is not None:
-            # HYBRID: 50% Current Intent + 50% User History (tăng weight history)
-            final_vec = (query_vec * 0.5) + (user_profile_vec * 0.5)
+            # HYBRID: 30% Current Intent + 70% User History (emphasize learned preferences)
+            final_vec = (query_vec * 0.3) + (user_profile_vec * 0.7)
         else:
             final_vec = query_vec
     else:
@@ -358,7 +363,8 @@ def recommend_content_based(user_prefs_tags, user_id: Optional[int] = None, top_
         
         if user_liked_places and item_similarity_matrix is not None:
             # Tính CF score dựa trên items user đã like
-            for liked_place_id in user_liked_places[:10]:  # Top 10 liked items
+            # INCREASED: Use top 30 liked items (from 20)
+            for liked_place_id in user_liked_places[:30]:
                 try:
                     liked_idx = items_df.index[items_df['id'] == liked_place_id].tolist()[0]
                     # Lấy similarity với tất cả items
@@ -382,11 +388,12 @@ def recommend_content_based(user_prefs_tags, user_id: Optional[int] = None, top_
         # --- BƯỚC 6: KẾT HỢP CÁC SCORES (HYBRID) ---
         # Weights dựa trên có user history hay không
         if user_id and user_liked_places:
-            # User có history: 40% content + 40% CF + 20% popularity
+            # User có history: 30% content + 60% CF + 10% popularity
+            # Tăng CF weight vì có 552 users → stronger signal
             results['score'] = (
-                0.40 * results['content_score'] +
-                0.40 * results['cf_score'] +
-                0.20 * results['popularity_score']
+                0.30 * results['content_score'] +
+                0.60 * results['cf_score'] +
+                0.10 * results['popularity_score']
             )
         else:
             # User mới: 60% content + 40% popularity
@@ -398,11 +405,28 @@ def recommend_content_based(user_prefs_tags, user_id: Optional[int] = None, top_
     # Thêm cột province (lấy từ tag đầu tiên)
     results['province'] = results['tags'].apply(lambda x: x[0] if x and len(x) > 0 else 'Vietnam')
     
-    # --- BƯỚC 7: XỬ LÝ PLACES ĐÃ INTERACT (SOFT PENALTY) ---
-    # Giảm score cho disliked places nhưng không loại bỏ hoàn toàn
-    if disliked_places:
-        # Penalty cho disliked places
-        results.loc[results['id'].isin(disliked_places), 'score'] *= 0.1
+    # --- BƯỚC 7: XỬ LÝ PLACES ĐÃ INTERACT (SMART PENALTY) ---
+    # Giảm score cho disliked places và similar places
+    if disliked_places and item_similarity_matrix is not None:
+        for disliked_id in disliked_places:
+            # Penalty cho disliked place itself
+            results.loc[results['id'] == disliked_id, 'score'] *= 0.01
+            
+            # IMPROVED: Also penalize similar places
+            try:
+                disliked_idx = items_df.index[items_df['id'] == disliked_id].tolist()[0]
+                # Get similar items
+                similarities = item_similarity_matrix[disliked_idx]
+                
+                # Penalize top similar items (similarity > 0.5)
+                for idx, sim in enumerate(similarities):
+                    if sim > 0.5 and idx != disliked_idx:
+                        place_id = items_df.iloc[idx]['id']
+                        # Proportional penalty based on similarity
+                        penalty = 1.0 - (sim * 0.5)  # Max 50% penalty
+                        results.loc[results['id'] == place_id, 'score'] *= penalty
+            except (IndexError, KeyError):
+                pass
     
     # Không filter interacted places trong evaluation
     # (để có thể recommend lại places user thích)
@@ -442,8 +466,8 @@ def recommend_content_based(user_prefs_tags, user_id: Optional[int] = None, top_
     # Sắp xếp theo score
     results = results.sort_values(by='score', ascending=False)
     
-    # Lấy top candidates (2x top_k để có room cho diversity)
-    candidates = results.head(top_k * 2)
+    # Lấy top candidates (3x top_k để có nhiều room cho diversity)
+    candidates = results.head(top_k * 3)
     
     # Apply diversity: Chọn items với different tags
     selected = []
@@ -453,12 +477,15 @@ def recommend_content_based(user_prefs_tags, user_id: Optional[int] = None, top_
         if len(selected) >= top_k:
             break
         
-        # Tạo tag signature (2 tags đầu tiên)
+        # Tạo tag signature (3 tags đầu tiên cho diversity tốt hơn)
         place_tags = row['tags'] if isinstance(row['tags'], list) else []
-        tag_sig = tuple(sorted(place_tags[:2])) if len(place_tags) >= 2 else tuple(place_tags)
+        tag_sig = tuple(sorted(place_tags[:3])) if len(place_tags) >= 3 else tuple(place_tags)
         
-        # Nếu tag combo chưa thấy hoặc đã có đủ đa dạng, thêm vào
-        if tag_sig not in seen_tag_combos or len(selected) < top_k * 0.7:
+        # RELAXED diversity: chỉ first 30% must be diverse
+        diversity_threshold = int(top_k * 0.3)
+        
+        if tag_sig not in seen_tag_combos or len(selected) >= diversity_threshold:
+            # After diversity threshold, allow duplicates if high score
             selected.append(row)
             seen_tag_combos.add(tag_sig)
     
