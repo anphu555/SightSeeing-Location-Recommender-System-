@@ -22,14 +22,15 @@ def get_place_detail(place_id: int, session: Session = Depends(get_session)):
     # Lấy province từ tags[0] nếu có
     province = place.tags[0] if place.tags and len(place.tags) > 0 else None
     
-    # Trả về dữ liệu với province
+    # Trả về dữ liệu với province và climate
     return PlaceDetailResponse(
         id=place.id,
         name=place.name,
         description=place.description,
         image=place.image,
         tags=place.tags,
-        province=province
+        province=province,
+        climate=place.climate
     )
 
 @router.get("/search/by-name", response_model=List[PlaceDetailResponse])
@@ -54,7 +55,7 @@ def search_places_by_name(
     
     places = session.exec(statement).all()
     
-    # Convert to PlaceDetailResponse with province
+    # Convert to PlaceDetailResponse with province and climate
     results = []
     for place in places:
         province = place.tags[0] if place.tags and len(place.tags) > 0 else None
@@ -64,7 +65,8 @@ def search_places_by_name(
             description=place.description,
             image=place.image,
             tags=place.tags,
-            province=province
+            province=province,
+            climate=place.climate
         ))
     
     return results

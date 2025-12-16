@@ -216,9 +216,8 @@ async function loadPlaces() {
             return {
                 id: item.id,
                 name: item.name,
-                cost: "Medium",
-                weather: item.province || "Cool",
-                crowd: "Medium",
+                province: item.province || "Vietnam",
+                weather: item.climate || "Cool",
                 img: imgSrc
             };
         });
@@ -230,12 +229,12 @@ async function loadPlaces() {
         
         // Fallback data nếu API lỗi
         const fallbackData = [
-            { id: "101", name: "HA LONG BAY", cost: "Medium", weather: "Cool", crowd: "Medium", img: "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070" },
-            { id: "105", name: "NHA TRANG", cost: "Low", weather: "Hot", crowd: "High", img: "https://images.unsplash.com/photo-1565691668615-5e60d5c08611?q=80&w=2070" },
-            { id: "106", name: "SAPA", cost: "Low", weather: "Cold", crowd: "Medium", img: "https://images.unsplash.com/photo-1599229062397-6c8418047918?q=80&w=2070" },
-            { id: "104", name: "DA LAT", cost: "Medium", weather: "Cool", crowd: "High", img: "https://images.unsplash.com/photo-1596328372690-e9b46571b402?q=80&w=2070" },
-            { id: "108", name: "PHU QUOC", cost: "High", weather: "Warm", crowd: "Low", img: "https://images.unsplash.com/photo-1592350849318-7b9c9f2b879a?q=80&w=2070" },
-            { id: "103", name: "HOI AN", cost: "Medium", weather: "Warm", crowd: "High", img: "https://images.unsplash.com/photo-1557750255-c76072a7aad1?q=80&w=2070" }
+            { id: "101", name: "HA LONG BAY", province: "Quảng Ninh", weather: "Cool", img: "https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070" },
+            { id: "105", name: "NHA TRANG", province: "Khánh Hòa", weather: "Hot", img: "https://images.unsplash.com/photo-1565691668615-5e60d5c08611?q=80&w=2070" },
+            { id: "106", name: "SAPA", province: "Lào Cai", weather: "Cold", img: "https://images.unsplash.com/photo-1599229062397-6c8418047918?q=80&w=2070" },
+            { id: "104", name: "DA LAT", province: "Lâm Đồng", weather: "Cool", img: "https://images.unsplash.com/photo-1596328372690-e9b46571b402?q=80&w=2070" },
+            { id: "108", name: "PHU QUOC", province: "Kiên Giang", weather: "Warm", img: "https://images.unsplash.com/photo-1592350849318-7b9c9f2b879a?q=80&w=2070" },
+            { id: "103", name: "HOI AN", province: "Đà Nẵng", weather: "Warm", img: "https://images.unsplash.com/photo-1557750255-c76072a7aad1?q=80&w=2070" }
         ];
         renderCarousel(fallbackData);
     }
@@ -252,9 +251,8 @@ function renderCarousel(data) {
         <div class="card-name-overlay"><h3>${item.name}</h3></div>
         <div class="card-content-wrapper">
             <div class="card-content">
-                <p><strong>Cost:</strong> ${item.cost}</p>
+                <p><strong>Province:</strong> ${item.province}</p>
                 <p><strong>Weather:</strong> ${item.weather}</p>
-                <p><strong>Crowd:</strong> ${item.crowd}</p>
                 <button class="explore-btn" onclick="event.stopPropagation(); window.location.href='detail.html?id=${item.id}'">Explore Now!</button>
             </div>
         </div>

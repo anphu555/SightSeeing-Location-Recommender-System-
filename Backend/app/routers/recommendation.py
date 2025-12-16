@@ -150,7 +150,8 @@ async def get_recommendations(
             province=tags[0] if tags else "Vietnam",
             themes=tags,
             score=float(row.get('score', 0.0)),
-            image=place.image if place and place.image else None
+            image=place.image if place and place.image else None,
+            climate=place.climate if place and place.climate else None
         ))
 
     return RecommendResponse(extraction=extraction, results=results_list)

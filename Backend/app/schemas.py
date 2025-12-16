@@ -51,6 +51,11 @@ class Place(SQLModel, table=True):
     description: List[str] = Field(default=[], sa_column=Column(JSON))
     image: List[str] = Field(default=[], sa_column=Column(JSON))
     tags: List[str] = Field(default=[], sa_column=Column(JSON))
+    
+    # 4. Geographic & Climate Data (from Open-Meteo API)
+    lat: Optional[float] = Field(default=None)  # Latitude
+    lon: Optional[float] = Field(default=None)  # Longitude
+    climate: Optional[str] = Field(default=None)  # e.g., "cool", "warm", "hot", "cold"
 
     # Relationships
     ratings: List["Rating"] = Relationship(back_populates="place")
@@ -85,6 +90,7 @@ class PlaceDetailResponse(SQLModel):
     image: List[str]
     tags: List[str]
     province: Optional[str] = None  # Province/location, usually from tags[0]
+    climate: Optional[str] = None  # Weather condition: "cool", "warm", "hot", "cold", etc.
 
     
 from datetime import datetime
@@ -149,6 +155,7 @@ class PlaceOut(SQLModel):
     themes: List[str]
     score: float
     image: Optional[List[str]] = None
+    climate: Optional[str] = None  # Weather condition: "cool", "warm", "hot", etc.
 
 
 # class PreferenceEnum(str, Enum):
