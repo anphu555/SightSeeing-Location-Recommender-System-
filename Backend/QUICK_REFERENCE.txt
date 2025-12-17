@@ -1,0 +1,123 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║                    RATING ALGORITHM QUICK REFERENCE                  ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 📊 SCORE RANGE: 1.0 - 5.0 (with decimals)                          │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ ⏱️  VIEW TIME SCORING                                            │
+├─────────────────────────────────────────────────────────────────────┤
+│  < 5 sec       →  IGNORED (accidental click)                        │
+│  5 sec         →  2.5 points (minimum valid view)                  │
+│  30 sec        →  2.94 points                                      │
+│  60 sec        →  3.47 points                                      │
+│  90+ sec       →  4.0 points (max for view time)                   │
+│                                                                      │
+│  Formula: 2.5 + ((time - 5) / 85) * 1.5                              │
+│                                                                      │
+│  Subsequent views: Update only if new score > current score         │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 👍 LIKE SCORING                                                      │
+├─────────────────────────────────────────────────────────────────────┤
+│  Current + 4 points (capped at 5.0)                                 │
+│                                                                      │
+│  Examples:                                                          │
+│    2.5 + 4 = 5.0 (max)                                             │
+│    0.8 + 4 = 4.8                                                   │
+│    3.0 + 4 = 5.0 (capped)                                          │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 👎 DISLIKE SCORING                                                   │
+├─────────────────────────────────────────────────────────────────────┤
+│  Current - 5 points (minimum 1.0)                                   │
+│                                                                      │
+│  Examples:                                                          │
+│    4.0 - 5 = 1.0 (min)                                             │
+│    2.0 - 5 = 1.0 (min)                                             │
+│    3.5 - 5 = 1.0 (min)                                             │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 💬 COMMENT SCORING                                                   │
+├─────────────────────────────────────────────────────────────────────┤
+│  First comment:   +0.5 points                                       │
+│  Other comments:  No change                                         │
+│                                                                      │
+│  Examples:                                                          │
+│    3.0 + 0.5 = 3.5 (first comment)                                 │
+│    3.5 + 0.0 = 3.5 (second comment)                                │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 🔄 API ENDPOINTS                                                     │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  POST /rating/view-time                                             │
+│    Body: {place_id: int, view_time_seconds: float}                 │
+│    → Track view time and update rating                             │
+│                                                                      │
+│  POST /likes/place                                                  │
+│    Body: {place_id: int, is_like: bool}                            │
+│    → Like/Dislike and auto-update rating                           │
+│                                                                      │
+│  POST /comments                                                     │
+│    Body: {place_id: int, content: string}                          │
+│    → Create comment and auto-update rating (+0.5 first time)       │
+│                                                                      │
+│  GET /rating/rating/{place_id}                                      │
+│    → Get current user rating for place                             │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 🎯 EXAMPLE SCENARIOS                                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  Scenario 1: User likes place                                       │
+│    1. View 60s → 3.47                                              │
+│    2. Comment  → 3.97 (+0.5)                                       │
+│    3. Like     → 5.0  (+4, max)                                    │
+│                                                                      │
+│  Scenario 2: User dislikes place                                    │
+│    1. View 10s → 2.59                                              │
+│    2. Dislike  → 1.0  (-5, min)                                    │
+│                                                                      │
+│  Scenario 3: Existing rating                                        │
+│    1. Old: 3.0    → 3.0                                            │
+│    2. View 90s    → 4.0  (higher, updated)                         │
+│    3. Comment     → 4.5  (+0.5)                                    │
+│    4. Like        → 5.0  (+4, max)                                 │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ ⚡ IMPORTANT RULES                                                   │
+├─────────────────────────────────────────────────────────────────────┤
+│  ✓ View time updates: only if new score > current                   │
+│  ✓ Comment bonus only for FIRST comment                            │
+│  ✓ Accidental clicks (< 5s) are IGNORED                            │
+│  ✓ Max view time: 90 seconds = 4.0 points                          │
+│  ✓ Score always between 1.0 and 5.0                                │
+│  ✓ All endpoints AUTO-UPDATE rating                                │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ 📂 KEY FILES                                                         │
+├─────────────────────────────────────────────────────────────────────┤
+│  backend/app/services/scoring_service.py   ← Core algorithm         │
+│  backend/app/routers/rating.py             ← Rating endpoints       │
+│  backend/app/routers/like.py               ← Like/Dislike          │
+│  backend/app/routers/comment.py            ← Comments               │
+│  backend/test_rating_algorithm.py          ← Demo & tests           │
+│  backend/RATING_ALGORITHM.md               ← Full documentation     │
+│  backend/IMPLEMENTATION_SUMMARY.md         ← Summary (Vietnamese)   │
+└─────────────────────────────────────────────────────────────────────┘
+
+╔══════════════════════════════════════════════════════════════════════╗
+║  Run: python test_rating_algorithm.py to see algorithm in action!   ║
+╚══════════════════════════════════════════════════════════════════════╝

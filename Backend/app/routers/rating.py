@@ -3,8 +3,92 @@ from sqlmodel import Session, select
 from app.database import get_session
 from app.schemas import InteractionCreate, InteractionType, Rating, User
 from app.routers.auth import get_current_user
+from app.services.scoring_service import RatingScorer
+from pydantic import BaseModel
+from typing import Optional
 
 router = APIRouter()
+
+# ==========================================
+# REQUEST/RESPONSE MODELS
+# ==========================================
+
+class ViewTimeRequest(BaseModel):
+    """Request model for tracking view time (simple time-based)"""
+    place_id: int
+    view_time_seconds: float
+
+class RatingResponse(BaseModel):
+    """Response model for rating operations"""
+    user_id: int
+    place_id: int
+    score: float
+    status: str  # "created" or "updated"
+
+# ==========================================
+# ENDPOINTS
+# ==========================================
+
+@router.post("/view-time", response_model=RatingResponse)
+async def track_view_time(
+    view_data: ViewTimeRequest,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """
+    Track user view time on a place and calculate rating score.
+    Simple time-based tracking from page load to page exit.
+    """
+    # Log view time
+    print(f"[View Time Tracking] User {current_user.id} -> Place {view_data.place_id}: {view_data.view_time_seconds}s")
+    
+    # Update rating using the scoring algorithm
+    rating = RatingScorer.update_rating(
+        user_id=current_user.id,
+        place_id=view_data.place_id,
+        session=session,
+        view_time_seconds=view_data.view_time_seconds
+    )
+    
+    # Check if it was newly created or updated
+    statement = select(Rating).where(
+        Rating.user_id == current_user.id,
+        Rating.place_id == view_data.place_id
+    )
+    existing_count = len(session.exec(statement).all())
+    
+    return RatingResponse(
+        user_id=rating.user_id,
+        place_id=rating.place_id,
+        score=rating.score,
+        status="created" if existing_count == 1 else "updated"
+    )
+
+@router.get("/rating/{place_id}")
+async def get_user_rating(
+    place_id: int,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Get user's rating for a specific place"""
+    statement = select(Rating).where(
+        Rating.user_id == current_user.id,
+        Rating.place_id == place_id
+    )
+    rating = session.exec(statement).first()
+    
+    if not rating:
+        return {"place_id": place_id, "score": None, "message": "No rating found"}
+    
+    return {
+        "place_id": rating.place_id,
+        "score": rating.score,
+        "user_id": rating.user_id
+    }
+
+# ==========================================
+# LEGACY ENDPOINTS (Keep for backward compatibility)
+# ==========================================
 
 # Quy tắc tính điểm
 SCORE_MAP = {

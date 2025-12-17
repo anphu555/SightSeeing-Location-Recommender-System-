@@ -7,6 +7,52 @@ let currentImgIndex = 0;
 let currentImagesList = [];
 const ITEMS_PER_PAGE = 4; // Số lượng ảnh hiển thị 1 lần
 
+// === VIEW TIME TRACKING ===
+// Tracks total time from page entry to page exit (continuous tracking)
+let viewStartTime = Date.now();
+let currentPlaceId = null;
+
+// Only track view time when user actually LEAVES the page
+// (not when switching tabs, opening chatbot, or other in-page actions)
+window.addEventListener('beforeunload', (event) => {
+    const viewTimeSeconds = (Date.now() - viewStartTime) / 1000;
+    
+    console.log('[View Time Tracking] beforeunload:', {
+        view_time: viewTimeSeconds.toFixed(2) + 's',
+        place_id: currentPlaceId,
+        will_send: viewTimeSeconds >= 5 && !!currentPlaceId
+    });
+    
+    if (viewTimeSeconds >= 5 && currentPlaceId) {
+        const token = localStorage.getItem('token');
+        if (token) {
+            // Use fetch with keepalive for beforeunload
+            // This ensures the request completes even after page unload
+            console.log('[View Time Tracking] Sending request from beforeunload...');
+            fetch(`${CONFIG.apiBase}/api/v1/rating/view-time`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    place_id: currentPlaceId,
+                    view_time_seconds: Math.round(viewTimeSeconds * 100) / 100
+                }),
+                keepalive: true // Critical for beforeunload
+            }).then(response => {
+                console.log('[View Time Tracking] Response:', response.status);
+                return response.json();
+            }).then(data => {
+                console.log('[View Time Tracking] Success:', data);
+            }).catch(err => {
+                // Silent fail - don't block navigation
+                console.log('[View Time Tracking] Error:', err.message);
+            });
+        }
+    }
+});
+
 // === 3. HÀM ĐIỀU HƯỚNG (Next/Prev) ===
 window.slideThumbs = function(direction) {
     let newIndex = currentImgIndex + direction;
@@ -74,6 +120,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'results.html';
         return;
     }
+    
+    // Set current place ID for view time tracking
+    currentPlaceId = parseInt(id);
+    viewStartTime = Date.now(); // Reset start time
+    
+    console.log('[View Time Tracking] Initialized:', {
+        place_id: currentPlaceId,
+        start_time: new Date(viewStartTime).toLocaleTimeString(),
+        token_exists: !!localStorage.getItem('token')
+    });
     
     try {
         // Gọi API lấy thông tin địa điểm

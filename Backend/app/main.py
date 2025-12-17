@@ -92,7 +92,7 @@ def root():
 # Đăng ký router
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])         # đăng nhập đăng ký
 app.include_router(recommendation.router, prefix="/api/v1", tags=["Recommendation"])    # gợi ý địa điểm
-app.include_router(rating.router, prefix="/api/v1/user", tags=["User Actions"])         # đánh giá địa điểm
+app.include_router(rating.router, prefix="/api/v1/rating", tags=["Rating"])             # rating & view time tracking
 app.include_router(comment.router, prefix="/api/v1", tags=["Comments"])                 # comments/reviews
 app.include_router(like.router, prefix="/api/v1", tags=["Likes"])                       # likes
 

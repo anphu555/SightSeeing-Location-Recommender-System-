@@ -1,0 +1,116 @@
+
+============================================================
+HỆ THỐNG ĐÁNH GIÁ RECOMMENDATION ALGORITHM
+============================================================
+
+⏳ Đang khởi tạo Recommendation Model...
+RecSys initialized with 928 places
+✓ Model đã sẵn sàng!
+
+BƯỚC 1: TẠO TRAIN/TEST SPLIT
+------------------------------------------------------------
+✓ Tổng số users: 14
+✓ Users có đủ 5+ interactions: 11
+✓ Train set: 393 interactions
+✓ Test set: 94 interactions
+✓ Test users: 11
+
+BƯỚC 2: ĐÁNH GIÁ VỚI K = [5, 10, 20]
+------------------------------------------------------------
+
+============================================================
+ĐANG ĐÁNH GIÁ 11 USERS...
+============================================================
+
+[1/11] User 7: 2 relevant places
+[2/11] User 9: 13 relevant places
+[3/11] User 10: 13 relevant places
+[4/11] User 11: 16 relevant places
+[5/11] User 13: 8 relevant places
+[6/11] User 14: 5 relevant places
+[7/11] User 15: 24 relevant places
+[8/11] User 16: 4 relevant places
+[9/11] User 17: 3 relevant places
+[10/11] User 18: 2 relevant places
+[11/11] User 19: 4 relevant places
+
+============================================================
+KẾT QUẢ ĐÁNH GIÁ TỔNG HỢP
+============================================================
+
+📊 Số users được đánh giá: 11
+📊 Trung bình relevant items/user: 8.55
+
+📈 PRECISION (Độ chính xác của đề xuất):
+   • Precision@5: 0.00%
+   • Precision@10: 0.00%
+   • Precision@20: 0.45%
+
+📈 RECALL (Tỉ lệ items relevant được tìm thấy):
+   • Recall@5: 0.00%
+   • Recall@10: 0.00%
+   • Recall@20: 4.55%
+
+📈 F1 SCORE (Harmonic mean of Precision & Recall):
+   • F1@5: 0.00%
+   • F1@10: 0.00%
+   • F1@20: 0.83%
+
+📈 NDCG (Ranking Quality):
+   • NDCG@5: 0.00%
+   • NDCG@10: 0.00%
+   • NDCG@20: 1.43%
+
+📈 MAP (Mean Average Precision): 0.32%
+
+📈 COVERAGE (Catalog coverage): 13.36%
+📈 DIVERSITY (Recommendation diversity): 56.36%
+
+============================================================
+💡 ĐÁNH GIÁ CHẤT LƯỢNG THUẬT TOÁN
+============================================================
+
+Kết luận: ❌ CẦN CẢI THIỆN
+
+💡 Gợi ý cải thiện:
+   1. Thu thập thêm dữ liệu user interactions
+   2. Cải thiện feature engineering (tags, descriptions)
+   3. Thử các thuật toán khác (collaborative filtering, hybrid)
+   4. Fine-tune hyperparameters
+
+============================================================
+💾 ĐANG LƯU KẾT QUẢ...
+============================================================
+
+✓ Đã lưu: evaluation_results.json
+✓ Đã lưu: evaluation_detailed.csv
+
+============================================================
+ĐÁNH GIÁ COLD-START PERFORMANCE
+============================================================
+
+Test 1: User mới thích lịch sử Hà Nội
+Tags: ['Hanoi', 'Historical']
+✓ Trả về 5 recommendations
+  Places: Hoang Au Beach, Lan Co Bay, Hanoi City...
+
+Test 2: User mới muốn đi biển Nha Trang
+Tags: ['Beach', 'Nha Trang']
+✓ Trả về 5 recommendations
+  Places: Hoang Au Beach, Lan Co Bay, Nha Trang Stone Church...
+
+Test 3: User mới thích núi và thiên nhiên
+Tags: ['Mountain', 'Nature']
+✓ Trả về 5 recommendations
+  Places: Lan Co Bay, Hoang Au Beach, Ba Na - Nui Chua...
+
+Test 4: User mới quan tâm ẩm thực văn hóa
+Tags: ['Food', 'Culture']
+✓ Trả về 5 recommendations
+  Places: Hoang Au Beach, Lan Co Bay, Ba Na - Nui Chua...
+
+Test 5: User mới không có preferences
+Tags: []
+✓ Trả về 5 recommendations
+  Places: Ba Na - Nui Chua, Hoang Au Beach, Lan Co Bay...
+

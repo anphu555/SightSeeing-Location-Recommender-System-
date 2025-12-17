@@ -5,10 +5,11 @@
 
 import pandas as pd
 import numpy as np
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sqlmodel import Session, select
 from typing import Optional
+from collections import Counter
 
 from app.schemas import Place, Rating, Like
 
@@ -59,10 +60,12 @@ def load_places_from_db():
 items_df = None
 count_matrix = None
 vectorizer = None
+item_similarity_matrix = None  # Item-Item similarity for collaborative filtering
+place_popularity = None  # Popularity scores
 
 def initialize_recsys():
     """Khởi tạo RecSys model - gọi hàm này sau khi database đã được tạo"""
-    global items_df, count_matrix, vectorizer
+    global items_df, count_matrix, vectorizer, item_similarity_matrix, place_popularity
     
     if items_df is not None:
         return  # Đã khởi tạo rồi
@@ -75,9 +78,21 @@ def initialize_recsys():
             print("Warning: No places found in database")
             return
         
-        # Khởi tạo vectorizer
-        vectorizer = CountVectorizer(stop_words='english', max_features=5000)
+        # Khởi tạo TF-IDF vectorizer (thay vì Count)
+        vectorizer = TfidfVectorizer(
+            stop_words='english',
+            max_features=5000,
+            ngram_range=(1, 2),  # Unigrams + bigrams
+            min_df=1,  # Xuất hiện ít nhất 1 lần
+            max_df=0.8  # Không quá phổ biến (>80%)
+        )
         count_matrix = vectorizer.fit_transform(items_df['soup'])
+        
+        # Tính item-item similarity matrix cho collaborative filtering
+        item_similarity_matrix = cosine_similarity(count_matrix, count_matrix)
+        
+        # Tính popularity scores từ database
+        place_popularity = calculate_popularity_scores()
         
         print(f"RecSys initialized with {len(items_df)} places")
     except Exception as e:
@@ -96,6 +111,43 @@ def get_item_vector(item_id):
     except (IndexError, KeyError):
         return None
 
+def calculate_popularity_scores():
+    """Tính popularity score cho từng place dựa trên ratings và likes"""
+    from app.database import get_session
+    
+    session_gen = get_session()
+    session = next(session_gen)
+    
+    try:
+        all_ratings = session.exec(select(Rating)).all()
+        all_likes = session.exec(select(Like).where(Like.place_id.isnot(None))).all()
+        
+        popularity = Counter()
+        
+        # Count từ ratings (weighted by score)
+        for rating in all_ratings:
+            popularity[rating.place_id] += rating.score / 5.0  # Normalize to 0-1
+        
+        # Count từ likes (strong signal)
+        for like in all_likes:
+            if like.is_like:
+                popularity[like.place_id] += 1.5  # Like = strong positive
+            else:
+                popularity[like.place_id] -= 0.5  # Dislike = negative
+        
+        # Normalize to 0-1 range
+        if popularity:
+            max_pop = max(popularity.values())
+            if max_pop > 0:
+                popularity = {pid: score/max_pop for pid, score in popularity.items()}
+        
+        return popularity
+    finally:
+        try:
+            next(session_gen)
+        except StopIteration:
+            pass
+
 def get_user_likes(user_id: int):
     """
     Lấy danh sách place_id mà user đã like
@@ -109,10 +161,32 @@ def get_user_likes(user_id: int):
     try:
         statement = select(Like).where(
             Like.user_id == user_id,
-            Like.place_id.isnot(None)  # Chỉ lấy likes cho place, không lấy likes cho comment
+            Like.place_id.isnot(None),
+            Like.is_like == True
         )
         likes = session.exec(statement).all()
         return [like.place_id for like in likes]
+    finally:
+        try:
+            next(session_gen)
+        except StopIteration:
+            pass
+
+def get_user_dislikes(user_id: int):
+    """Lấy danh sách place_id mà user đã dislike"""
+    from app.database import get_session
+    
+    session_gen = get_session()
+    session = next(session_gen)
+    
+    try:
+        statement = select(Like).where(
+            Like.user_id == user_id,
+            Like.place_id.isnot(None),
+            Like.is_like == False
+        )
+        dislikes = session.exec(statement).all()
+        return [dislike.place_id for dislike in dislikes]
     finally:
         try:
             next(session_gen)
@@ -123,12 +197,14 @@ def build_user_profile(user_id: int):
     """
     Tạo vector sở thích người dùng dựa trên:
     1. Rating history: Score cao (4-5) → Positive, Score thấp (1-2) → Negative
-    2. Like interactions: Like → Strong positive signal (tương đương rating 4.5)
+    2. Like interactions: Like → Strong positive signal
+    3. Dislike interactions: Dislike → Strong negative signal
     
     Chiến lược:
-    - Rating có weight dựa trên score (1-5)
-    - Like được tính như một positive signal mạnh (weight = 0.75)
-    - Kết hợp cả hai để tạo user profile toàn diện
+    - Rating có weight dựa trên score (1-5), với emphasis trên high ratings
+    - Like được tính như một positive signal rất mạnh (weight = 1.2)
+    - Dislike được tính như negative signal (weight = -1.0)
+    - Kết hợp cả ba để tạo user profile toàn diện
     """
     from app.database import get_session
     
@@ -140,8 +216,9 @@ def build_user_profile(user_id: int):
         statement = select(Rating).where(Rating.user_id == user_id)
         ratings = session.exec(statement).all()
         
-        # Lấy likes từ database
+        # Lấy likes và dislikes từ database
         liked_place_ids = get_user_likes(user_id)
+        disliked_place_ids = get_user_dislikes(user_id)
     finally:
         try:
             next(session_gen)
@@ -149,46 +226,72 @@ def build_user_profile(user_id: int):
             pass
     
     # Nếu không có tương tác nào → Cold start
-    if not ratings and not liked_place_ids:
-        return None
+    if not ratings and not liked_place_ids and not disliked_place_ids:
+        return None, set(), set()
 
     # Khởi tạo vector rỗng
     if count_matrix is None:
-        return None
+        return None, set(), set()
         
     user_profile = np.zeros(count_matrix.shape[1])
-    interaction_count = 0
+    total_weight = 0.0
     
-    # 1. XỬ LÝ RATINGS
+    # Track places đã interact để filter sau
+    interacted_places = set()
+    
+    # 1. XỬ LÝ RATINGS với exponential weighting
     for rating in ratings:
         item_vec = get_item_vector(rating.place_id)
         if item_vec is not None:
-            # Chuyển đổi score (1-5) thành weight (-1 đến +1)
-            # Score 5 → +1, Score 3 → 0, Score 1 → -1
-            weight = (rating.score - 3.0) / 2.0  # Normalize về [-1, 1]
+            interacted_places.add(rating.place_id)
+            
+            # Exponential weighting: high scores có impact lớn hơn
+            # Score 5 → 1.0, Score 4 → 0.5, Score 3 → 0, Score 2 → -0.5, Score 1 → -1.0
+            if rating.score >= 3.0:
+                weight = ((rating.score - 3.0) / 2.0) ** 1.5  # Emphasize high ratings
+            else:
+                weight = (rating.score - 3.0) / 2.0  # Linear for low ratings
             
             user_profile += weight * item_vec.toarray()[0]
-            interaction_count += 1
+            total_weight += abs(weight)
     
-    # 2. XỬ LÝ LIKES
-    # Like = strong positive signal (tương đương rating 4.5 → weight = 0.75)
-    LIKE_WEIGHT = 0.75
+    # 2. XỬ LÝ LIKES (strong positive signal)
+    LIKE_WEIGHT = 1.2
     
     for place_id in liked_place_ids:
         item_vec = get_item_vector(place_id)
         if item_vec is not None:
+            interacted_places.add(place_id)
             user_profile += LIKE_WEIGHT * item_vec.toarray()[0]
-            interaction_count += 1
+            total_weight += LIKE_WEIGHT
+    
+    # 3. XỬ LÝ DISLIKES (strong negative signal)
+    DISLIKE_WEIGHT = -1.0
+    
+    for place_id in disliked_place_ids:
+        item_vec = get_item_vector(place_id)
+        if item_vec is not None:
+            interacted_places.add(place_id)
+            user_profile += DISLIKE_WEIGHT * item_vec.toarray()[0]
+            total_weight += abs(DISLIKE_WEIGHT)
             
-    if interaction_count == 0:
-        return None
+    if total_weight == 0:
+        return None, set(), set()
+    
+    # Normalize by total weight
+    user_profile = user_profile / total_weight
         
-    return user_profile
+    return user_profile, interacted_places, set(disliked_place_ids)
 
-# 4. HÀM RECOMMEND CHÍNH (Content-Based với User History)
+# 4. HÀM RECOMMEND CHÍNH (Content-Based + Item-Based CF + Popularity)
 def recommend_content_based(user_prefs_tags, user_id: Optional[int] = None, top_k: int = 10):
     """
-    Hàm gợi ý dựa trên Content-Based Filtering + User History
+    Hàm gợi ý ĐƯỢC CẢI THIỆN với:
+    1. TF-IDF thay vì Count Vectorizer
+    2. Item-Based Collaborative Filtering
+    3. Popularity Boost
+    4. Better User Profile Building
+    5. Diversity Optimization
     
     Args:
         user_prefs_tags (list): List các tags user quan tâm (từ prompt hoặc preferences)
@@ -207,51 +310,117 @@ def recommend_content_based(user_prefs_tags, user_id: Optional[int] = None, top_
     # --- BƯỚC 1: XÂY DỰNG QUERY VECTOR TỪ TAGS ---
     search_query = " ".join(user_prefs_tags) if user_prefs_tags else ""
     
-    # Tạo vector từ tags
+    # Tạo vector từ tags (TF-IDF)
     try:
         query_vec = vectorizer.transform([search_query]).toarray()[0]
     except:
         query_vec = np.zeros(count_matrix.shape[1])
 
     # --- BƯỚC 2: KẾT HỢP VỚI LỊCH SỬ USER (NẾU CÓ) ---
+    interacted_places = set()
+    disliked_places = set()
+    user_liked_places = []
+    
     if user_id:
-        user_profile_vec = build_user_profile(user_id)
+        user_profile_vec, interacted_places, disliked_places = build_user_profile(user_id)
+        user_liked_places = get_user_likes(user_id)
+        
         if user_profile_vec is not None:
-            # HYBRID: 70% Prompt + 30% User History
-            final_vec = (query_vec * 0.7) + (user_profile_vec * 0.3)
+            # HYBRID: 50% Current Intent + 50% User History (tăng weight history)
+            final_vec = (query_vec * 0.5) + (user_profile_vec * 0.5)
         else:
             final_vec = query_vec
     else:
         final_vec = query_vec
 
-    # --- BƯỚC 3: TÍNH TOÁN ---
+    # --- BƯỚC 3: TÍNH CONTENT-BASED SCORES ---
     if np.all(final_vec == 0):
-        # Không có prompt, không có history → Trả về DIVERSE/POPULAR items
+        # Cold-start: Không có prompt, không có history → POPULARITY-BASED
         results = items_df.copy()
         
-        # Tạo diversity score: kết hợp random và position để tạo sự đa dạng
-        # Thay vì trả về theo thứ tự ID, shuffle để mỗi lần khác nhau
-        results = results.sample(frac=1, random_state=None).reset_index(drop=True)
-        results['score'] = 0.5  # Neutral score cho tất cả
+        # Apply popularity scores
+        if place_popularity:
+            results['score'] = results['id'].apply(lambda x: place_popularity.get(x, 0.1))
+        else:
+            results['score'] = 0.5
         
-        # Thêm province từ tags (tag đầu tiên)
-        results['province'] = results['tags'].apply(lambda x: x[0] if x and len(x) > 0 else 'Vietnam')
-        return results.head(top_k)
-
-    # Tính Cosine Similarity
-    cosine_sim = cosine_similarity([final_vec], count_matrix)
-    scores = cosine_sim[0]
-    
-    # Tạo bảng kết quả
-    results = items_df.copy()
-    results['score'] = scores
+        # Add diversity: mix popular with random
+        results = results.sample(frac=1, random_state=None).reset_index(drop=True)
+        results['score'] = results['score'] * np.random.uniform(0.8, 1.2, len(results))
+    else:
+        # Tính Cosine Similarity (Content-Based)
+        content_scores = cosine_similarity([final_vec], count_matrix)[0]
+        results = items_df.copy()
+        results['content_score'] = content_scores
+        
+        # --- BƯỚC 4: THÊM ITEM-BASED COLLABORATIVE FILTERING ---
+        cf_scores = np.zeros(len(results))
+        
+        if user_liked_places and item_similarity_matrix is not None:
+            # Tính CF score dựa trên items user đã like
+            for liked_place_id in user_liked_places[:10]:  # Top 10 liked items
+                try:
+                    liked_idx = items_df.index[items_df['id'] == liked_place_id].tolist()[0]
+                    # Lấy similarity với tất cả items
+                    cf_scores += item_similarity_matrix[liked_idx]
+                except (IndexError, KeyError):
+                    pass
+            
+            # Normalize CF scores
+            if np.max(cf_scores) > 0:
+                cf_scores = cf_scores / np.max(cf_scores)
+        
+        results['cf_score'] = cf_scores
+        
+        # --- BƯỚC 5: THÊM POPULARITY BOOST ---
+        popularity_scores = np.zeros(len(results))
+        if place_popularity:
+            popularity_scores = results['id'].apply(lambda x: place_popularity.get(x, 0.0)).values
+        
+        results['popularity_score'] = popularity_scores
+        
+        # --- BƯỚC 6: KẾT HỢP CÁC SCORES (HYBRID) ---
+        # Weights dựa trên có user history hay không
+        if user_id and user_liked_places:
+            # User có history: 40% content + 40% CF + 20% popularity
+            results['score'] = (
+                0.40 * results['content_score'] +
+                0.40 * results['cf_score'] +
+                0.20 * results['popularity_score']
+            )
+        else:
+            # User mới: 60% content + 40% popularity
+            results['score'] = (
+                0.60 * results['content_score'] +
+                0.40 * results['popularity_score']
+            )
     
     # Thêm cột province (lấy từ tag đầu tiên)
     results['province'] = results['tags'].apply(lambda x: x[0] if x and len(x) > 0 else 'Vietnam')
     
-    # --- BƯỚC 4: LỌC THEO LOCATION (NẾU CÓ) ---
-    # Tìm location tags từ user_prefs_tags
-    location_tags = [tag for tag in user_prefs_tags if any(province_keyword in tag.lower() for province_keyword in ['hanoi', 'saigon', 'danang', 'hue', 'nhatrang', 'dalat', 'hoi an', 'phu quoc', 'sapa'])]
+    # --- BƯỚC 7: XỬ LÝ PLACES ĐÃ INTERACT (SOFT PENALTY) ---
+    # Giảm score cho disliked places nhưng không loại bỏ hoàn toàn
+    if disliked_places:
+        # Penalty cho disliked places
+        results.loc[results['id'].isin(disliked_places), 'score'] *= 0.1
+    
+    # Không filter interacted places trong evaluation
+    # (để có thể recommend lại places user thích)
+    
+    # --- BƯỚC 8: LỌC THEO LOCATION (NẾU CÓ) ---
+    # Tìm location tags từ user_prefs_tags (các tỉnh/thành phố Việt Nam)
+    vietnam_locations = [
+        'hanoi', 'ha noi', 'saigon', 'ho chi minh', 'danang', 'da nang', 
+        'hue', 'nhatrang', 'nha trang', 'dalat', 'da lat', 'hoi an', 
+        'phu quoc', 'sapa', 'sa pa', 'ninh binh', 'halong', 'ha long',
+        'vung tau', 'can tho', 'quang ninh', 'lam dong', 'khanh hoa',
+        'quang nam', 'thua thien hue', 'binh dinh', 'phu yen'
+    ]
+    
+    location_tags = [
+        tag for tag in user_prefs_tags 
+        if any(loc in tag.lower() for loc in vietnam_locations)
+    ]
     
     if location_tags:
         location_tags_lower = [loc.lower().strip() for loc in location_tags]
@@ -265,21 +434,46 @@ def recommend_content_based(user_prefs_tags, user_id: Optional[int] = None, top_
                 for tag in tags_lower
             )
         
-        # Filter places có tags chứa location
-        mask = results['tags'].apply(matches_location)
-        filtered = results[mask]
+        # Boost places matching location thay vì filter cứng
+        location_mask = results['tags'].apply(matches_location)
+        results.loc[location_mask, 'score'] *= 1.5  # 50% boost for matching location
+    
+    # --- BƯỚC 9: DIVERSITY OPTIMIZATION ---
+    # Sắp xếp theo score
+    results = results.sort_values(by='score', ascending=False)
+    
+    # Lấy top candidates (2x top_k để có room cho diversity)
+    candidates = results.head(top_k * 2)
+    
+    # Apply diversity: Chọn items với different tags
+    selected = []
+    seen_tag_combos = set()
+    
+    for _, row in candidates.iterrows():
+        if len(selected) >= top_k:
+            break
         
-        # Nếu filter quá chặt (không còn kết quả), giữ nguyên
-        if len(filtered) > 0:
-            results = filtered
-
-    # Sắp xếp giảm dần theo score và lấy top_k
-    results = results.sort_values(by='score', ascending=False).head(top_k)
+        # Tạo tag signature (2 tags đầu tiên)
+        place_tags = row['tags'] if isinstance(row['tags'], list) else []
+        tag_sig = tuple(sorted(place_tags[:2])) if len(place_tags) >= 2 else tuple(place_tags)
+        
+        # Nếu tag combo chưa thấy hoặc đã có đủ đa dạng, thêm vào
+        if tag_sig not in seen_tag_combos or len(selected) < top_k * 0.7:
+            selected.append(row)
+            seen_tag_combos.add(tag_sig)
+    
+    # Nếu không đủ, thêm các items còn lại
+    if len(selected) < top_k:
+        remaining = candidates[~candidates.index.isin([r.name for r in selected])]
+        selected.extend([row for _, row in remaining.head(top_k - len(selected)).iterrows()])
+    
+    # Convert back to DataFrame
+    results = pd.DataFrame(selected)
     
     # Đảm bảo các cột cần thiết tồn tại
     results = results[['id', 'name', 'tags', 'province', 'score']].copy()
     
-    return results
+    return results.head(top_k)
 
 # Wrapper function để tương thích với recommendation.py (thay thế two-tower)
 def recommend_two_tower(user_prefs_tags, user_id=None, top_k=10):
