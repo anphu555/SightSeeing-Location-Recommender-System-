@@ -1,12 +1,19 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlmodel import Session, select
-from sqlalchemy import or_
+from sqlalchemy import or_, String
 from app.database import get_session
 from app.schemas import Place, PlaceDetailResponse
+from app.services.llm_service import extract_with_groq
 from typing import List
 import re
+import unicodedata
 
 router = APIRouter()
+
+def remove_accents(text: str) -> str:
+    """Bỏ dấu tiếng Việt"""
+    nfkd = unicodedata.normalize('NFD', text)
+    return ''.join(c for c in nfkd if not unicodedata.combining(c))
 
 # Stop words - các từ phổ biến không mang ý nghĩa tìm kiếm
 STOP_WORDS = {
@@ -33,12 +40,31 @@ STOP_WORDS = {
 }
 
 def extract_keywords(query: str) -> List[str]:
-    """Trích xuất từ khóa có ý nghĩa từ câu query"""
-    # Chuyển thành lowercase và tách từ
-    words = re.findall(r'\b\w+\b', query.lower())
-    # Loại bỏ stop words và từ quá ngắn (< 2 ký tự)
-    keywords = [word for word in words if word not in STOP_WORDS and len(word) >= 2]
-    return keywords
+    """Trích xuất từ khóa có ý nghĩa từ câu query, giữ nguyên cụm từ ghép (tên tỉnh/thành phố)"""
+    query_lower = query.lower()
+    
+    # Bước 1: Loại bỏ stop words từ đầu và cuối câu, giữ nguyên phần còn lại
+    words = re.findall(r'\b\w+\b', query_lower)
+    
+    # Tìm vị trí bắt đầu và kết thúc của phần có ý nghĩa
+    start_idx = 0
+    end_idx = len(words)
+    
+    # Loại bỏ stop words từ đầu
+    while start_idx < len(words) and words[start_idx] in STOP_WORDS:
+        start_idx += 1
+    
+    # Loại bỏ stop words từ cuối
+    while end_idx > start_idx and words[end_idx - 1] in STOP_WORDS:
+        end_idx -= 1
+    
+    if start_idx >= end_idx:
+        return []
+    
+    # Giữ nguyên cụm từ còn lại (có thể là tên địa danh ghép như "Quang Ninh", "Ha Long")
+    meaningful_phrase = ' '.join(words[start_idx:end_idx])
+    
+    return [meaningful_phrase] if meaningful_phrase else []
 
 @router.get("/{place_id}", response_model=PlaceDetailResponse)
 def get_place_detail(place_id: int, session: Session = Depends(get_session)):
@@ -67,38 +93,54 @@ def get_place_detail(place_id: int, session: Session = Depends(get_session)):
     )
 
 @router.get("/search/by-name", response_model=List[PlaceDetailResponse])
-def search_places_by_name(
+async def search_places_by_name(
     q: str = Query(..., description="Tên địa điểm hoặc câu mô tả cần tìm"),
     limit: int = Query(50, ge=1, le=100, description="Số lượng kết quả tối đa"),
     session: Session = Depends(get_session)
 ):
     """
     API tìm kiếm địa điểm theo tên hoặc từ khóa (case-insensitive, partial match).
-    Hỗ trợ tìm kiếm cả câu như "i want to go to the beach" bằng cách trích xuất từ khóa.
+    Sử dụng LLM để extract location từ câu query, sau đó filter theo tags.
     Frontend gọi: GET /api/v1/place/search/by-name?q=ha+long&limit=20
     """
     if not q or len(q.strip()) < 2:
         return []
     
-    # Trích xuất từ khóa có ý nghĩa từ câu query
-    keywords = extract_keywords(q)
+    # Dùng LLM để extract location và các thông tin khác
+    extraction = await extract_with_groq(q)
     
-    # Nếu không tìm được từ khóa nào, thử tìm với toàn bộ query gốc
-    if not keywords:
-        keywords = [q.strip()]
+    # Lấy locations từ LLM extraction
+    locations = extraction.location if extraction.location else []
+    place_type = extraction.type if extraction.type and extraction.type != "unknown" else None
     
-    # Tạo điều kiện OR cho tất cả từ khóa - tìm trong cả name và description
-    conditions = []
-    for keyword in keywords:
-        search_term = f"%{keyword}%"
-        conditions.append(Place.name.ilike(search_term))
-        conditions.append(Place.description.ilike(search_term))
+    # Nếu LLM extract được location, filter theo tags
+    if locations:
+        conditions = []
+        for loc in locations:
+            # Bỏ dấu để match với tags trong DB (không dấu)
+            loc_no_accent = remove_accents(loc)
+            search_term = f"%{loc_no_accent}%"
+            # Tìm trong tags (chứa tên tỉnh) - cast sang String type
+            conditions.append(Place.tags.cast(String).ilike(search_term))
+        
+        statement = select(Place).where(or_(*conditions)).limit(limit)
+        places = session.exec(statement).all()
+    else:
+        # Nếu không có location, fallback về tìm kiếm theo keyword
+        keywords = extract_keywords(q)
+        if not keywords:
+            keywords = [q.strip()]
+        
+        conditions = []
+        for keyword in keywords:
+            search_term = f"%{keyword}%"
+            conditions.append(Place.name.ilike(search_term))
+            conditions.append(Place.tags.cast(String).ilike(search_term))
+        
+        statement = select(Place).where(or_(*conditions)).limit(limit)
+        places = session.exec(statement).all()
     
-    statement = select(Place).where(or_(*conditions)).limit(limit)
-    
-    places = session.exec(statement).all()
-    
-    # Convert to PlaceDetailResponse with province
+    # Convert to PlaceDetailResponse
     results = []
     for place in places:
         province = place.tags[0] if place.tags and len(place.tags) > 0 else None
