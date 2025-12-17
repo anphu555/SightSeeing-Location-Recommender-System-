@@ -742,6 +742,12 @@ async function togglePlaceLike(placeId, isLike) {
             } else if (result.action === "updated") {
                 showToast(isLike ? 'Changed to like!' : 'Changed to dislike', 'success');
             }
+            
+            // Reload recommendations sau khi like/dislike để cập nhật dựa trên preferences mới
+            // Đợi 500ms để backend cập nhật preferences trước khi gọi lại API recommend
+            setTimeout(() => {
+                renderRecs(placeId);
+            }, 500);
         } else if (response.status === 401) {
             showToast('Session expired. Please login again.', 'error');
             setTimeout(() => {
