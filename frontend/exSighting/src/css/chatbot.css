@@ -198,3 +198,69 @@ body {
     color: #aaa; 
     margin-top: 8px; 
 }
+
+/* =========================================
+   RESPONSIVE - Mobile
+   ========================================= */
+@media (max-width: 768px) {
+    .chat-window {
+        width: calc(100vw - 20px);
+        height: calc(100vh - 120px);
+        right: 10px;
+        bottom: 80px;
+        border-radius: 12px;
+    }
+
+    .chat-widget-closed {
+        right: 15px;
+        bottom: 15px;
+    }
+
+    .chat-button {
+        width: 50px;
+        height: 50px;
+    }
+
+    .chat-tooltip {
+        display: none; /* Ẩn tooltip trên mobile */
+    }
+
+    .chat-header {
+        padding: 15px;
+    }
+
+    .header-logo {
+        width: 35px;
+        height: 35px;
+    }
+
+    .chat-body {
+        padding: 15px;
+    }
+
+    .message {
+        max-width: 85%;
+        font-size: 13px;
+        padding: 10px 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .chat-window {
+        width: 100vw;
+        height: calc(100vh - 70px);
+        right: 0;
+        bottom: 70px;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .chat-widget-closed {
+        right: 10px;
+        bottom: 10px;
+    }
+
+    .chat-button {
+        width: 45px;
+        height: 45px;
+    }
+}

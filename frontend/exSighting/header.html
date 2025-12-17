@@ -7,11 +7,10 @@ document.addEventListener("DOMContentLoaded", function() {
             <span>exSighting</span>
         </div>
 
-        <nav class="nav-links">
+        <nav class="nav-links" id="navLinks">
             <a href="home.html" class="nav-item">Home</a>
             <a href="destinations.html" class="nav-item">Destinations</a>
             <a href="about.html" class="nav-item">About Us</a>
-            
         </nav>
         
         <div id="authSection">
@@ -34,7 +33,15 @@ document.addEventListener("DOMContentLoaded", function() {
                 </div>
             </div>
         </div>
+
+        <!-- Hamburger Menu for Mobile -->
+        <div class="hamburger-menu" id="hamburgerMenu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
     </header>
+    <div class="nav-overlay" id="navOverlay"></div>
     `;
 
     // 2. NHÚNG VÀO TRANG
@@ -44,6 +51,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // 3. CHẠY CÁC HÀM XỬ LÝ (Sau khi HTML đã được nhúng)
     initAuthLogic();      // Kiểm tra đăng nhập
     highlightActiveLink(); // Tô đậm menu trang hiện tại
+    initMobileMenu();      // Khởi tạo menu mobile
 });
 
 // --- CÁC HÀM HỖ TRỢ ---
@@ -101,5 +109,38 @@ function highlightActiveLink() {
         if(link.getAttribute('href') === currentPath) {
             link.classList.add('active'); // Thêm class active
         }
+    });
+}
+
+function initMobileMenu() {
+    const hamburger = document.getElementById('hamburgerMenu');
+    const navLinks = document.getElementById('navLinks');
+    const overlay = document.getElementById('navOverlay');
+
+    if (!hamburger || !navLinks) return;
+
+    // Toggle menu khi bấm hamburger
+    hamburger.addEventListener('click', () => {
+        navLinks.classList.toggle('active');
+        if (overlay) overlay.classList.toggle('active');
+        hamburger.classList.toggle('active');
+    });
+
+    // Đóng menu khi bấm overlay
+    if (overlay) {
+        overlay.addEventListener('click', () => {
+            navLinks.classList.remove('active');
+            overlay.classList.remove('active');
+            hamburger.classList.remove('active');
+        });
+    }
+
+    // Đóng menu khi bấm vào link
+    navLinks.querySelectorAll('.nav-item').forEach(link => {
+        link.addEventListener('click', () => {
+            navLinks.classList.remove('active');
+            if (overlay) overlay.classList.remove('active');
+            hamburger.classList.remove('active');
+        });
     });
 }
