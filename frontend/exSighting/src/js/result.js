@@ -8,7 +8,7 @@ let hasMore = true;
 let currentQuery = "";
 const ITEMS_PER_PAGE = 20;
 let allLoadedResults = []; // Lưu tất cả kết quả đã load
-let currentSortMode = 'newest'; // Track current sort mode
+let currentSortMode = 'default'; // Track current sort mode
 
 document.addEventListener('DOMContentLoaded', () => {
     // Apply saved theme
@@ -579,6 +579,12 @@ function initSortDropdown() {
             
             if (sortValue === 'nearby') {
                 await sortByDistance();
+            } else if (sortValue === 'default') {
+                // Reset to default sorting
+                currentPage = 0;
+                allLoadedResults = [];
+                hasMore = true;
+                fetchAndDisplayResults();
             } else {
                 // Other sort modes - reload with normal API
                 currentPage = 0;
