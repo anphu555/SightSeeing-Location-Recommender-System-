@@ -243,7 +243,8 @@ function renderResults(results, query, grid, count, isLoadMore = false) {
             <div class="result-card" onclick="goToDetail(${item.id})" style="cursor: pointer;">
                 <div class="card-img-top">
                     <img src="${imgSrc}" alt="${item.name}" onerror="this.src='https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070';">
-                    <div class="view-badge"><i class="fas fa-star"></i> ${scoreDisplay}</div>
+                    <!-- DISABLED: Star badge showing score -->
+                    <!-- <div class="view-badge"><i class="fas fa-star"></i> ${scoreDisplay}</div> -->
                     ${distanceBadge}
                 </div>
                 <div class="card-body">
