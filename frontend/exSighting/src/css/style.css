@@ -442,6 +442,10 @@ button.user-actions-unsigned-in:hover { background-color: #0c6a6f; }
 
 .view-badge { position: absolute; top: 10px; right: 10px; background-color: #14838B; color: white; font-size: 0.8rem; font-weight: 600; padding: 4px 10px; border-radius: 20px; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
+/* Distance Badge - hiển thị khoảng cách từ vị trí người dùng */
+.distance-badge { position: absolute; top: 10px; left: 10px; background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%); color: white; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 20px; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+.distance-badge i { font-size: 0.7rem; }
+
 .card-body { padding: 15px; text-align: center; flex-grow: 1; }
 .card-title { color: #14838B; font-size: 1rem; margin: 0 0 5px 0; font-weight: 600; }
 .card-subtitle { color: #777; font-size: 0.9rem; margin: 0; }

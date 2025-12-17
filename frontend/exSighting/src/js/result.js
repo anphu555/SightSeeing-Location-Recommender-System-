@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-import { getUserLocationWithCache, formatDistance, isGeolocationSupported } from './gps-utils.js';
+import { getUserLocationWithCache, formatDistance, isGeolocationSupported, calculateDistance } from './gps-utils.js';
 
 // Biến theo dõi phân trang và trạng thái
 let currentPage = 0;
@@ -595,10 +595,17 @@ function initSortDropdown() {
 }
 
 // === SORT BY DISTANCE (GPS-BASED) ===
+// Sort kết quả hiện tại theo khoảng cách từ vị trí người dùng
 async function sortByDistance() {
     // Check if geolocation is supported
     if (!isGeolocationSupported()) {
         showToast('Your browser does not support GPS location', 'error');
+        return;
+    }
+    
+    // Check if we have results to sort
+    if (allLoadedResults.length === 0) {
+        showToast('No results to sort', 'warning');
         return;
     }
     
@@ -620,35 +627,61 @@ async function sortByDistance() {
         const userLocation = await getUserLocationWithCache();
         console.log('📍 User location:', userLocation);
         
-        // Call nearby API
-        const response = await fetch(
-            `${CONFIG.apiBase}/api/v1/place/search/nearby?lat=${userLocation.lat}&lon=${userLocation.lon}&limit=100&max_distance=500`
-        );
+        // Tính khoảng cách cho mỗi địa điểm trong kết quả hiện tại
+        const resultsWithDistance = allLoadedResults.map(place => {
+            // Lấy lat/lon từ place (nếu có)
+            const placeLat = place.lat;
+            const placeLon = place.lon;
+            
+            let distance = null;
+            if (placeLat && placeLon) {
+                distance = calculateDistance(
+                    userLocation.lat, 
+                    userLocation.lon, 
+                    placeLat, 
+                    placeLon
+                );
+            }
+            
+            return {
+                ...place,
+                distance: distance
+            };
+        });
         
-        if (!response.ok) {
-            throw new Error('Failed to fetch nearby places');
-        }
+        // Sort theo khoảng cách (gần nhất trước)
+        // Các địa điểm không có tọa độ sẽ được đưa xuống cuối
+        resultsWithDistance.sort((a, b) => {
+            if (a.distance === null && b.distance === null) return 0;
+            if (a.distance === null) return 1;
+            if (b.distance === null) return -1;
+            return a.distance - b.distance;
+        });
         
-        const places = await response.json();
-        console.log(`✅ Found ${places.length} nearby places`);
+        console.log(`✅ Sorted ${resultsWithDistance.length} results by distance`);
         
-        // Update results
-        allLoadedResults = places;
+        // Update allLoadedResults với distance đã tính
+        allLoadedResults = resultsWithDistance;
         currentPage = 0;
-        hasMore = false; // Đã load hết rồi
+        hasMore = false;
         
-        renderResults(places, false);
+        // Render tất cả kết quả đã sort
+        renderResults(resultsWithDistance, '', grid, count, false);
         
-        if (count) count.innerText = places.length;
+        if (count) count.innerText = resultsWithDistance.length;
         
-        if (places.length === 0) {
-            showToast('No places found nearby (within 500km radius)', 'warning');
+        // Hiển thị thông báo
+        const nearbyCount = resultsWithDistance.filter(p => p.distance !== null).length;
+        if (nearbyCount > 0) {
+            const closestPlace = resultsWithDistance[0];
+            const closestDistance = closestPlace.distance ? formatDistance(closestPlace.distance) : 'N/A';
+            showToast(`Sorted by distance. Closest: ${closestDistance}`, 'success');
         } else {
-            showToast(`Found ${places.length} places near you`, 'success');
+            showToast('Sorted results (location data unavailable for some places)', 'warning');
         }
         
     } catch (error) {
-        console.error('Error getting nearby places:', error);
+        console.error('Error sorting by distance:', error);
         
         let errorMessage = 'Unable to get your location';
         if (error.message.includes('denied')) {
@@ -657,18 +690,8 @@ async function sortByDistance() {
         
         showToast(errorMessage, 'error');
         
-        // Fallback to normal view
-        if (grid) {
-            grid.innerHTML = `
-                <div style="grid-column: 1/-1; text-align: center; padding: 50px;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: #f39c12;"></i>
-                    <p style="margin-top: 20px; color: #666;">${errorMessage}</p>
-                    <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #4A90E2; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                        Try Again
-                    </button>
-                </div>
-            `;
-        }
+        // Fallback: re-render kết quả hiện tại
+        renderResults(allLoadedResults, '', grid, count, false);
     }
 }
 

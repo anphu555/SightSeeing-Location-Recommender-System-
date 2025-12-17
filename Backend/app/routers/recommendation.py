@@ -151,7 +151,9 @@ async def get_recommendations(
             themes=tags,
             score=float(row.get('score', 0.0)),
             image=place.image if place and place.image else None,
-            climate=place.climate if place and place.climate else None
+            climate=place.climate if place and place.climate else None,
+            lat=place.lat if place else None,
+            lon=place.lon if place else None
         ))
 
     return RecommendResponse(extraction=extraction, results=results_list)

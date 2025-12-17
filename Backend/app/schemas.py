@@ -91,6 +91,8 @@ class PlaceDetailResponse(SQLModel):
     tags: List[str]
     province: Optional[str] = None  # Province/location, usually from tags[0]
     climate: Optional[str] = None  # Weather condition: "cool", "warm", "hot", "cold", etc.
+    lat: Optional[float] = None  # Latitude for GPS sorting
+    lon: Optional[float] = None  # Longitude for GPS sorting
 
     
 from datetime import datetime
@@ -156,6 +158,8 @@ class PlaceOut(SQLModel):
     score: float
     image: Optional[List[str]] = None
     climate: Optional[str] = None  # Weather condition: "cool", "warm", "hot", etc.
+    lat: Optional[float] = None  # Latitude for GPS sorting
+    lon: Optional[float] = None  # Longitude for GPS sorting
 
 
 # class PreferenceEnum(str, Enum):
