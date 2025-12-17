@@ -438,57 +438,106 @@ def recommend_content_based(user_prefs_tags, user_id: Optional[int] = None, top_
         location_mask = results['tags'].apply(matches_location)
         results.loc[location_mask, 'score'] *= 1.5  # 50% boost for matching location
     
-    # --- BƯỚC 9: DIVERSITY OPTIMIZATION ---
+    # --- BƯỚC 9: DIVERSITY OPTIMIZATION (MMR-inspired) ---
     # Sắp xếp theo score
     results = results.sort_values(by='score', ascending=False)
     
-    # Lấy top candidates (3x top_k để có room cho diversity)
-    candidates = results.head(top_k * 3)
+    # Lấy top candidates (5x top_k để có đủ options cho diversity)
+    candidates = results.head(top_k * 5)
     
-    # Multi-dimension diversity: Đảm bảo đa dạng theo PROVINCE và CATEGORY riêng biệt
+    # Multi-dimension diversity với STRICT LIMITS
     selected = []
-    province_count = Counter()  # Đếm số lần xuất hiện của mỗi province
-    category_count = Counter()  # Đếm số lần xuất hiện của mỗi category
+    province_count = Counter()
+    category_count = Counter()
     
-    # Giới hạn tối đa items từ cùng province hoặc category
-    max_per_province = max(2, top_k // 3)  # Tối đa 1/3 từ cùng province
-    max_per_category = max(3, top_k // 2)  # Tối đa 1/2 từ cùng category
+    # STRICT LIMITS - không cho phép vượt quá
+    # Province: tối đa 30% từ cùng province (ví dụ: top_k=10 → max 3 từ Lam Dong)
+    # Category: tối đa 40% từ cùng category (ví dụ: top_k=10 → max 4 Waterfall)
+    max_per_province = max(2, int(top_k * 0.3))
+    max_per_category = max(3, int(top_k * 0.4))
     
+    # HARD LIMIT cho category phổ biến như "Nature" (xuất hiện quá nhiều)
+    common_categories = {'Nature', 'Historical', 'Cultural', 'Scenic', 'Sightseeing'}
+    max_common_category = max(5, int(top_k * 0.6))  # 60% cho common categories
+    
+    def can_add_item(province, categories, current_count):
+        """Kiểm tra có thể thêm item không dựa trên diversity constraints"""
+        # Check province limit
+        if province_count[province] >= max_per_province:
+            return False, "province_limit"
+        
+        # Check category limits
+        for cat in categories:
+            if cat in common_categories:
+                if category_count[cat] >= max_common_category:
+                    return False, f"common_cat_{cat}"
+            else:
+                # Specific categories (Waterfall, Beach, Temple, etc.) - stricter
+                if category_count[cat] >= max_per_category:
+                    return False, f"specific_cat_{cat}"
+        
+        return True, "ok"
+    
+    # Pass 1: Strict selection
     for _, row in candidates.iterrows():
         if len(selected) >= top_k:
             break
         
         place_tags = row['tags'] if isinstance(row['tags'], list) else []
-        
-        # Tag đầu tiên là province, các tag còn lại là categories
         province = place_tags[0] if len(place_tags) > 0 else 'Unknown'
         categories = place_tags[1:] if len(place_tags) > 1 else ['Unknown']
         
-        # Kiểm tra điều kiện diversity
-        province_ok = province_count[province] < max_per_province
+        can_add, reason = can_add_item(province, categories, len(selected))
         
-        # Kiểm tra tất cả categories của place này
-        category_ok = all(category_count[cat] < max_per_category for cat in categories)
-        
-        # Nếu đã chọn được 70% items, nới lỏng điều kiện để đảm bảo đủ số lượng
-        relaxed_mode = len(selected) >= top_k * 0.7
-        
-        if province_ok and category_ok:
-            selected.append(row)
-            province_count[province] += 1
-            for cat in categories:
-                category_count[cat] += 1
-        elif relaxed_mode and (province_ok or category_ok):
-            # Relaxed mode: chỉ cần 1 trong 2 điều kiện
+        if can_add:
             selected.append(row)
             province_count[province] += 1
             for cat in categories:
                 category_count[cat] += 1
     
-    # Nếu không đủ, thêm các items còn lại theo score
+    # Pass 2: Relaxed selection (chỉ check province OR giới hạn category nới lỏng 50%)
     if len(selected) < top_k:
-        remaining = candidates[~candidates.index.isin([r.name for r in selected])]
-        selected.extend([row for _, row in remaining.head(top_k - len(selected)).iterrows()])
+        for _, row in candidates.iterrows():
+            if len(selected) >= top_k:
+                break
+            if row.name in [r.name for r in selected]:
+                continue
+            
+            place_tags = row['tags'] if isinstance(row['tags'], list) else []
+            province = place_tags[0] if len(place_tags) > 0 else 'Unknown'
+            categories = place_tags[1:] if len(place_tags) > 1 else ['Unknown']
+            
+            # Relaxed: province limit x1.5 OR all categories under x1.5 limit
+            province_ok = province_count[province] < max_per_province * 1.5
+            category_ok = all(
+                category_count[cat] < (max_common_category * 1.5 if cat in common_categories else max_per_category * 1.5)
+                for cat in categories
+            )
+            
+            if province_ok and category_ok:
+                selected.append(row)
+                province_count[province] += 1
+                for cat in categories:
+                    category_count[cat] += 1
+    
+    # Pass 3: Fill remaining (nhưng vẫn giữ HARD LIMIT: max 50% từ cùng province)
+    if len(selected) < top_k:
+        hard_max_province = max(3, int(top_k * 0.5))
+        for _, row in candidates.iterrows():
+            if len(selected) >= top_k:
+                break
+            if row.name in [r.name for r in selected]:
+                continue
+            
+            place_tags = row['tags'] if isinstance(row['tags'], list) else []
+            province = place_tags[0] if len(place_tags) > 0 else 'Unknown'
+            
+            # Hard limit: không quá 50% từ cùng province
+            if province_count[province] < hard_max_province:
+                selected.append(row)
+                province_count[province] += 1
+                for cat in place_tags[1:]:
+                    category_count[cat] += 1
     
     # Convert back to DataFrame
     results = pd.DataFrame(selected)
