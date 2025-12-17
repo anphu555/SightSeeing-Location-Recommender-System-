@@ -19,6 +19,11 @@ from sqlmodel import Session, select
 from typing import List, Dict, Tuple, Optional
 from collections import defaultdict
 import json
+import sys
+from pathlib import Path
+
+# Add parent directory to path to import from app
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.database import engine
 from app.schemas import User, Place, Rating, Like
