@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Forum Test</title>
+</head>
+<body>
+    <h1>Forum Auth Test</h1>
+    <div id="result"></div>
+    <script>
+        async function test() {
+            const token = localStorage.getItem('token');
+            const result = document.getElementById('result');
+            result.innerHTML = '<p>Token: ' + (token ? 'EXISTS' : 'MISSING') + '</p>';
+            
+            if (token) {
+                const response = await fetch('http://localhost:8000/api/v1/auth/profile', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json();
+                result.innerHTML += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            }
+        }
+        test();
+    </script>
+</body>
+</html>

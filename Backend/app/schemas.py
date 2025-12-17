@@ -219,5 +219,109 @@ class ChatbotRequest(SQLModel):
     message: str
 
 
+# ==========================================
+# FORUM / POST MODELS
+# ==========================================
+
+class Post(SQLModel, table=True):
+    """Bài đăng review địa điểm - giống Facebook/Instagram"""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Foreign Keys
+    user_id: int = Field(foreign_key="user.id")
+    place_id: Optional[int] = Field(default=None, foreign_key="place.id")  # Optional - có thể post không gắn địa điểm
+    
+    # Content
+    content: str  # Nội dung bài viết
+    images: List[str] = Field(default=[], sa_column=Column(JSON))  # Danh sách URLs ảnh
+    
+    # Metadata
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: Optional[datetime] = None
+    
+    # Stats (cache để query nhanh)
+    like_count: int = Field(default=0)
+    comment_count: int = Field(default=0)
+    
+    # Relationships
+    user: Optional[User] = Relationship()
+    place: Optional[Place] = Relationship()
+
+
+class PostLike(SQLModel, table=True):
+    """Like cho bài post"""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    user_id: int = Field(foreign_key="user.id")
+    post_id: int = Field(foreign_key="post.id")
+    
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class PostComment(SQLModel, table=True):
+    """Comment cho bài post"""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    user_id: int = Field(foreign_key="user.id")
+    post_id: int = Field(foreign_key="post.id")
+    
+    content: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    user: Optional[User] = Relationship()
+
+
+# --- API Models cho Forum ---
+
+class PostCreate(SQLModel):
+    """Request body để tạo post mới"""
+    content: str
+    place_id: Optional[int] = None
+    images: List[str] = []
+
+
+class PostCommentCreate(SQLModel):
+    """Request body để tạo comment"""
+    content: str
+
+
+class PostUserInfo(SQLModel):
+    """Thông tin user trong post response"""
+    id: int
+    username: str
+    display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+
+class PostPlaceInfo(SQLModel):
+    """Thông tin place trong post response"""
+    id: int
+    name: str
+    image: Optional[str] = None  # Ảnh đầu tiên của place
+
+
+class PostCommentResponse(SQLModel):
+    """Response cho một comment"""
+    id: int
+    content: str
+    created_at: datetime
+    user: PostUserInfo
+
+
+class PostResponse(SQLModel):
+    """Response cho một bài post"""
+    id: int
+    content: str
+    images: List[str]
+    created_at: datetime
+    like_count: int
+    comment_count: int
+    user: PostUserInfo
+    place: Optional[PostPlaceInfo] = None
+    is_liked: bool = False  # User hiện tại đã like chưa
+    comments: List[PostCommentResponse] = []  # Vài comment đầu tiên
+
+
 
 

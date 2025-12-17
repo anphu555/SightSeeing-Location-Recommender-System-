@@ -4,7 +4,7 @@ import os
 import shutil
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File, Header, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 from jose import JWTError, jwt
@@ -130,7 +130,7 @@ async def get_current_user(
     return user
 
 async def get_current_user_optional(
-    token: str = Depends(oauth2_scheme),
+    request: Request,
     session: Session = Depends(get_session)
 ) -> User | None:
     """
@@ -138,19 +138,36 @@ async def get_current_user_optional(
     Dùng cho các endpoint cho phép anonymous users
     """
     try:
-        if not token:
+        # Get token from Authorization header
+        authorization = request.headers.get('authorization')
+        print(f"🔑 get_current_user_optional called with authorization: {authorization}")
+        
+        if not authorization:
+            print("❌ No authorization header")
             return None
+            
+        # Extract token from "Bearer <token>"
+        parts = authorization.split()
+        if len(parts) != 2 or parts[0].lower() != "bearer":
+            print("❌ Invalid authorization format")
+            return None
+        
+        token = parts[1]
+        
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
+            print("❌ No username in token")
             return None
         
         # Fetch User from DB
         statement = select(User).where(User.username == username)
         user = session.exec(statement).first()
         
+        print(f"✅ User found: {user.username if user else None}")
         return user  # Return User object hoặc None
-    except:
+    except Exception as e:
+        print(f"❌ Exception in get_current_user_optional: {e}")
         return None
 
 
