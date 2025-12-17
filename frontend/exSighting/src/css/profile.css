@@ -864,6 +864,183 @@ body {
     background: #c82333;
 }
 
+/* Posts Feed in Liked Tab */
+#likedPostsList .post-card {
+    background: white;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    font-size: 0.9rem;
+}
+
+#likedPostsList .post-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    gap: 10px;
+}
+
+#likedPostsList .post-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+#likedPostsList .post-user-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+#likedPostsList .post-username {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+#likedPostsList .post-time {
+    font-size: 0.75rem;
+    color: #999;
+}
+
+#likedPostsList .post-place-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f0f9fa;
+    color: #14838B;
+    padding: 6px 12px;
+    margin: 0 15px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+#likedPostsList .post-place-tag:hover {
+    background: #d7f0f2;
+}
+
+#likedPostsList .post-content {
+    padding: 12px 15px;
+}
+
+#likedPostsList .post-content p {
+    margin: 0;
+    line-height: 1.5;
+    color: #333;
+    font-size: 0.9rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+#likedPostsList .post-images {
+    display: grid;
+    gap: 6px;
+    padding: 0 15px 10px;
+    max-height: 250px;
+}
+
+#likedPostsList .post-images.single {
+    grid-template-columns: 1fr;
+}
+
+#likedPostsList .post-images.double {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+#likedPostsList .post-images.grid {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+#likedPostsList .post-image-container {
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+    aspect-ratio: 1;
+    max-height: 250px;
+}
+
+#likedPostsList .post-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+#likedPostsList .more-count {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+#likedPostsList .post-stats {
+    display: flex;
+    gap: 15px;
+    padding: 10px 15px;
+    border-top: 1px solid #eee;
+    font-size: 0.85rem;
+    color: #666;
+}
+
+#likedPostsList .post-stats i {
+    font-size: 0.9rem;
+}
+
+#likedPostsList .post-actions {
+    display: flex;
+    padding: 10px 15px;
+    border-top: 1px solid #eee;
+    gap: 10px;
+}
+
+#likedPostsList .action-btn {
+    background: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #666;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 16px;
+    transition: all 0.3s;
+    flex: 1;
+    justify-content: center;
+}
+
+#likedPostsList .action-btn:hover {
+    background: #f0f0f0;
+}
+
+#likedPostsList .action-btn.liked {
+    color: #e74c3c;
+}
+
+#likedPostsList .action-btn.view-post-btn {
+    background: #14838B;
+    color: white;
+}
+
+#likedPostsList .action-btn.view-post-btn:hover {
+    background: #0d5f66;
+}
+
+#likedPostsList .action-btn i {
+    font-size: 0.9rem;
+}
+
 /* Toast Notification */
 .toast {
     position: fixed;

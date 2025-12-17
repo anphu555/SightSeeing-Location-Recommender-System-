@@ -13,6 +13,8 @@ from app.routers import recommendation, rating, chatbot, comment, like
 
 from app.routers import place
 
+from app.routers import forum
+
 
 
 # Define the Lifespan (Startup Event). 
@@ -97,6 +99,8 @@ app.include_router(like.router, prefix="/api/v1", tags=["Likes"])               
 app.include_router(chatbot.router, prefix="/chat", tags=["Chatbot"])         # chatbot
 
 app.include_router(place.router, prefix="/api/v1/place", tags=["Place Details"])        # place details
+
+app.include_router(forum.router)                                                        # forum/posts
 
 # admin interface
 from app.admin import * 

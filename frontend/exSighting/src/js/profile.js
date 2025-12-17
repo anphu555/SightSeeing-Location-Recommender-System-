@@ -259,7 +259,7 @@ function initTabs() {
             // Load liked content when Liked tab is clicked
             if (targetTab === 'liked') {
                 initLikedSubtabs();
-                loadLikedComments(); // Load comments by default
+                loadLikedPosts(); // Load posts by default
             }
         });
     });
@@ -645,7 +645,9 @@ function initLikedSubtabs() {
             }
             
             // Load content based on subtab
-            if (targetSubtab === 'liked-comments') {
+            if (targetSubtab === 'liked-posts') {
+                loadLikedPosts();
+            } else if (targetSubtab === 'liked-comments') {
                 loadLikedComments();
             } else if (targetSubtab === 'liked-places') {
                 loadLikedPlaces();
@@ -785,6 +787,193 @@ async function loadLikedPlaces() {
         console.error('Error loading liked places:', error);
         likedPlacesGrid.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">Error loading liked places</p>';
     }
+}
+
+// Load liked posts
+async function loadLikedPosts() {
+    const likedPostsList = document.getElementById('likedPostsList');
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        likedPostsList.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">Please login to view liked posts</p>';
+        return;
+    }
+    
+    try {
+        likedPostsList.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">Loading liked posts...</p>';
+        
+        const response = await fetch(`${CONFIG.apiBase}/api/v1/forum/likes/posts`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load liked posts');
+        }
+        
+        const likedPosts = await response.json();
+        
+        if (likedPosts.length === 0) {
+            likedPostsList.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">You haven\'t liked any posts yet</p>';
+            return;
+        }
+        
+        // Render posts using similar structure as forum.js
+        likedPostsList.innerHTML = likedPosts.map(post => {
+            // Parse and fix datetime - ensure UTC is properly handled
+            let postDate = post.created_at;
+            console.log('Original created_at:', postDate);
+            
+            // If datetime string doesn't end with 'Z', add it to indicate UTC
+            if (typeof postDate === 'string' && !postDate.endsWith('Z') && !postDate.includes('+')) {
+                postDate = postDate + 'Z';
+            }
+            postDate = new Date(postDate);
+            console.log('Parsed date:', postDate, 'Current time:', new Date(), 'Diff (ms):', Date.now() - postDate.getTime());
+            
+            const timeAgo = getTimeAgo(postDate);
+            console.log('Time ago result:', timeAgo);
+            
+            let images = [];
+            try {
+                if (Array.isArray(post.images)) {
+                    images = post.images;
+                } else if (typeof post.images === 'string') {
+                    images = JSON.parse(post.images);
+                }
+            } catch (e) {
+                images = [];
+            }
+            
+            return `
+                <div class="post-card" data-post-id="${post.id}">
+                    <div class="post-header">
+                        <img src="${getAvatarUrl(post.user)}" alt="Avatar" class="post-avatar">
+                        <div class="post-user-info">
+                            <span class="post-username">${post.user?.display_name || post.user?.username || 'Anonymous'}</span>
+                            <span class="post-time">${timeAgo}</span>
+                        </div>
+                    </div>
+                    
+                    ${post.place ? `
+                        <a href="detail.html?id=${post.place_id}" class="post-place-tag">
+                            <i class="fas fa-map-marker-alt"></i> ${post.place.name}
+                        </a>
+                    ` : ''}
+                    
+                    <div class="post-content">
+                        <p>${formatContent(post.content)}</p>
+                    </div>
+                    
+                    ${images.length > 0 ? `
+                        <div class="post-images ${images.length === 1 ? 'single' : images.length === 2 ? 'double' : 'grid'}">
+                            ${images.slice(0, 4).map((img, idx) => {
+                                const imgUrl = getImageUrl(img);
+                                return `
+                                <div class="post-image-container ${idx === 3 && images.length > 4 ? 'more-overlay' : ''}">
+                                    <img src="${imgUrl}" alt="Post image">
+                                    ${idx === 3 && images.length > 4 ? `<span class="more-count">+${images.length - 4}</span>` : ''}
+                                </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="post-stats">
+                        <span class="likes-count">
+                            <i class="fas fa-heart"></i> ${post.like_count || 0} likes
+                        </span>
+                        <span class="comments-count">
+                            ${post.comment_count || 0} comments
+                        </span>
+                    </div>
+                    
+                    <div class="post-actions">
+                        <button class="action-btn like-btn liked" disabled title="You liked this post">
+                            <i class="fas fa-heart"></i>
+                            <span>Liked</span>
+                        </button>
+                        <button class="action-btn view-post-btn" onclick="window.location.href='forum.html?post=${post.id}'">
+                            <i class="fas fa-arrow-right"></i>
+                            <span>View Post</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading liked posts:', error);
+        likedPostsList.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">Error loading liked posts</p>';
+    }
+}
+
+// Helper functions for posts rendering
+function getAvatarUrl(user) {
+    if (!user || !user.avatar_url) {
+        return 'src/images/default-avatar.png';
+    }
+    if (user.avatar_url.startsWith('http')) {
+        return user.avatar_url;
+    }
+    const avatarPath = user.avatar_url.startsWith('/') ? user.avatar_url.substring(1) : user.avatar_url;
+    return `${CONFIG.apiBase}/${avatarPath}`;
+}
+
+function getImageUrl(imagePath) {
+    if (!imagePath) return '';
+    if (imagePath.startsWith('http')) return imagePath;
+    const path = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+    return `${CONFIG.apiBase}/${path}`;
+}
+
+function getTimeAgo(date) {
+    // Ensure date is a valid Date object
+    if (!(date instanceof Date)) {
+        date = new Date(date);
+    }
+    
+    // Calculate seconds difference
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    
+    // Handle future dates (clock skew)
+    if (seconds < 0) {
+        return 'Just now';
+    }
+    
+    const intervals = {
+        year: 31536000,
+        month: 2592000,
+        week: 604800,
+        day: 86400,
+        hour: 3600,
+        minute: 60
+    };
+    
+    for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+        const interval = Math.floor(seconds / secondsInUnit);
+        if (interval >= 1) {
+            return `${interval} ${unit}${interval > 1 ? 's' : ''} ago`;
+        }
+    }
+    
+    return 'Just now';
+}
+
+function formatContent(content) {
+    if (!content) return '';
+    // Convert URLs to links
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    let formatted = content.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    
+    // Convert hashtags
+    const hashtagRegex = /#(\w+)/g;
+    formatted = formatted.replace(hashtagRegex, '<span class="hashtag">#$1</span>');
+    
+    // Convert newlines to br
+    formatted = formatted.replace(/\n/g, '<br>');
+    
+    return formatted;
 }
 
 // Unlike a comment

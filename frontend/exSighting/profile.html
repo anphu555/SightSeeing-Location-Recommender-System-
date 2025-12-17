@@ -19,6 +19,7 @@
         </div>
         <nav class="nav-links">
             <a href="about.html" class="nav-item">About us</a>
+            <a href="forum.html" class="nav-item">Forum</a>
         </nav>
         
         <div id="authSection">
@@ -173,7 +174,11 @@
                     <!-- Liked Tab -->
                     <div class="tab-content" id="liked-tab">
                         <div class="liked-subtabs">
-                            <button class="liked-subtab-btn active" data-subtab="liked-comments">
+                            <button class="liked-subtab-btn active" data-subtab="liked-posts">
+                                <i class="fas fa-images"></i>
+                                Liked Posts
+                            </button>
+                            <button class="liked-subtab-btn" data-subtab="liked-comments">
                                 <i class="fas fa-comment"></i>
                                 Liked Reviews
                             </button>
@@ -183,7 +188,13 @@
                             </button>
                         </div>
                         
-                        <div class="liked-subtab-content active" id="liked-comments-subtab">
+                        <div class="liked-subtab-content active" id="liked-posts-subtab">
+                            <div class="posts-feed" id="likedPostsList">
+                                <!-- Liked posts will be loaded here -->
+                            </div>
+                        </div>
+                        
+                        <div class="liked-subtab-content" id="liked-comments-subtab">
                             <div class="reviews-list" id="likedCommentsList">
                                 <!-- Liked comments will be loaded here -->
                             </div>

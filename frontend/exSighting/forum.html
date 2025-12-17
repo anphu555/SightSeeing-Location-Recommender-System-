@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <link rel="icon" type="image/png" href="src/images/TUYU_umbrella.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forum - exSighting</title>
+    <link rel="stylesheet" href="src/css/style.css">
+    <link rel="stylesheet" href="src/css/header.css">
+    <link rel="stylesheet" href="src/css/footer.css">
+    <link rel="stylesheet" href="src/css/forum.css">
+    <link rel="stylesheet" href="src/css/chatbot.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <div id="header-placeholder"></div>
+
+    <!-- Hero Banner -->
+    <section class="forum-hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h1><i class="fas fa-comments"></i> Community Forum</h1>
+            <p>Share your travel experiences and discover hidden gems from fellow travelers</p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="forum-container">
+        <!-- Create Post Section -->
+        <div class="create-post-section" id="createPostSection" style="display: none;">
+            <div class="create-post-card">
+                <div class="create-post-header">
+                    <img src="src/images/default-avatar.png" alt="Avatar" class="user-avatar" id="currentUserAvatar">
+                    <textarea placeholder="Share your travel experience..." id="postContent" rows="3"></textarea>
+                </div>
+                <div class="create-post-images" id="imagePreviewContainer"></div>
+                <div class="create-post-footer">
+                    <div class="post-options">
+                        <label class="option-btn" title="Add Photos">
+                            <i class="fas fa-image"></i>
+                            <input type="file" id="postImages" multiple accept="image/*" hidden>
+                        </label>
+                        <button class="option-btn" id="selectPlaceBtn" title="Tag a Place">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </button>
+                        <span class="selected-place" id="selectedPlaceName"></span>
+                        <input type="hidden" id="selectedPlaceId">
+                    </div>
+                    <button class="post-btn" id="submitPostBtn">
+                        <i class="fas fa-paper-plane"></i> Post
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login Prompt (cho user chưa đăng nhập) -->
+        <div class="login-prompt" id="loginPrompt">
+            <i class="fas fa-user-circle"></i>
+            <p>Sign in to share your travel experiences</p>
+            <a href="login.html" class="login-btn">Sign In</a>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="forum-tabs">
+            <button class="tab-btn active" data-filter="all">
+                <i class="fas fa-globe"></i> All Posts
+            </button>
+            <button class="tab-btn" data-filter="popular">
+                <i class="fas fa-fire"></i> Popular
+            </button>
+            <button class="tab-btn" data-filter="recent">
+                <i class="fas fa-clock"></i> Recent
+            </button>
+        </div>
+
+        <!-- Posts Feed -->
+        <div class="posts-feed" id="postsFeed">
+            <!-- Posts will be loaded here by JavaScript -->
+            <div class="loading-spinner" id="loadingSpinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading posts...</p>
+            </div>
+        </div>
+
+        <!-- Load More Button -->
+        <div class="load-more-container" id="loadMoreContainer" style="display: none;">
+            <button class="load-more-btn" id="loadMoreBtn">
+                <i class="fas fa-plus"></i> Load More
+            </button>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <i class="fas fa-comments"></i>
+            <h3>No posts yet</h3>
+            <p>Be the first to share your travel experience!</p>
+        </div>
+    </div>
+
+    <!-- Place Selection Modal -->
+    <div class="modal" id="placeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Select a Place</h3>
+                <button class="close-modal" id="closePlaceModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="search-box-modal">
+                    <input type="text" id="placeSearchInput" placeholder="Search for a place...">
+                    <i class="fas fa-search"></i>
+                </div>
+                <div class="places-list" id="placesList">
+                    <!-- Places will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post Detail Modal -->
+    <div class="modal" id="postDetailModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Post Details</h3>
+                <button class="close-modal" id="closePostModal">&times;</button>
+            </div>
+            <div class="modal-body" id="postDetailContent">
+                <!-- Post detail will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div id="footer-placeholder"></div>
+
+    <!-- Chatbot -->
+    <div id="chatbot-placeholder"></div>
+
+    <!-- Scripts -->
+    <script type="module" src="src/js/header.js"></script>
+    <script src="src/js/footer.js"></script>
+    <script type="module" src="src/js/forum.js"></script>
+</body>
+</html>

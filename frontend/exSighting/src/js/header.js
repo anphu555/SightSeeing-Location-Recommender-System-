@@ -16,8 +16,8 @@ document.addEventListener("DOMContentLoaded", function() {
         </div>
         
         <nav class="nav-links">
-            
             <a href="about.html" class="nav-item">About us</a>
+            <a href="forum.html" class="nav-item">Forum</a>
         </nav>
         
         <div id="authSection">
