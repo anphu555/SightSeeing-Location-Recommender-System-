@@ -1,5 +1,6 @@
 // === 1. IMPORT CONFIG ===
 import { CONFIG } from './config.js';
+import { getUserLocationWithCache, calculateDistance, formatDistance, isGeolocationSupported } from './gps-utils.js';
 
 // === 2. QUẢN LÝ TRẠNG THÁI ===
 let currentImgIndex = 0;
@@ -140,11 +141,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const placeData = await response.json();
         
+        // Tính khoảng cách thực từ vị trí người dùng
+        let distanceText = null;
+        if (placeData.lat && placeData.lon && isGeolocationSupported()) {
+            try {
+                const userLocation = await getUserLocationWithCache();
+                const distance = calculateDistance(
+                    userLocation.lat, 
+                    userLocation.lon, 
+                    placeData.lat, 
+                    placeData.lon
+                );
+                distanceText = formatDistance(distance);
+            } catch (e) {
+                console.log('Could not get user location for distance calculation');
+            }
+        }
+        
         // Xử lý dữ liệu từ backend
         const data = {
             name: placeData.name || 'Unknown',
             location: placeData.tags && placeData.tags.length > 0 ? placeData.tags[0] : 'Vietnam',
-            distance: Math.floor(Math.random() * 500 + 50), // Random distance (có thể tính thật từ GPS)
+            distance: distanceText, // Khoảng cách thực (hoặc null nếu không có GPS)
             desc: formatDescription(placeData.description),
             images: placeData.image && placeData.image.length > 0 
                 ? placeData.image 
@@ -201,7 +219,18 @@ function formatDescription(descArray) {
 function renderPage(data) {
     document.getElementById('detailTitle').innerText = data.name;
     document.getElementById('detailLocation').innerText = data.location;
-    document.getElementById('detailDistance').innerText = data.distance + " km from you";
+    
+    // Hiển thị khoảng cách nếu có
+    const distanceEl = document.getElementById('detailDistance');
+    if (distanceEl) {
+        if (data.distance) {
+            distanceEl.innerText = data.distance + " from you";
+            distanceEl.style.display = 'block';
+        } else {
+            distanceEl.style.display = 'none';
+        }
+    }
+    
     document.getElementById('detailDesc').innerHTML = data.desc;
     
     const thumbsContainer = document.getElementById('detailThumbs');

@@ -1,4 +1,5 @@
 import { CONFIG } from './config.js';
+import { getUserLocationWithCache, formatDistance, isGeolocationSupported, calculateDistance } from './gps-utils.js';
 
 // Biến theo dõi phân trang và trạng thái
 let currentPage = 0;
@@ -7,6 +8,7 @@ let hasMore = true;
 let currentQuery = "";
 const ITEMS_PER_PAGE = 20;
 let allLoadedResults = []; // Lưu tất cả kết quả đã load
+let currentSortMode = 'default'; // Track current sort mode
 
 document.addEventListener('DOMContentLoaded', () => {
     // Apply saved theme
@@ -232,11 +234,17 @@ function renderResults(results, query, grid, count, isLoadMore = false) {
             // Get province - fallback chain: province -> tags[0] -> 'Vietnam'
             const province = item.province || (item.tags && item.tags.length > 0 ? item.tags[0] : 'Vietnam');
             
+            // Show distance if available
+            const distanceBadge = item.distance !== undefined 
+                ? `<div class="distance-badge"><i class="fas fa-map-marker-alt"></i> ${formatDistance(item.distance)}</div>` 
+                : '';
+            
             return `
             <div class="result-card" onclick="goToDetail(${item.id})" style="cursor: pointer;">
                 <div class="card-img-top">
                     <img src="${imgSrc}" alt="${item.name}" onerror="this.src='https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070';">
                     <div class="view-badge"><i class="fas fa-star"></i> ${scoreDisplay}</div>
+                    ${distanceBadge}
                 </div>
                 <div class="card-body">
                     <h4 class="card-title">${item.name}</h4>
@@ -558,17 +566,139 @@ function initSortDropdown() {
     };
 
     options.forEach(opt => {
-        opt.onclick = () => {
+        opt.onclick = async () => {
+            const sortValue = opt.getAttribute('data-value');
+            
             if(display) display.innerText = opt.innerText;
             options.forEach(o => o.classList.remove('active'));
             opt.classList.add('active');
             dropdown.classList.remove('open');
+            
+            // Handle sorting
+            currentSortMode = sortValue;
+            
+            if (sortValue === 'nearby') {
+                await sortByDistance();
+            } else if (sortValue === 'default') {
+                // Reset to default sorting
+                currentPage = 0;
+                allLoadedResults = [];
+                hasMore = true;
+                fetchAndDisplayResults();
+            } else {
+                // Other sort modes - reload with normal API
+                currentPage = 0;
+                allLoadedResults = [];
+                hasMore = true;
+                fetchAndDisplayResults();
+            }
         };
     });
 
     document.onclick = (e) => {
         if(!dropdown.contains(e.target)) dropdown.classList.remove('open');
     };
+}
+
+// === SORT BY DISTANCE (GPS-BASED) ===
+// Sort kết quả hiện tại theo khoảng cách từ vị trí người dùng
+async function sortByDistance() {
+    // Check if geolocation is supported
+    if (!isGeolocationSupported()) {
+        showToast('Your browser does not support GPS location', 'error');
+        return;
+    }
+    
+    // Check if we have results to sort
+    if (allLoadedResults.length === 0) {
+        showToast('No results to sort', 'warning');
+        return;
+    }
+    
+    const grid = document.getElementById('resultsGrid');
+    const count = document.getElementById('totalCount');
+    
+    // Show loading
+    if (grid) {
+        grid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 50px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #4A90E2;"></i>
+                <p style="margin-top: 20px; color: #666;">Getting your location...</p>
+            </div>
+        `;
+    }
+    
+    try {
+        // Get user location (with cache)
+        const userLocation = await getUserLocationWithCache();
+        console.log('📍 User location:', userLocation);
+        
+        // Tính khoảng cách cho mỗi địa điểm trong kết quả hiện tại
+        const resultsWithDistance = allLoadedResults.map(place => {
+            // Lấy lat/lon từ place (nếu có)
+            const placeLat = place.lat;
+            const placeLon = place.lon;
+            
+            let distance = null;
+            if (placeLat && placeLon) {
+                distance = calculateDistance(
+                    userLocation.lat, 
+                    userLocation.lon, 
+                    placeLat, 
+                    placeLon
+                );
+            }
+            
+            return {
+                ...place,
+                distance: distance
+            };
+        });
+        
+        // Sort theo khoảng cách (gần nhất trước)
+        // Các địa điểm không có tọa độ sẽ được đưa xuống cuối
+        resultsWithDistance.sort((a, b) => {
+            if (a.distance === null && b.distance === null) return 0;
+            if (a.distance === null) return 1;
+            if (b.distance === null) return -1;
+            return a.distance - b.distance;
+        });
+        
+        console.log(`✅ Sorted ${resultsWithDistance.length} results by distance`);
+        
+        // Update allLoadedResults với distance đã tính
+        allLoadedResults = resultsWithDistance;
+        currentPage = 0;
+        hasMore = false;
+        
+        // Render tất cả kết quả đã sort
+        renderResults(resultsWithDistance, '', grid, count, false);
+        
+        if (count) count.innerText = resultsWithDistance.length;
+        
+        // Hiển thị thông báo
+        const nearbyCount = resultsWithDistance.filter(p => p.distance !== null).length;
+        if (nearbyCount > 0) {
+            const closestPlace = resultsWithDistance[0];
+            const closestDistance = closestPlace.distance ? formatDistance(closestPlace.distance) : 'N/A';
+            showToast(`Sorted by distance. Closest: ${closestDistance}`, 'success');
+        } else {
+            showToast('Sorted results (location data unavailable for some places)', 'warning');
+        }
+        
+    } catch (error) {
+        console.error('Error sorting by distance:', error);
+        
+        let errorMessage = 'Unable to get your location';
+        if (error.message.includes('denied')) {
+            errorMessage = 'Location access denied. Please enable location permission in your browser settings.';
+        }
+        
+        showToast(errorMessage, 'error');
+        
+        // Fallback: re-render kết quả hiện tại
+        renderResults(allLoadedResults, '', grid, count, false);
+    }
 }
 
 // === HÀM INFINITE SCROLL ===

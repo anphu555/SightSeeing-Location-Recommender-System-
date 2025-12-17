@@ -1,13 +1,22 @@
 /* =========================================
    1. THIẾT LẬP CHUNG (GLOBAL)
    ========================================= */
-body {
-    font-family: 'Poppins', sans-serif;
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html, body {
     margin: 0;
     padding: 0;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
     background-color: #f4f4f4;
     color: #333;
-    overflow-x: hidden;
 }
 
 /* =========================================
@@ -17,7 +26,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 100px; 
+    padding: 15px 5%; 
     background-color: white; 
     border-bottom: 1px solid #eee;
     position: relative; 
@@ -323,11 +332,14 @@ button.user-actions-unsigned-in:hover { background-color: #0c6a6f; }
 .places-carousel {
     display: flex; align-items: center; justify-content: center; gap: 20px; 
     position: relative; width: 100%; 
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .carousel-viewport { 
     overflow: hidden; width: 810px; border-radius: 15px; 
     padding-top: 30px; padding-bottom: 50px; margin-top: -30px; margin-bottom: -50px;
+    max-width: 100%;
 }
 
 .arrow-btn { background-color: white; border: 1px solid #ccc; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; color: #333; cursor: pointer; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); transition: all 0.3s; flex-shrink: 0; z-index: 5; }
@@ -400,11 +412,90 @@ button.user-actions-unsigned-in:hover { background-color: #0c6a6f; }
     box-sizing: border-box;
 }
 
+/* =========================================
+   RESPONSIVE - Tablet
+   ========================================= */ 
+@media (max-width: 1024px) {
+    .popular-places-section { padding: 30px 20px; }
+    .carousel-viewport { width: 100%; max-width: 540px; }
+    .place-card { width: 240px; height: 380px; }
+    .search-box { width: 90%; max-width: 500px; }
+    .navbar-v3 .nav-links { gap: 25px; }
+}
+
+/* =========================================
+   RESPONSIVE - Mobile
+   ========================================= */
 @media (max-width: 768px) {
+    /* Results Page */
     .results-page-wrapper { padding: 20px 10px; }
     .results-container { padding: 15px; border: none; box-shadow: none; }
-    .results-toolbar { flex-direction: column; gap: 15px; align-items: flex-start; }
+    .results-toolbar { flex-direction: column; gap: 15px; align-items: stretch; width: 100%; }
     .custom-sort-dropdown { width: 100%; }
+    .search-in-page { width: 100%; max-width: 100%; }
+    
+    /* Hero Banner */
+    .hero-banner { height: 300px; margin-top: -60px; }
+    .hero-banner-static { height: 250px; margin-top: -60px; }
+    .search-container h1 { font-size: 1.3rem; }
+    .search-box { width: 90%; max-width: 350px; }
+    
+    /* Popular Places Section */
+    .popular-places-section { padding: 20px 15px; }
+    .section-title { font-size: 1.3rem; }
+    .places-carousel { flex-direction: column; gap: 10px; }
+    .carousel-viewport { 
+        width: 100%; 
+        max-width: 100%; 
+        overflow-x: auto; 
+        padding: 15px 0; 
+        margin: 0;
+        -webkit-overflow-scrolling: touch;
+    }
+    .place-card-list { gap: 12px; padding: 0 15px; }
+    .place-card { width: 180px; height: 280px; }
+    .card-name-overlay h3 { font-size: 1rem; }
+    .arrow-btn { display: none; }
+    
+    /* Results Grid */
+    .results-grid { 
+        grid-template-columns: repeat(2, 1fr); 
+        gap: 12px; 
+        width: 100%;
+    }
+    .card-img-top { height: 140px; }
+    .card-title { font-size: 0.85rem; }
+    .card-location { font-size: 0.75rem; }
+    .result-count { font-size: 1rem; }
+}
+
+@media (max-width: 480px) {
+    /* Hero Banner */
+    .hero-banner { height: 300px; }
+    .hero-banner-static { height: 250px; }
+    .search-container { padding-top: 60px; }
+    .search-container h1 { font-size: 1.2rem; margin-bottom: 15px; }
+    .search-box { padding: 3px 3px 3px 15px; }
+    .search-box input { font-size: 0.9rem; }
+    .search-box button { width: 35px; height: 35px; font-size: 1rem; }
+    
+    /* Popular Places */
+    .section-title { font-size: 1.2rem; }
+    .place-card { width: 180px; height: 280px; }
+    .card-content { padding: 12px; }
+    .card-content p { font-size: 0.85rem; }
+    .explore-btn { padding: 6px 12px; font-size: 0.85rem; }
+    
+    /* Results Grid */
+    .results-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .result-card { border-radius: 8px; }
+    .card-img-top { height: 130px; }
+    .card-body { padding: 10px; }
+    .card-title { font-size: 0.85rem; }
+    .view-badge, .distance-badge { font-size: 0.65rem; padding: 3px 8px; }
+    
+    /* Like buttons */
+    .like-btn, .dislike-btn { font-size: 1rem; }
 }
 
 .results-toolbar {
@@ -441,6 +532,10 @@ button.user-actions-unsigned-in:hover { background-color: #0c6a6f; }
 .card-img-top img { width: 100%; height: 100%; object-fit: cover; }
 
 .view-badge { position: absolute; top: 10px; right: 10px; background-color: #14838B; color: white; font-size: 0.8rem; font-weight: 600; padding: 4px 10px; border-radius: 20px; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+/* Distance Badge - hiển thị khoảng cách từ vị trí người dùng */
+.distance-badge { position: absolute; top: 10px; left: 10px; background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%); color: white; font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 20px; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+.distance-badge i { font-size: 0.7rem; }
 
 .card-body { padding: 15px; text-align: center; flex-grow: 1; }
 .card-title { color: #14838B; font-size: 1rem; margin: 0 0 5px 0; font-weight: 600; }

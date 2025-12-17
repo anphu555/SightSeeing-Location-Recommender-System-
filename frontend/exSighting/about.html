@@ -108,10 +108,35 @@
         .team-member span { color: #14838B; font-size: 14px; font-weight: 600; text-transform: uppercase; }
 
         /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .section-container { padding: 60px 20px; }
+            .story-section { gap: 30px; }
+            .team-member { width: 220px; }
+            .member-img { width: 160px; height: 160px; }
+        }
+
         @media (max-width: 768px) {
             .story-section, .values-grid { flex-direction: column; }
             .hero-content h1 { font-size: 2.5rem; }
             .team-grid { gap: 40px; }
+            .about-hero { height: 50vh; }
+            h2 { font-size: 28px; }
+            .value-card { padding: 30px 15px; }
+            .value-card i { font-size: 32px; }
+        }
+
+        @media (max-width: 480px) {
+            .section-container { padding: 40px 15px; }
+            .about-hero { height: 40vh; }
+            .hero-content h1 { font-size: 2rem; }
+            .hero-content p { font-size: 1rem; }
+            h2 { font-size: 24px; }
+            .sub-heading { font-size: 12px; }
+            .team-member { width: 100%; max-width: 280px; }
+            .member-img { width: 140px; height: 140px; }
+            .team-member h3 { font-size: 16px; }
+            .team-member span { font-size: 12px; }
+            .value-card { padding: 25px 15px; }
         }
 
         /* ==================== DARK MODE ==================== */
@@ -194,7 +219,8 @@
         <div class="story-text">
             <h4 class="sub-heading">WHO WE ARE</h4>
             <h2>More than just Sightseeing</h2>
-            <p>Started in 2025, <strong>exSighting</strong> was born from a simple idea: Travel should be exciting, not exhausting.</p>
+            <p>Today, many travel platforms have emerged, offering convenient services and great deals. However, they often lack personalization and fail to highlight lesser-known destinations.</p>
+            <p>Recognizing this gap, we created <strong>exSighting</strong> with the goal of delivering optimized experiences tailored to each user's preferences, while also bringing hidden gems to travelers' attention — contributing to the growth of Vietnam's culture and tourism.</p>
             <p>The name <strong>"exSighting"</strong> is a blend of <em>"Excitement"</em> and <em>"Sightseeing"</em>. We believe that every destination has a hidden story waiting to be told.</p>
         </div>
     </section>

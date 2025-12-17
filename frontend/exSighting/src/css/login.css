@@ -10,6 +10,12 @@
     font-family: 'Poppins', sans-serif;
 }
 
+html, body {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+}
+
 /* Container bao quanh toàn trang */
 .login-page {
     /* Background Gradient màu thương hiệu: Từ xanh nhạt sang xanh đậm */
