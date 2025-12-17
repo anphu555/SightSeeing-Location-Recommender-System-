@@ -18,7 +18,8 @@ Thư mục này chứa tất cả các công cụ và tài liệu liên quan đ�
 |------|-------|
 | **EVALUATION_EXPLAINED.md** | ⭐ Giải thích chi tiết phương pháp evaluation (bắt đầu từ đây!) |
 | **EVALUATION_GUIDE.md** | Hướng dẫn chi tiết cách chạy evaluation |
-| **EVALUATION_REPORT.md** | Báo cáo kết quả evaluation |
+| **EVALUATION_REPORT.md** | Báo cáo kết quả evaluation cũ |
+| **ALGORITHM_EVALUATION_REPORT.md** | 🔥 Báo cáo đánh giá thuật toán mới nhất với phân tích chi tiết |
 | **SETUP_EVALUATION.md** | Hướng dẫn setup môi trường evaluation |
 
 ### 📊 Kết quả
