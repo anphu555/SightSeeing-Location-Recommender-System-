@@ -43,7 +43,7 @@ YOUR JSON:
 USER TEXT: "show me islands in Quang Ninh"
 YOUR JSON:
 {
-  "location": ["Quảng Ninh"],
+  "location": ["Quang Ninh"],
   "exclude_locations": [],
   "type": "island",
   "budget": "unknown",
@@ -55,7 +55,7 @@ USER TEXT: "Hmmm, i would love to go somewhere with great oceanic view that is s
 YOUR JSON:
 {
   "location": [],
-  "exclude_locations": ["Bà Rịa - Vũng Tàu"],
+  "exclude_locations": ["Ba Ria - Vung Tau"],
   "type": "beach",
   "budget": "unknown",
   "weather": "unknown",

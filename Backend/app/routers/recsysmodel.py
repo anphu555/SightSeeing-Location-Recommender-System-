@@ -442,27 +442,50 @@ def recommend_content_based(user_prefs_tags, user_id: Optional[int] = None, top_
     # Sắp xếp theo score
     results = results.sort_values(by='score', ascending=False)
     
-    # Lấy top candidates (2x top_k để có room cho diversity)
-    candidates = results.head(top_k * 2)
+    # Lấy top candidates (3x top_k để có room cho diversity)
+    candidates = results.head(top_k * 3)
     
-    # Apply diversity: Chọn items với different tags
+    # Multi-dimension diversity: Đảm bảo đa dạng theo PROVINCE và CATEGORY riêng biệt
     selected = []
-    seen_tag_combos = set()
+    province_count = Counter()  # Đếm số lần xuất hiện của mỗi province
+    category_count = Counter()  # Đếm số lần xuất hiện của mỗi category
+    
+    # Giới hạn tối đa items từ cùng province hoặc category
+    max_per_province = max(2, top_k // 3)  # Tối đa 1/3 từ cùng province
+    max_per_category = max(3, top_k // 2)  # Tối đa 1/2 từ cùng category
     
     for _, row in candidates.iterrows():
         if len(selected) >= top_k:
             break
         
-        # Tạo tag signature (2 tags đầu tiên)
         place_tags = row['tags'] if isinstance(row['tags'], list) else []
-        tag_sig = tuple(sorted(place_tags[:2])) if len(place_tags) >= 2 else tuple(place_tags)
         
-        # Nếu tag combo chưa thấy hoặc đã có đủ đa dạng, thêm vào
-        if tag_sig not in seen_tag_combos or len(selected) < top_k * 0.7:
+        # Tag đầu tiên là province, các tag còn lại là categories
+        province = place_tags[0] if len(place_tags) > 0 else 'Unknown'
+        categories = place_tags[1:] if len(place_tags) > 1 else ['Unknown']
+        
+        # Kiểm tra điều kiện diversity
+        province_ok = province_count[province] < max_per_province
+        
+        # Kiểm tra tất cả categories của place này
+        category_ok = all(category_count[cat] < max_per_category for cat in categories)
+        
+        # Nếu đã chọn được 70% items, nới lỏng điều kiện để đảm bảo đủ số lượng
+        relaxed_mode = len(selected) >= top_k * 0.7
+        
+        if province_ok and category_ok:
             selected.append(row)
-            seen_tag_combos.add(tag_sig)
+            province_count[province] += 1
+            for cat in categories:
+                category_count[cat] += 1
+        elif relaxed_mode and (province_ok or category_ok):
+            # Relaxed mode: chỉ cần 1 trong 2 điều kiện
+            selected.append(row)
+            province_count[province] += 1
+            for cat in categories:
+                category_count[cat] += 1
     
-    # Nếu không đủ, thêm các items còn lại
+    # Nếu không đủ, thêm các items còn lại theo score
     if len(selected) < top_k:
         remaining = candidates[~candidates.index.isin([r.name for r in selected])]
         selected.extend([row for _, row in remaining.head(top_k - len(selected)).iterrows()])
